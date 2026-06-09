@@ -48,7 +48,7 @@ router.get('/', verificarAdmin, async (req, res) => {
       SELECT
         (SELECT COUNT(*) FROM jogos) AS total_jogos,
         (SELECT COUNT(*) FROM jogos WHERE fase = 'grupo' AND finalizado = 1) AS jogos_finalizados,
-        (SELECT COUNT(*) FROM jogos WHERE finalizado = 0 AND data < NOW()) AS jogos_pendentes,
+        (SELECT COUNT(*) FROM jogos WHERE finalizado = 0 AND data < ${process.env.DATABASE_URL ? 'NOW()' : "datetime('now')"}) AS jogos_pendentes,
         (SELECT COUNT(*) FROM usuarios) AS total_usuarios,
         (SELECT COUNT(*) FROM palpites) AS total_palpites
     `);
