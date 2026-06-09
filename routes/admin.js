@@ -5,10 +5,11 @@ const { verificarAdmin } = require('../middleware/auth');
 const router = express.Router();
 
 // Sistema de pontuação
-// - Placar exato: 10 pontos
-// - Vencedor/empate + gols de um time: 5 pontos
-// - Só resultado (V/E/D): 3 pontos
-// - Erro: 0 pontos
+// - Placar exato: 10 pts
+// - Resultado certo + gols de 1 time: 7 pts (5 + 2)
+// - Só resultado (V/E/D): 3 pts
+// - Errou resultado mas acertou gols de 1 time: 2 pts
+// - Errou tudo: 0 pts
 function calcularPontos(golsCasa, golsVisitante, palpiteCasa, palpiteVisitante) {
   if (golsCasa === null || golsVisitante === null ||
       golsCasa === undefined || golsVisitante === undefined) return 0;
@@ -22,23 +23,25 @@ function calcularPontos(golsCasa, golsVisitante, palpiteCasa, palpiteVisitante) 
 
   // Determina resultado real e do palpite
   let resReal, resPalpite;
-  if (golsCasa > golsVisitante) resReal = 'C';
-  else if (golsCasa < golsVisitante) resReal = 'V';
-  else resReal = 'E';
+  if (golsCasa > golsVisitante) { resReal = 'C'; }
+  else if (golsCasa < golsVisitante) { resReal = 'V'; }
+  else { resReal = 'E'; }
 
-  if (palpiteCasa > palpiteVisitante) resPalpite = 'C';
-  else if (palpiteCasa < palpiteVisitante) resPalpite = 'V';
-  else resPalpite = 'E';
+  if (palpiteCasa > palpiteVisitante) { resPalpite = 'C'; }
+  else if (palpiteCasa < palpiteVisitante) { resPalpite = 'V'; }
+  else { resPalpite = 'E'; }
 
-  // Errou o resultado
-  if (resReal !== resPalpite) return 0;
+  const acertouGolCasa = golsCasa === palpiteCasa;
+  const acertouGolVisitante = golsVisitante === palpiteVisitante;
+  const acertouGolTime = acertouGolCasa || acertouGolVisitante;
 
-  // Acertou o resultado: verifica gols
-  if (golsCasa === palpiteCasa || golsVisitante === palpiteVisitante) {
-    return 5;
+  if (resReal === resPalpite) {
+    if (acertouGolTime) return 7;
+    return 3;
   }
 
-  return 3;
+  if (acertouGolTime) return 2;
+  return 0;
 }
 
 // GET /admin - painel principal
