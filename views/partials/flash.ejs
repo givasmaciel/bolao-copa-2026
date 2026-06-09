@@ -1,0 +1,17 @@
+<% if (typeof sucesso !== 'undefined' && sucesso && sucesso.length > 0) { %>
+  <% sucesso.forEach(function(msg) { %>
+    <div class="flash sucesso">✅ <%= msg %></div>
+  <% }); %>
+<% } %>
+
+<% if (typeof erro !== 'undefined' && erro && erro.length > 0) { %>
+  <% erro.forEach(function(msg) { %>
+    <div class="flash erro">❌ <%= msg %></div>
+  <% }); %>
+<% } %>
+
+<% if (typeof aviso !== 'undefined' && aviso && aviso.length > 0) { %>
+  <% aviso.forEach(function(msg) { %>
+    <div class="flash aviso">⚠ <%= msg %></div>
+  <% }); %>
+<% } %>

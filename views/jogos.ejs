@@ -1,0 +1,50 @@
+<%- include('partials/header', { active: 'jogos' }) %>
+
+<%- include('partials/flash') %>
+
+<h1>📅 Tabela de jogos da Copa 2026</h1>
+<p class="subtitulo">Acompanhe todos os 104 jogos do torneio. Conforme os jogos forem acontecendo, os placares e os pontos do bolão são atualizados.</p>
+
+<% Object.keys(fases).forEach(function(fase) { const f = fases[fase]; if (!f.jogos || f.jogos.length === 0) return; %>
+  <h2><%= f.nome %></h2>
+  <% f.jogos.forEach(function(jogo) { %>
+    <div class="jogo-card <%= jogo.finalizado === 1 ? 'finalizado' : '' %>">
+      <div class="jogo-time">
+        <% if (jogo.casa_bandeira) { %>
+          <img src="<%= jogo.casa_bandeira %>" alt="<%= jogo.casa_pt %>">
+        <% } else { %>
+          <span style="width:32px; height:24px; background:#e2e8f0; border-radius:3px; display:inline-block"></span>
+        <% } %>
+        <span><%= jogo.casa_pt || 'A definir' %></span>
+      </div>
+
+      <div class="jogo-info">
+        <% if (jogo.finalizado === 1) { %>
+          <div class="jogo-placar-display"><%= jogo.gols_casa %> × <%= jogo.gols_visitante %></div>
+        <% } else { %>
+          <div class="jogo-placar-display" style="color:#aaa">×</div>
+        <% } %>
+        <div class="jogo-data">📅 <%= new Date(jogo.data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) %></div>
+        <div class="jogo-estadio">📍 <%= jogo.estadio %>, <%= jogo.cidade %></div>
+        <% if (jogo.grupo_letra) { %>
+          <div style="margin-top:4px"><span class="badge" style="background:var(--verde); color:white">Grupo <%= jogo.grupo_letra %></span></div>
+        <% } else if (jogo.fase === 'final') { %>
+          <div style="margin-top:4px"><span class="badge badge-final">⭐ FINAL</span></div>
+        <% } else { %>
+          <div style="margin-top:4px"><span class="badge badge-knockout">Mata-mata</span></div>
+        <% } %>
+      </div>
+
+      <div class="jogo-time visitante">
+        <span><%= jogo.visitante_pt || 'A definir' %></span>
+        <% if (jogo.visitante_bandeira) { %>
+          <img src="<%= jogo.visitante_bandeira %>" alt="<%= jogo.visitante_pt %>">
+        <% } else { %>
+          <span style="width:32px; height:24px; background:#e2e8f0; border-radius:3px; display:inline-block"></span>
+        <% } %>
+      </div>
+    </div>
+  <% }); %>
+<% }); %>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,78 @@
+<%- include('partials/header', { active: 'ranking' }) %>
+
+<%- include('partials/flash') %>
+
+<h1>👤 <%= usuario.nome %></h1>
+<p class="subtitulo">Membro desde <%= new Date(usuario.criado_em).toLocaleDateString('pt-BR') %></p>
+
+<% if (stats) { %>
+  <div class="grid grid-4 mb-2">
+    <div class="stat-card">
+      <div class="stat-valor"><%= stats.total || 0 %></div>
+      <div class="stat-label">Palpites</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-valor"><%= stats.acertos || 0 %></div>
+      <div class="stat-label">Com pontos</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-valor"><%= stats.pontos || 0 %></div>
+      <div class="stat-label">Pontos</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-valor">
+        <% if (stats.total > 0) { %>
+          <%= Math.round(((stats.acertos || 0) / stats.total) * 100) %>%
+        <% } else { %>—<% } %>
+      </div>
+      <div class="stat-label">Taxa de acerto</div>
+    </div>
+  </div>
+<% } %>
+
+<% if (!palpites || palpites.length === 0) { %>
+  <div class="card text-center">
+    <p>😕 Este participante ainda não fez nenhum palpite.</p>
+    <a href="/ranking" class="btn btn-primary mt-2">Voltar ao ranking</a>
+  </div>
+<% } else { %>
+  <h2>Palpites por rodada</h2>
+  <% let rodadaAtual = null; %>
+  <% palpites.forEach(function(p) { %>
+    <% if (p.rodada !== rodadaAtual) { %>
+      <% if (rodadaAtual !== null) { %><% /* fecha a anterior */ %><% } %>
+      <h3 class="jogo-rodada-titulo">Rodada <%= p.rodada %></h3>
+      <% rodadaAtual = p.rodada; %>
+    <% } %>
+    <div class="jogo-card <%= p.finalizado === 1 ? 'finalizado' : '' %>">
+      <div class="jogo-time">
+        <span><%= p.casa_pt %></span>
+      </div>
+      <div class="jogo-info">
+        <% if (p.finalizado === 1) { %>
+          <div class="jogo-placar-display"><%= p.gols_casa %> × <%= p.gols_visitante %></div>
+        <% } else { %>
+          <div class="jogo-placar-display" style="color:#aaa">×</div>
+        <% } %>
+        <div style="margin-top:6px">
+          <strong>Palpite:</strong>
+          <%= p.palpite_gols_casa %> × <%= p.palpite_gols_visitante %>
+        </div>
+        <% if (p.finalizado === 1) { %>
+          <div class="pontos-badge <%= (p.pontos_obtidos || 0) === 0 ? 'zero' : '' %>">
+            <%= p.pontos_obtidos || 0 %> pts
+          </div>
+        <% } %>
+      </div>
+      <div class="jogo-time visitante">
+        <span><%= p.visitante_pt %></span>
+      </div>
+    </div>
+  <% }); %>
+
+  <div class="text-center mt-3">
+    <a href="/ranking" class="btn btn-secondary">← Voltar ao ranking</a>
+  </div>
+<% } %>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,60 @@
+<%- include('partials/header', { active: 'admin' }) %>
+
+<%- include('partials/flash') %>
+
+<h1>📝 Editar resultados</h1>
+<p class="subtitulo">Informe o placar e marque o jogo como finalizado. Os pontos são recalculados automaticamente.</p>
+
+<div class="card mb-2">
+  <form method="GET" action="/admin/jogos" class="flex gap-1" style="flex-wrap:wrap; align-items:end">
+    <div class="form-group" style="margin:0; flex:1; min-width:200px">
+      <label>Filtrar por fase</label>
+      <select name="fase" class="form-control" onchange="this.form.submit()">
+        <option value="">Todas</option>
+        <option value="grupo" <%= typeof query !== 'undefined' && query.fase === 'grupo' ? 'selected' : '' %>>Fase de grupos</option>
+        <option value="r32" <%= typeof query !== 'undefined' && query.fase === 'r32' ? 'selected' : '' %>>32-avos</option>
+        <option value="r16" <%= typeof query !== 'undefined' && query.fase === 'r16' ? 'selected' : '' %>>Oitavas</option>
+        <option value="qf" <%= typeof query !== 'undefined' && query.fase === 'qf' ? 'selected' : '' %>>Quartas</option>
+        <option value="sf" <%= typeof query !== 'undefined' && query.fase === 'sf' ? 'selected' : '' %>>Semis</option>
+        <option value="terceiro" <%= typeof query !== 'undefined' && query.fase === 'terceiro' ? 'selected' : '' %>>3º lugar</option>
+        <option value="final" <%= typeof query !== 'undefined' && query.fase === 'final' ? 'selected' : '' %>>Final</option>
+      </select>
+    </div>
+    <% if (typeof query !== 'undefined' && query.fase) { %>
+      <a href="/admin/jogos" class="btn btn-secondary">Limpar</a>
+    <% } %>
+  </form>
+</div>
+
+<% const jogosFiltrados = typeof query !== 'undefined' && query.fase ? jogos.filter(function(j){ return j.fase === query.fase; }) : jogos; %>
+
+<% jogosFiltrados.forEach(function(jogo) { %>
+  <form method="POST" action="/admin/jogos/<%= jogo.id %>" class="jogo-card <%= jogo.finalizado === 1 ? 'finalizado' : '' %>">
+    <div class="jogo-time">
+      <span><%= jogo.casa_pt || 'A definir' %></span>
+    </div>
+    <div class="jogo-info">
+      <div class="jogo-placar">
+        <input type="number" name="gols_casa" min="0" max="99" class="form-control"
+               value="<%= jogo.gols_casa !== null ? jogo.gols_casa : '' %>" placeholder="—" style="width:60px">
+        <span class="x">×</span>
+        <input type="number" name="gols_visitante" min="0" max="99" class="form-control"
+               value="<%= jogo.gols_visitante !== null ? jogo.gols_visitante : '' %>" placeholder="—" style="width:60px">
+      </div>
+      <div class="jogo-data">
+        <% if (jogo.grupo_letra) { %>Grupo <%= jogo.grupo_letra %> • <% } %>
+        <%= new Date(jogo.data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) %>
+      </div>
+      <label class="flex gap-1 mt-1" style="justify-content:center; font-size:0.85rem">
+        <input type="checkbox" name="finalizado" value="1" <%= jogo.finalizado === 1 ? 'checked' : '' %>>
+        Finalizado
+      </label>
+      <button type="submit" class="btn btn-primary btn-sm mt-1">💾 Salvar</button>
+    </div>
+    <div class="jogo-time visitante">
+      <span><%= jogo.visitante_pt || 'A definir' %></span>
+    </div>
+  </form>
+<% }); %>
+
+<%- include('partials/footer') %>

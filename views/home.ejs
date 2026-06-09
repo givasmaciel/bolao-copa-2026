@@ -1,0 +1,96 @@
+<%- include('partials/header', { active: 'home' }) %>
+
+<%- include('partials/flash') %>
+
+<section class="hero">
+  <h1>⚽ Bolão da Copa do Mundo 2026</h1>
+  <p>Chute o resultado dos 104 jogos da Copa, dispute com a galera e veja quem é o melhor palpiteiro!</p>
+  <div class="hero-actions">
+    <% if (!usuario) { %>
+      <a href="/cadastro" class="btn btn-amarelo btn-lg">Criar minha conta</a>
+      <a href="/login" class="btn btn-secondary btn-lg">Já tenho conta</a>
+    <% } else { %>
+      <a href="/palpites" class="btn btn-amarelo btn-lg">Fazer meus palpites</a>
+      <a href="/ranking" class="btn btn-secondary btn-lg">Ver ranking</a>
+    <% } %>
+  </div>
+</section>
+
+<div class="grid grid-4 mb-2">
+  <div class="stat-card">
+    <div class="stat-valor">48</div>
+    <div class="stat-label">Seleções</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-valor">12</div>
+    <div class="stat-label">Grupos (A-L)</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-valor">104</div>
+    <div class="stat-label">Jogos no total</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-valor">3</div>
+    <div class="stat-label">Países-sede</div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Como funciona o bolão</h2>
+  <p>É simples: você dá o <strong>placar exato</strong> de cada um dos 72 jogos da fase de grupos. A pontuação é calculada automaticamente conforme os jogos acontecem:</p>
+
+  <div class="grid grid-3 mt-2">
+    <div class="stat-card" style="border-top-color:#FFD700">
+      <div class="stat-valor" style="color:#d4a000">10 pts</div>
+      <div class="stat-label">Placar exato</div>
+    </div>
+    <div class="stat-card" style="border-top-color:#C0C0C0">
+      <div class="stat-valor" style="color:#888">5 pts</div>
+      <div class="stat-label">Resultado + gols de 1 time</div>
+    </div>
+    <div class="stat-card" style="border-top-color:#CD7F32">
+      <div class="stat-valor" style="color:#a05a2c">3 pts</div>
+      <div class="stat-label">Só o resultado (V/E/D)</div>
+    </div>
+  </div>
+
+  <p class="mt-3">Os palpites podem ser editados até a hora do jogo começar. Os jogos do mata-mata (oitavas, quartas, semi, final) serão liberados para palpites após o fim da fase de grupos.</p>
+</div>
+
+<div class="card">
+  <h2>🏆 Os 12 grupos da Copa 2026</h2>
+  <div class="grid grid-4 mt-2">
+    <% const GRUPOS_HOME = [
+      { letra: 'A', times: ['México', 'África do Sul', 'Coreia do Sul', 'Rep. Tcheca'], bandeiras: ['mx','za','kr','cz'] },
+      { letra: 'B', times: ['Canadá', 'Bósnia', 'Catar', 'Suíça'], bandeiras: ['ca','ba','qa','ch'] },
+      { letra: 'C', times: ['Brasil', 'Marrocos', 'Haiti', 'Escócia'], bandeiras: ['br','ma','ht','gb-sct'] },
+      { letra: 'D', times: ['EUA', 'Paraguai', 'Austrália', 'Turquia'], bandeiras: ['us','py','au','tr'] },
+      { letra: 'E', times: ['Alemanha', 'Curaçau', 'Costa do Marfim', 'Equador'], bandeiras: ['de','cw','ci','ec'] },
+      { letra: 'F', times: ['Holanda', 'Japão', 'Suécia', 'Tunísia'], bandeiras: ['nl','jp','se','tn'] },
+      { letra: 'G', times: ['Bélgica', 'Egito', 'Irã', 'Nova Zelândia'], bandeiras: ['be','eg','ir','nz'] },
+      { letra: 'H', times: ['Espanha', 'Cabo Verde', 'Arábia Saudita', 'Uruguai'], bandeiras: ['es','cv','sa','uy'] },
+      { letra: 'I', times: ['França', 'Senegal', 'Iraque', 'Noruega'], bandeiras: ['fr','sn','iq','no'] },
+      { letra: 'J', times: ['Argentina', 'Argélia', 'Áustria', 'Jordânia'], bandeiras: ['ar','dz','at','jo'] },
+      { letra: 'K', times: ['Portugal', 'RD Congo', 'Uzbequistão', 'Colômbia'], bandeiras: ['pt','cd','uz','co'] },
+      { letra: 'L', times: ['Inglaterra', 'Croácia', 'Gana', 'Panamá'], bandeiras: ['gb-eng','hr','gh','pa'] }
+    ]; %>
+    <% GRUPOS_HOME.forEach(function(grupo) { %>
+      <div class="grupo-bloco">
+        <div class="grupo-titulo">
+          <div class="grupo-letra"><%= grupo.letra %></div>
+          <h3>Grupo <%= grupo.letra %></h3>
+        </div>
+        <div class="selecoes-lista">
+          <% grupo.times.forEach(function(time, idx) { %>
+            <div class="selecao-item">
+              <img src="https://flagcdn.com/w40/<%= grupo.bandeiras[idx] %>.png" alt="<%= time %>" loading="lazy">
+              <span><%= time %></span>
+            </div>
+          <% }); %>
+        </div>
+      </div>
+    <% }); %>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

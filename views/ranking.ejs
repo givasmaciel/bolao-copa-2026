@@ -1,0 +1,67 @@
+<%- include('partials/header', { active: 'ranking' }) %>
+
+<%- include('partials/flash') %>
+
+<h1>🏆 Ranking do Bolão</h1>
+<p class="subtitulo">Veja quem está mandando bem nos palpites da Copa 2026!</p>
+
+<% if (totais) { %>
+  <div class="grid grid-4 mb-2">
+    <div class="stat-card">
+      <div class="stat-valor"><%= totais.total_usuarios %></div>
+      <div class="stat-label">Participantes</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-valor"><%= totais.jogos_finalizados %>/<%= totais.total_jogos %></div>
+      <div class="stat-label">Jogos finalizados</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-valor"><%= totais.total_palpites %></div>
+      <div class="stat-label">Palpites no total</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-valor"><%= ranking.length > 0 ? ranking[0].total_pontos : 0 %></div>
+      <div class="stat-label">Pontos do líder</div>
+    </div>
+  </div>
+<% } %>
+
+<% if (ranking.length === 0) { %>
+  <div class="card text-center">
+    <p>😕 Ninguém palpitou ainda. <a href="/cadastro">Seja o primeiro!</a></p>
+  </div>
+<% } else { %>
+  <table class="ranking-tabela">
+    <thead>
+      <tr>
+        <th class="pos">#</th>
+        <th>Participante</th>
+        <th class="text-center">Palpites</th>
+        <th class="text-center">Acertos</th>
+        <th class="text-center">Melhor</th>
+        <th class="text-center">Pontos</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% ranking.forEach(function(u) { %>
+        <tr class="<%= typeof usuario !== 'undefined' && usuario && usuario.id === u.id ? 'voce' : '' %>">
+          <td class="pos <%= u.posicao === 1 ? 'pos-1' : (u.posicao === 2 ? 'pos-2' : (u.posicao === 3 ? 'pos-3' : '')) %>">
+            <% if (u.posicao === 1) { %>🥇<% } else if (u.posicao === 2) { %>🥈<% } else if (u.posicao === 3) { %>🥉<% } else { %><%= u.posicao %>º<% } %>
+          </td>
+          <td>
+            <a href="/ranking/usuario/<%= u.id %>"><%= u.nome %></a>
+            <% if (typeof usuario !== 'undefined' && usuario && usuario.id === u.id) { %>
+              <span class="texto-aux" style="color:var(--verde); font-weight:600">(você)</span>
+            <% } %>
+          </td>
+          <td class="text-center"><%= u.total_palpites %></td>
+          <td class="text-center"><%= u.palpites_com_pontos %></td>
+          <td class="text-center"><%= u.maior_palpite %> pts</td>
+          <td class="text-center pontos"><%= u.total_pontos %></td>
+        </tr>
+      <% }); %>
+    </tbody>
+  </table>
+<% } %>
+
+<%- include('partials/footer') %>

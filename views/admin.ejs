@@ -1,0 +1,88 @@
+<%- include('partials/header', { active: 'admin' }) %>
+
+<%- include('partials/flash') %>
+
+<h1>⚙ Painel do Administrador</h1>
+<p class="subtitulo">Gerencie os resultados dos jogos e veja as estatísticas do bolão.</p>
+
+<% if (totais) { %>
+  <div class="grid grid-4 mb-2">
+    <div class="stat-card">
+      <div class="stat-valor"><%= totais.total_jogos %></div>
+      <div class="stat-label">Total de jogos</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-valor"><%= totais.jogos_finalizados %></div>
+      <div class="stat-label">Jogos finalizados</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-valor"><%= totais.jogos_pendentes %></div>
+      <div class="stat-label">Atrasados (sem placar)</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-valor"><%= totais.total_usuarios %></div>
+      <div class="stat-label">Participantes</div>
+    </div>
+  </div>
+<% } %>
+
+<div class="card">
+  <h2>Ações</h2>
+  <div class="grid grid-2 mt-2">
+    <a href="/admin/jogos" class="btn btn-primary btn-lg">📝 Editar resultados dos jogos</a>
+    <form method="POST" action="/admin/recalcular" style="display:contents">
+      <button type="submit" class="btn btn-amarelo btn-lg" onclick="return confirm('Recalcular todos os pontos dos palpites?')">
+        🔄 Recalcular todos os pontos
+      </button>
+    </form>
+  </div>
+  <p class="texto-aux mt-2">
+    💡 <strong>Como funciona:</strong> a cada vez que você marca um jogo como finalizado e informa o placar, o sistema
+    recalcula automaticamente os pontos de todos os palpites daquele jogo. Use o botão "Recalcular" se quiser
+    refazer a conta em massa.
+  </p>
+</div>
+
+<div class="card">
+  <h2>Últimos jogos alterados</h2>
+  <% if (!proximosJogos || proximosJogos.length === 0) { %>
+    <p class="texto-aux">Nenhum jogo ainda.</p>
+  <% } else { %>
+    <table class="ranking-tabela" style="margin-top:8px">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Jogo</th>
+          <th class="text-center">Data</th>
+          <th class="text-center">Placar</th>
+          <th class="text-center">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% proximosJogos.forEach(function(j) { %>
+          <tr>
+            <td>#<%= j.id %></td>
+            <td><%= j.casa_pt || 'A definir' %> × <%= j.visitante_pt || 'A definir' %></td>
+            <td class="text-center"><%= new Date(j.data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) %></td>
+            <td class="text-center">
+              <% if (j.finalizado === 1) { %>
+                <strong><%= j.gols_casa %> × <%= j.gols_visitante %></strong>
+              <% } else { %>
+                <span style="color:#aaa">—</span>
+              <% } %>
+            </td>
+            <td class="text-center">
+              <% if (j.finalizado === 1) { %>
+                <span class="badge badge-finalizado">Final</span>
+              <% } else { %>
+                <span class="badge badge-pendente">Pendente</span>
+              <% } %>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<%- include('partials/footer') %>
