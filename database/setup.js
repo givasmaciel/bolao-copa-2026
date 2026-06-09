@@ -10,7 +10,7 @@ async function setup() {
 
   // 2. Verifica se já tem dados (selecoes)
   const count = await get('SELECT COUNT(*) AS total FROM selecoes');
-  if (!count || count.total === 0) {
+  if (!count || Number(count.total) === 0) {
     console.log('🌱 Banco vazio. Executando seed...');
     const { seed } = require('./seed');
     await seed();
