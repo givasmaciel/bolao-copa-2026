@@ -1,52 +1,40 @@
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
-const fs = require('fs');
+const { Pool } = require('pg');
 
-const dataDir = path.join(__dirname, '..', 'data');
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL || 'postgresql://localhost:5432/bolao',
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+});
+
+function convertSql(sql) {
+  let idx = 0;
+  return sql.replace(/\?/g, () => `$${++idx}`);
 }
 
-const dbPath = path.join(dataDir, 'bolao.db');
-const db = new sqlite3.Database(dbPath, (err) => {
-  if (err) {
-    console.error('Erro ao abrir banco de dados:', err.message);
-    process.exit(1);
+function prepareSql(sql) {
+  const trimmed = sql.trim().toUpperCase();
+  if (trimmed.startsWith('INSERT') && !trimmed.includes('RETURNING')) {
+    return sql + ' RETURNING id';
   }
-  console.log('✅ Banco de dados conectado:', dbPath);
-});
-
-db.serialize(() => {
-  // Habilita WAL mode para melhor concorrência
-  db.run('PRAGMA journal_mode = WAL');
-  db.run('PRAGMA foreign_keys = ON');
-});
-
-function run(sql, params = []) {
-  return new Promise((resolve, reject) => {
-    db.run(sql, params, function (err) {
-      if (err) return reject(err);
-      resolve({ lastID: this.lastID, changes: this.changes });
-    });
-  });
+  return sql;
 }
 
-function get(sql, params = []) {
-  return new Promise((resolve, reject) => {
-    db.get(sql, params, (err, row) => {
-      if (err) return reject(err);
-      resolve(row);
-    });
-  });
+async function run(sql, params = []) {
+  const result = await pool.query(prepareSql(convertSql(sql)), params);
+  return {
+    lastID: result.rows[0]?.id || null,
+    changes: result.rowCount,
+    rows: result.rows
+  };
 }
 
-function all(sql, params = []) {
-  return new Promise((resolve, reject) => {
-    db.all(sql, params, (err, rows) => {
-      if (err) return reject(err);
-      resolve(rows);
-    });
-  });
+async function get(sql, params = []) {
+  const result = await pool.query(convertSql(sql), params);
+  return result.rows[0] || null;
 }
 
-module.exports = { db, run, get, all };
+async function all(sql, params = []) {
+  const result = await pool.query(convertSql(sql), params);
+  return result.rows;
+}
+
+module.exports = { run, get, all, pool };

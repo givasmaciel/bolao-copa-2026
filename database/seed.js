@@ -245,8 +245,6 @@ async function seed() {
   await run('DELETE FROM jogos');
   await run('DELETE FROM selecoes');
   await run('DELETE FROM grupos');
-  await run("DELETE FROM sqlite_sequence WHERE name IN ('grupos','selecoes','jogos','palpites','usuarios')");
-
   // Insere grupos
   const grupoIds = {};
   for (const grupo of GRUPOS) {
