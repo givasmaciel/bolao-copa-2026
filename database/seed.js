@@ -262,8 +262,8 @@ async function seed() {
     const grupoId = grupoIds[grupoLetra];
     const bandeiraUrl = `https://flagcdn.com/w80/${selecao.bandeira}.png`;
     await run(
-      'INSERT INTO selecoes (nome, nome_pt, sigla, bandeira_url, grupo_id) VALUES (?, ?, ?, ?, ?)',
-      [selecao.nome, selecao.pt, selecao.sigla, bandeiraUrl, grupoId]
+      'INSERT INTO selecoes (id, nome, nome_pt, sigla, bandeira_url, grupo_id) VALUES (?, ?, ?, ?, ?, ?)',
+      [selecao.id, selecao.nome, selecao.pt, selecao.sigla, bandeiraUrl, grupoId]
     );
   }
   console.log(`✅ ${SELECOES.length} seleções inseridas`);
