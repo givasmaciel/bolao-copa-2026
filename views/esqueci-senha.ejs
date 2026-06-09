@@ -1,0 +1,24 @@
+<%- include('partials/header', { active: 'login' }) %>
+
+<%- include('partials/flash') %>
+
+<div class="auth-container">
+  <div class="card">
+    <h1>Esqueci a senha</h1>
+    <p class="subtitulo">Digite seu e-mail e enviaremos um link para redefinir sua senha.</p>
+
+    <form method="POST" action="/esqueci-senha">
+      <div class="form-group">
+        <label for="email">E-mail</label>
+        <input type="email" id="email" name="email" class="form-control" required autofocus>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block btn-lg">Enviar link</button>
+    </form>
+
+    <p class="link-aux">
+      Lembrou a senha? <a href="/login">Entrar</a>
+    </p>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

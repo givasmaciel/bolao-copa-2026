@@ -135,6 +135,27 @@ async function criarSchema() {
     `);
   }
 
+  const tabelaReset = usandoPG
+    ? `CREATE TABLE IF NOT EXISTS password_reset_tokens (
+        id SERIAL PRIMARY KEY,
+        usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+        token TEXT NOT NULL UNIQUE,
+        expira_em TIMESTAMP NOT NULL,
+        usado INTEGER DEFAULT 0,
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`
+    : `CREATE TABLE IF NOT EXISTS password_reset_tokens (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        usuario_id INTEGER NOT NULL,
+        token TEXT NOT NULL UNIQUE,
+        expira_em DATETIME NOT NULL,
+        usado INTEGER DEFAULT 0,
+        criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+      )`;
+
+  await run(tabelaReset);
+
   console.log('✅ Schema criado/verificado');
 }
 
