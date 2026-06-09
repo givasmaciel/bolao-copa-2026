@@ -156,6 +156,47 @@ async function criarSchema() {
 
   await run(tabelaReset);
 
+  const tabelaExtrasPG = `
+    CREATE TABLE IF NOT EXISTS palpites_extras (
+      id SERIAL PRIMARY KEY,
+      usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+      categoria TEXT NOT NULL,
+      selecao_id INTEGER REFERENCES selecoes(id),
+      criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(usuario_id, categoria)
+    )
+  `;
+  const tabelaExtrasSQLite = `
+    CREATE TABLE IF NOT EXISTS palpites_extras (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      usuario_id INTEGER NOT NULL,
+      categoria TEXT NOT NULL,
+      selecao_id INTEGER,
+      criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(usuario_id, categoria),
+      FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+    )
+  `;
+  await run(usandoPG ? tabelaExtrasPG : tabelaExtrasSQLite);
+
+  const tabelaResultPG = `
+    CREATE TABLE IF NOT EXISTS resultados_extras (
+      categoria TEXT PRIMARY KEY,
+      selecao_id INTEGER REFERENCES selecoes(id),
+      pontos INTEGER NOT NULL DEFAULT 0,
+      atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `;
+  const tabelaResultSQLite = `
+    CREATE TABLE IF NOT EXISTS resultados_extras (
+      categoria TEXT PRIMARY KEY,
+      selecao_id INTEGER,
+      pontos INTEGER NOT NULL DEFAULT 0,
+      atualizado_em DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `;
+  await run(usandoPG ? tabelaResultPG : tabelaResultSQLite);
+
   console.log('✅ Schema criado/verificado');
 }
 

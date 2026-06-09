@@ -1,0 +1,46 @@
+<%- include('partials/header', { active: 'extras' }) %>
+
+<%- include('partials/flash') %>
+
+<h1>🏆 Palpites Extras</h1>
+<p class="subtitulo">Aposte nas seleções para cada fase do torneio e acumule pontos extras!</p>
+
+<div class="card mb-2" style="border-left:4px solid var(--amarelo)">
+  <p><strong>📅 Data limite:</strong> <%= dataLimite.toLocaleString('pt-BR', { dateStyle: 'long', timeStyle: 'short' }) %></p>
+  <p class="texto-aux mt-1">Após essa data, os palpites extras serão travados.</p>
+</div>
+
+<% if (prazoPassou) { %>
+  <div class="flash aviso">⚠ O prazo para palpites extras já encerrou.</div>
+<% } %>
+
+<form method="POST" action="/palpites-extras">
+  <div class="grid grid-2">
+    <% categorias.forEach(function(cat) { %>
+      <div class="card">
+        <div class="flex-between">
+          <h3 style="margin:0"><%= cat.nome %></h3>
+          <span class="pontos-badge"><%= cat.pts %> pts</span>
+        </div>
+        <div class="form-group mt-2" style="margin-bottom:0">
+          <select name="<%= cat.id %>" class="form-control" <%= prazoPassou ? 'disabled' : '' %>>
+            <option value="">— Selecione —</option>
+            <% selecoes.forEach(function(s) { %>
+              <option value="<%= s.id %>" <%= palpites[cat.id] == s.id ? 'selected' : '' %>>
+                <%= s.nome_pt %>
+              </option>
+            <% }); %>
+          </select>
+        </div>
+      </div>
+    <% }); %>
+  </div>
+
+  <% if (!prazoPassou) { %>
+    <div class="text-center mt-3 mb-2">
+      <button type="submit" class="btn btn-primary btn-lg">💾 Salvar palpites extras</button>
+    </div>
+  <% } %>
+</form>
+
+<%- include('partials/footer') %>

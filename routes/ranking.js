@@ -12,7 +12,19 @@ router.get('/', async (req, res) => {
         u.nome,
         u.criado_em,
         COUNT(p.id) AS total_palpites,
-        COALESCE(SUM(p.pontos_obtidos), 0) AS total_pontos,
+        COALESCE(SUM(p.pontos_obtidos), 0) + COALESCE((
+          SELECT SUM(r.pontos)
+          FROM palpites_extras pe
+          JOIN resultados_extras r ON r.categoria = pe.categoria AND r.selecao_id = pe.selecao_id
+          WHERE pe.usuario_id = u.id
+        ), 0) AS total_pontos,
+        COALESCE(SUM(p.pontos_obtidos), 0) AS palpites_pontos,
+        COALESCE((
+          SELECT SUM(r.pontos)
+          FROM palpites_extras pe
+          JOIN resultados_extras r ON r.categoria = pe.categoria AND r.selecao_id = pe.selecao_id
+          WHERE pe.usuario_id = u.id
+        ), 0) AS extras_pontos,
         SUM(CASE WHEN p.pontos_obtidos > 0 THEN 1 ELSE 0 END) AS palpites_com_pontos,
         COALESCE(MAX(p.pontos_obtidos), 0) AS maior_palpite
       FROM usuarios u
