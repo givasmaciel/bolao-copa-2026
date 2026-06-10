@@ -64,9 +64,41 @@ router.get('/', verificarAutenticado, async (req, res) => {
       SELECT COUNT(*) AS total FROM jogos WHERE fase = 'grupo' AND finalizado = 1
     `);
 
+    // Processa próximo jogo para alerta
+    let nextGame = null;
+    if (proximosJogos.length > 0) {
+      const j = proximosJogos[0];
+      const agora = new Date();
+      const dataJogo = new Date(j.data);
+      const margem = new Date(dataJogo.getTime() - 2 * 60 * 1000);
+      const diffMs = dataJogo.getTime() - agora.getTime();
+      const diffMin = Math.round(diffMs / 60000);
+      const jahFechou = agora >= margem;
+      const temPalpite = j.palpite_gols_casa !== null;
+
+      // Formata hora BRT
+      const horaBRT = dataJogo.toLocaleString('pt-BR', {
+        timeZone: 'America/Sao_Paulo',
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      nextGame = {
+        ...j,
+        diffMin,
+        jahFechou,
+        temPalpite,
+        horaBRT
+      };
+    }
+
     res.render('dashboard', {
       title: 'Painel',
       proximosJogos,
+      nextGame,
       pendentes: pendentesArr[0]?.total || 0,
       top5,
       stats: stats || { total_palpites: 0, total_pontos: 0, palpites_certos: 0, placares_exatos: 0 },
