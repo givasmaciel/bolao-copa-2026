@@ -21,7 +21,12 @@ const MULTI_CATS = new Set(['r32', 'oitavas', 'quartas', 'semi', 'finalista']);
 
 async function getDataLimite() {
   const row = await get("SELECT valor FROM config WHERE chave = 'extras_data_limite'");
-  if (row) return new Date(row.valor);
+  if (row) {
+    const d = new Date(row.valor);
+    if (!isNaN(d.getTime())) return d;
+    // Fallback: tenta interpretar como BRT sem offset
+    return new Date(row.valor + ':00-03:00');
+  }
   return new Date(DATA_LIMITE_PADRAO);
 }
 
@@ -279,8 +284,11 @@ adminRouter.post('/extras/config', verificarAdmin, async (req, res) => {
   try {
     const { data_limite } = req.body;
     if (data_limite) {
+      // Converte de BRT (America/Sao_Paulo) para string ISO com offset
+      // O input vem como YYYY-MM-DDTHH:MM (horário BRT)
+      const dataBRT = new Date(data_limite + ':00-03:00');
       await run("DELETE FROM config WHERE chave = 'extras_data_limite'");
-      await run('INSERT INTO config (chave, valor) VALUES (?, ?)', ['extras_data_limite', data_limite]);
+      await run('INSERT INTO config (chave, valor) VALUES (?, ?)', ['extras_data_limite', dataBRT.toISOString()]);
       req.flash('sucesso', 'Prazo dos palpites extras atualizado!');
     }
     res.redirect('/admin/extras');
