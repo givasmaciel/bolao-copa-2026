@@ -284,6 +284,15 @@ router.post('/usuarios/:id/excluir', verificarAdmin, async (req, res) => {
 // POST /admin/gerar-testes - cria 4 jogos-teste para amanhã
 router.post('/gerar-testes', verificarAdmin, async (req, res) => {
   try {
+    // Garante que a coluna tipo existe (segurança para banco existente)
+    try {
+      if (process.env.DATABASE_URL) {
+        await run("ALTER TABLE jogos ADD COLUMN IF NOT EXISTS tipo TEXT DEFAULT 'oficial'");
+      } else {
+        await run("ALTER TABLE jogos ADD COLUMN tipo TEXT DEFAULT 'oficial'");
+      }
+    } catch (_) {}
+
     const amanha = new Date();
     amanha.setDate(amanha.getDate() + 1);
     amanha.setHours(0, 0, 0, 0);
@@ -330,6 +339,13 @@ router.post('/gerar-testes', verificarAdmin, async (req, res) => {
 // POST /admin/deletar-testes - remove todos os jogos-teste e palpites relacionados
 router.post('/deletar-testes', verificarAdmin, async (req, res) => {
   try {
+    try {
+      if (process.env.DATABASE_URL) {
+        await run("ALTER TABLE jogos ADD COLUMN IF NOT EXISTS tipo TEXT DEFAULT 'oficial'");
+      } else {
+        await run("ALTER TABLE jogos ADD COLUMN tipo TEXT DEFAULT 'oficial'");
+      }
+    } catch (_) {}
     const ids = await all("SELECT id FROM jogos WHERE tipo = 'teste'");
     for (const j of ids) {
       await run('DELETE FROM palpites WHERE jogo_id = ?', [j.id]);
