@@ -315,6 +315,35 @@ router.post('/resetar-todos-palpites', verificarAdmin, async (req, res) => {
   res.redirect('/admin');
 });
 
+// POST /admin/usuarios/criar - cria um novo participante
+router.post('/usuarios/criar', verificarAdmin, async (req, res) => {
+  const { nome, email, senha } = req.body;
+  if (!nome || !email || !senha) {
+    req.flash('erro', 'Preencha todos os campos.');
+    return res.redirect('/admin/usuarios');
+  }
+  if (senha.length < 4) {
+    req.flash('erro', 'A senha deve ter pelo menos 4 caracteres.');
+    return res.redirect('/admin/usuarios');
+  }
+  try {
+    const existe = await get('SELECT id FROM usuarios WHERE email = ?', [email.toLowerCase().trim()]);
+    if (existe) {
+      req.flash('erro', 'Já existe um participante com este e-mail.');
+      return res.redirect('/admin/usuarios');
+    }
+    const hash = await bcrypt.hash(senha, 10);
+    await run('INSERT INTO usuarios (nome, email, senha_hash, is_admin) VALUES (?, ?, ?, 0)', [
+      nome.trim(), email.toLowerCase().trim(), hash
+    ]);
+    req.flash('sucesso', `Participante ${nome} criado com sucesso!`);
+  } catch (err) {
+    console.error('Erro ao criar participante:', err);
+    req.flash('erro', 'Erro ao criar participante.');
+  }
+  res.redirect('/admin/usuarios');
+});
+
 // POST /admin/usuarios/:id/excluir
 router.post('/usuarios/:id/excluir', verificarAdmin, async (req, res) => {
   const id = parseInt(req.params.id, 10);
