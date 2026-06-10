@@ -71,6 +71,7 @@ async function criarSchema() {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         nome TEXT NOT NULL,
         email TEXT NOT NULL UNIQUE,
+        username TEXT UNIQUE,
         senha_hash TEXT NOT NULL,
         is_admin INTEGER DEFAULT 0,
         criado_em DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -226,6 +227,17 @@ async function criarSchema() {
     }
   } catch (e) {
     // Coluna já não existe ou SQLite antigo, ignorar
+  }
+
+  // Migração: adicionar coluna username para login alternativo
+  try {
+    if (usandoPG) {
+      await run("ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS username TEXT");
+    } else {
+      await run("ALTER TABLE usuarios ADD COLUMN username TEXT");
+    }
+  } catch (e) {
+    // Coluna já existe, ignorar
   }
 
   console.log('✅ Schema criado/verificado');

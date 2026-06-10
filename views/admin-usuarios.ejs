@@ -7,10 +7,14 @@
 
 <div class="card mb-3" style="border-left:4px solid var(--verde)">
   <h3 style="margin-top:0">➕ Criar novo participante</h3>
-  <form method="POST" action="/admin/usuarios/criar" class="grid grid-3" style="align-items:end">
+  <form method="POST" action="/admin/usuarios/criar" class="grid grid-4" style="align-items:end">
     <div class="form-group" style="margin:0">
       <label for="nome">Nome</label>
       <input type="text" id="nome" name="nome" class="form-control" required>
+    </div>
+    <div class="form-group" style="margin:0">
+      <label for="username">Usuário</label>
+      <input type="text" id="username" name="username" class="form-control" placeholder="opcional">
     </div>
     <div class="form-group" style="margin:0">
       <label for="email">E-mail</label>
@@ -30,6 +34,7 @@
   <thead>
     <tr>
       <th>Nome</th>
+      <th>Usuário</th>
       <th>E-mail</th>
       <th class="text-center">Admin</th>
       <th class="text-center">Desde</th>
@@ -40,6 +45,7 @@
     <% usuarios.forEach(function(u) { %>
       <tr>
         <td><%= u.nome %></td>
+        <td style="font-family:monospace"><%= u.username || '—' %></td>
         <td><%= u.email %></td>
         <td class="text-center"><%= u.is_admin ? '✅' : '—' %></td>
         <td class="text-center"><%= new Date(u.criado_em).toLocaleDateString('pt-BR') %></td>

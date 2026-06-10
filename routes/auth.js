@@ -15,7 +15,7 @@ router.get('/cadastro', jaLogado, (req, res) => {
 
 // POST /cadastro
 router.post('/cadastro', jaLogado, async (req, res) => {
-  const { nome, email, senha, confirmar } = req.body;
+  const { nome, email, senha, confirmar, username } = req.body;
 
   // Validações
   if (!nome || !email || !senha) {
@@ -32,22 +32,32 @@ router.post('/cadastro', jaLogado, async (req, res) => {
   }
 
   try {
-    const existe = await get('SELECT id FROM usuarios WHERE email = ?', [email.toLowerCase()]);
+    const emailLimpo = email.toLowerCase().trim();
+    const existe = await get('SELECT id FROM usuarios WHERE email = ?', [emailLimpo]);
     if (existe) {
       req.flash('erro', 'Já existe uma conta com este e-mail.');
       return res.render('cadastro', { title: 'Criar conta', dados: req.body });
     }
 
+    const usernameLimpo = username ? username.trim().toLowerCase() : null;
+    if (usernameLimpo) {
+      const existeUser = await get('SELECT id FROM usuarios WHERE username = ?', [usernameLimpo]);
+      if (existeUser) {
+        req.flash('erro', 'Este nome de usuário já está em uso.');
+        return res.render('cadastro', { title: 'Criar conta', dados: req.body });
+      }
+    }
+
     const senhaHash = await bcrypt.hash(senha, 10);
     const result = await run(
-      'INSERT INTO usuarios (nome, email, senha_hash) VALUES (?, ?, ?)',
-      [nome.trim(), email.toLowerCase().trim(), senhaHash]
+      'INSERT INTO usuarios (nome, email, username, senha_hash) VALUES (?, ?, ?, ?)',
+      [nome.trim(), emailLimpo, usernameLimpo, senhaHash]
     );
 
     req.session.usuario = {
       id: result.lastID,
       nome: nome.trim(),
-      email: email.toLowerCase().trim(),
+      email: emailLimpo,
       is_admin: 0
     };
 
@@ -77,9 +87,10 @@ router.post('/login', jaLogado, async (req, res) => {
   console.log('[LOGIN] req.secure:', req.secure, '| headers x-forwarded-proto:', req.headers['x-forwarded-proto'], '| NODE_ENV:', process.env.NODE_ENV, '| cookie:', req.headers.cookie);
 
   try {
+    const identifier = email; // campo do form chama 'email' mas aceita username também
     const usuario = await get(
-      'SELECT id, nome, email, senha_hash, is_admin FROM usuarios WHERE email = ?',
-      [email.toLowerCase().trim()]
+      'SELECT id, nome, email, senha_hash, is_admin FROM usuarios WHERE email = ? OR username = ?',
+      [identifier.toLowerCase().trim(), identifier.toLowerCase().trim()]
     );
 
     if (!usuario) {

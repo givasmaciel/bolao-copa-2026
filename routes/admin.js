@@ -233,7 +233,7 @@ router.post('/recalcular', verificarAdmin, async (req, res) => {
 router.get('/usuarios', verificarAdmin, async (req, res) => {
   try {
     const usuarios = await all(
-      'SELECT id, nome, email, is_admin, criado_em FROM usuarios ORDER BY nome'
+      'SELECT id, nome, email, username, is_admin, criado_em FROM usuarios ORDER BY nome'
     );
     res.render('admin-usuarios', { title: 'Gerenciar participantes', usuarios });
   } catch (err) {
@@ -317,9 +317,9 @@ router.post('/resetar-todos-palpites', verificarAdmin, async (req, res) => {
 
 // POST /admin/usuarios/criar - cria um novo participante
 router.post('/usuarios/criar', verificarAdmin, async (req, res) => {
-  const { nome, email, senha } = req.body;
+  const { nome, email, senha, username } = req.body;
   if (!nome || !email || !senha) {
-    req.flash('erro', 'Preencha todos os campos.');
+    req.flash('erro', 'Preencha os campos obrigatórios (nome, e-mail, senha).');
     return res.redirect('/admin/usuarios');
   }
   if (senha.length < 4) {
@@ -327,14 +327,23 @@ router.post('/usuarios/criar', verificarAdmin, async (req, res) => {
     return res.redirect('/admin/usuarios');
   }
   try {
-    const existe = await get('SELECT id FROM usuarios WHERE email = ?', [email.toLowerCase().trim()]);
-    if (existe) {
+    const emailLimpo = email.toLowerCase().trim();
+    const existeEmail = await get('SELECT id FROM usuarios WHERE email = ?', [emailLimpo]);
+    if (existeEmail) {
       req.flash('erro', 'Já existe um participante com este e-mail.');
       return res.redirect('/admin/usuarios');
     }
+    const usernameLimpo = username ? username.trim().toLowerCase() : null;
+    if (usernameLimpo) {
+      const existeUser = await get('SELECT id FROM usuarios WHERE username = ?', [usernameLimpo]);
+      if (existeUser) {
+        req.flash('erro', 'Este nome de usuário já está em uso.');
+        return res.redirect('/admin/usuarios');
+      }
+    }
     const hash = await bcrypt.hash(senha, 10);
-    await run('INSERT INTO usuarios (nome, email, senha_hash, is_admin) VALUES (?, ?, ?, 0)', [
-      nome.trim(), email.toLowerCase().trim(), hash
+    await run('INSERT INTO usuarios (nome, email, username, senha_hash, is_admin) VALUES (?, ?, ?, ?, 0)', [
+      nome.trim(), emailLimpo, usernameLimpo, hash
     ]);
     req.flash('sucesso', `Participante ${nome} criado com sucesso!`);
   } catch (err) {
