@@ -273,6 +273,9 @@ async function criarSchema() {
     await run("UPDATE usuarios SET codigo_convite = ? WHERE id = ?", [codigo, u.id]);
   }
 
+  // Correção: horário da abertura (México × África do Sul) é 16h BRT
+  await run("UPDATE jogos SET data = '2026-06-11 16:00-03:00' WHERE id = 1 AND data = '2026-06-11 13:00-03:00'");
+
   console.log('✅ Schema criado/verificado');
 }
 

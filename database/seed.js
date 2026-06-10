@@ -121,7 +121,7 @@ const ESTADIOS = {
 // Para knockout, selecao_casa_id e visitante ficam null (serão preenchidos depois)
 const JOGOS = [
   // Rodada 1
-  { id: 1, fase: 'grupo', rodada: 1, grupo: 'A', casa: 1, visitante: 2, data: '2026-06-11 13:00-03:00', estadio: 1 },
+  { id: 1, fase: 'grupo', rodada: 1, grupo: 'A', casa: 1, visitante: 2, data: '2026-06-11 16:00-03:00', estadio: 1 },
   { id: 2, fase: 'grupo', rodada: 1, grupo: 'A', casa: 3, visitante: 4, data: '2026-06-11 20:00-03:00', estadio: 2 },
   { id: 3, fase: 'grupo', rodada: 1, grupo: 'B', casa: 5, visitante: 6, data: '2026-06-12 15:00-03:00', estadio: 12 },
   { id: 4, fase: 'grupo', rodada: 1, grupo: 'D', casa: 13, visitante: 14, data: '2026-06-12 18:00-03:00', estadio: 16 },
