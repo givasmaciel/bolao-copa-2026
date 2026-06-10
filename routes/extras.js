@@ -6,30 +6,31 @@ const router = express.Router();
 const adminRouter = express.Router();
 
 const CATEGORIAS = [
-  { id: 'campeao', nome: 'Campeão', pts: 50 },
-  { id: 'vice', nome: 'Vice-campeão', pts: 50 },
-  { id: 'terceiro', nome: 'Terceiro lugar', pts: 50 },
-  { id: 'r32', nome: '1/16 avos de Final', pts: 10 },
-  { id: 'oitavas', nome: 'Oitavas de Final', pts: 10 },
-  { id: 'quartas', nome: 'Quartas de Final', pts: 15 },
-  { id: 'semi', nome: 'Semifinal', pts: 20 },
-  { id: 'finalista', nome: 'Finalista', pts: 30 }
+  { id: 'campeao', nome: 'Campeão', pts: 50, max: 1 },
+  { id: 'vice', nome: 'Vice-campeão', pts: 50, max: 1 },
+  { id: 'terceiro', nome: 'Terceiro lugar', pts: 50, max: 1 },
+  { id: 'r32', nome: '1/16 avos de Final', pts: 10, max: 32 },
+  { id: 'oitavas', nome: 'Oitavas de Final', pts: 10, max: 16 },
+  { id: 'quartas', nome: 'Quartas de Final', pts: 15, max: 8 },
+  { id: 'semi', nome: 'Semifinal', pts: 20, max: 4 },
+  { id: 'finalista', nome: 'Finalista', pts: 30, max: 2 }
 ];
 
+const MULTI_CATS = new Set(['r32', 'oitavas', 'quartas', 'semi', 'finalista']);
 const DATA_LIMITE = new Date('2026-06-11T11:00:00');
 
-// GET /palpites-extras
 router.get('/', verificarAutenticado, async (req, res) => {
   try {
     const selecoes = await all('SELECT id, nome_pt, sigla FROM selecoes ORDER BY nome_pt');
     const palpites = await all(
-      'SELECT categoria, selecao_id FROM palpites_extras WHERE usuario_id = ?',
+      'SELECT categoria, selecao_id FROM palpites_extras WHERE usuario_id = ? ORDER BY categoria',
       [req.session.usuario.id]
     );
 
-    const mapaPalpites = {};
+    const mapa = {};
     for (const p of palpites) {
-      mapaPalpites[p.categoria] = p.selecao_id;
+      if (!mapa[p.categoria]) mapa[p.categoria] = [];
+      mapa[p.categoria].push(p.selecao_id);
     }
 
     const prazoPassou = new Date() >= DATA_LIMITE;
@@ -38,7 +39,8 @@ router.get('/', verificarAutenticado, async (req, res) => {
       title: 'Palpites Extras',
       categorias: CATEGORIAS,
       selecoes,
-      palpites: mapaPalpites,
+      palpites: mapa,
+      multiCats: MULTI_CATS,
       prazoPassou,
       dataLimite: DATA_LIMITE
     });
@@ -49,7 +51,6 @@ router.get('/', verificarAutenticado, async (req, res) => {
   }
 });
 
-// POST /palpites-extras
 router.post('/', verificarAutenticado, async (req, res) => {
   if (new Date() >= DATA_LIMITE) {
     req.flash('erro', 'O prazo para palpites extras já encerrou.');
@@ -59,24 +60,25 @@ router.post('/', verificarAutenticado, async (req, res) => {
   const usuarioId = req.session.usuario.id;
 
   try {
+    await run('DELETE FROM palpites_extras WHERE usuario_id = ?', [usuarioId]);
+
     for (const cat of CATEGORIAS) {
-      const selecaoId = req.body[cat.id];
-      if (!selecaoId) continue;
-
-      const existe = await get(
-        'SELECT id FROM palpites_extras WHERE usuario_id = ? AND categoria = ?',
-        [usuarioId, cat.id]
-      );
-
-      if (existe) {
-        await run(
-          'UPDATE palpites_extras SET selecao_id = ?, criado_em = CURRENT_TIMESTAMP WHERE id = ?',
-          [parseInt(selecaoId, 10), existe.id]
-        );
+      if (MULTI_CATS.has(cat.id)) {
+        const selecoes = req.body[cat.id];
+        if (!selecoes) continue;
+        const ids = Array.isArray(selecoes) ? selecoes : [selecoes];
+        for (const sId of ids) {
+          await run(
+            'INSERT INTO palpites_extras (usuario_id, categoria, selecao_id) VALUES (?, ?, ?)',
+            [usuarioId, cat.id, parseInt(sId, 10)]
+          );
+        }
       } else {
+        const sId = req.body[cat.id];
+        if (!sId) continue;
         await run(
           'INSERT INTO palpites_extras (usuario_id, categoria, selecao_id) VALUES (?, ?, ?)',
-          [usuarioId, cat.id, parseInt(selecaoId, 10)]
+          [usuarioId, cat.id, parseInt(sId, 10)]
         );
       }
     }
@@ -90,19 +92,22 @@ router.post('/', verificarAutenticado, async (req, res) => {
   }
 });
 
-// GET /admin/extras - admin define os resultados
 adminRouter.get('/extras', verificarAdmin, async (req, res) => {
   try {
     const selecoes = await all('SELECT id, nome_pt, sigla FROM selecoes ORDER BY nome_pt');
-    const resultados = await all('SELECT * FROM resultados_extras');
+    const resultados = await all('SELECT * FROM resultados_extras ORDER BY categoria');
     const mapa = {};
-    for (const r of resultados) mapa[r.categoria] = r;
+    for (const r of resultados) {
+      if (!mapa[r.categoria]) mapa[r.categoria] = new Set();
+      mapa[r.categoria].add(r.selecao_id);
+    }
 
     res.render('admin-extras', {
       title: 'Resultados Extras',
       categorias: CATEGORIAS,
       selecoes,
-      resultados: mapa
+      resultados: mapa,
+      multiCats: MULTI_CATS
     });
   } catch (err) {
     console.error('Erro:', err);
@@ -111,19 +116,29 @@ adminRouter.get('/extras', verificarAdmin, async (req, res) => {
   }
 });
 
-// POST /admin/extras - salva resultados extras e recalcula pontos
 adminRouter.post('/extras', verificarAdmin, async (req, res) => {
   try {
-    for (const cat of CATEGORIAS) {
-      const selecaoId = req.body[cat.id];
-      if (!selecaoId) continue;
+    await run('DELETE FROM resultados_extras');
 
-      await run(
-        `INSERT INTO resultados_extras (categoria, selecao_id, pontos)
-         VALUES (?, ?, ?)
-         ON CONFLICT (categoria) DO UPDATE SET selecao_id = ?, pontos = ?, atualizado_em = CURRENT_TIMESTAMP`,
-        [cat.id, parseInt(selecaoId, 10), cat.pts, parseInt(selecaoId, 10), cat.pts]
-      );
+    for (const cat of CATEGORIAS) {
+      if (MULTI_CATS.has(cat.id)) {
+        const selecoes = req.body[cat.id];
+        if (!selecoes) continue;
+        const ids = Array.isArray(selecoes) ? selecoes : [selecoes];
+        for (const sId of ids) {
+          await run(
+            'INSERT INTO resultados_extras (categoria, selecao_id, pontos) VALUES (?, ?, ?)',
+            [cat.id, parseInt(sId, 10), cat.pts]
+          );
+        }
+      } else {
+        const sId = req.body[cat.id];
+        if (!sId) continue;
+        await run(
+          'INSERT INTO resultados_extras (categoria, selecao_id, pontos) VALUES (?, ?, ?)',
+          [cat.id, parseInt(sId, 10), cat.pts]
+        );
+      }
     }
 
     req.flash('sucesso', 'Resultados extras salvos! Pontos serão computados no ranking.');

@@ -156,43 +156,48 @@ async function criarSchema() {
 
   await run(tabelaReset);
 
+  await run('DROP TABLE IF EXISTS palpites_extras');
+  await run('DROP TABLE IF EXISTS resultados_extras');
+
   const tabelaExtrasPG = `
-    CREATE TABLE IF NOT EXISTS palpites_extras (
+    CREATE TABLE palpites_extras (
       id SERIAL PRIMARY KEY,
       usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
       categoria TEXT NOT NULL,
       selecao_id INTEGER REFERENCES selecoes(id),
       criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      UNIQUE(usuario_id, categoria)
+      UNIQUE(usuario_id, categoria, selecao_id)
     )
   `;
   const tabelaExtrasSQLite = `
-    CREATE TABLE IF NOT EXISTS palpites_extras (
+    CREATE TABLE palpites_extras (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       usuario_id INTEGER NOT NULL,
       categoria TEXT NOT NULL,
       selecao_id INTEGER,
       criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
-      UNIQUE(usuario_id, categoria),
+      UNIQUE(usuario_id, categoria, selecao_id),
       FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
     )
   `;
   await run(usandoPG ? tabelaExtrasPG : tabelaExtrasSQLite);
 
   const tabelaResultPG = `
-    CREATE TABLE IF NOT EXISTS resultados_extras (
-      categoria TEXT PRIMARY KEY,
+    CREATE TABLE resultados_extras (
+      id SERIAL PRIMARY KEY,
+      categoria TEXT NOT NULL,
       selecao_id INTEGER REFERENCES selecoes(id),
       pontos INTEGER NOT NULL DEFAULT 0,
-      atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      UNIQUE(categoria, selecao_id)
     )
   `;
   const tabelaResultSQLite = `
-    CREATE TABLE IF NOT EXISTS resultados_extras (
-      categoria TEXT PRIMARY KEY,
+    CREATE TABLE resultados_extras (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      categoria TEXT NOT NULL,
       selecao_id INTEGER,
       pontos INTEGER NOT NULL DEFAULT 0,
-      atualizado_em DATETIME DEFAULT CURRENT_TIMESTAMP
+      UNIQUE(categoria, selecao_id)
     )
   `;
   await run(usandoPG ? tabelaResultPG : tabelaResultSQLite);
