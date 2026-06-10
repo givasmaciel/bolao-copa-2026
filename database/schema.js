@@ -72,7 +72,6 @@ async function criarSchema() {
         nome TEXT NOT NULL,
         email TEXT NOT NULL UNIQUE,
         username TEXT UNIQUE,
-        codigo_convite TEXT UNIQUE,
         senha_hash TEXT NOT NULL,
         is_admin INTEGER DEFAULT 0,
         criado_em DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -250,27 +249,6 @@ async function criarSchema() {
     }
   } catch (e) {
     console.warn('Aviso: não foi possível preencher usernames automaticamente:', e.message);
-  }
-
-  // Migração: adicionar coluna codigo_convite para sistema de convite
-  try {
-    if (usandoPG) {
-      await run("ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS codigo_convite TEXT UNIQUE");
-    } else {
-      await run("ALTER TABLE usuarios ADD COLUMN codigo_convite TEXT");
-    }
-  } catch (e) {
-    // Coluna já existe, ignorar
-  }
-
-  // Gera código de convite para usuários que não têm
-  const semCodigo = await all("SELECT id FROM usuarios WHERE codigo_convite IS NULL");
-  for (const u of semCodigo) {
-    let codigo;
-    do {
-      codigo = Math.random().toString(36).substring(2, 10);
-    } while (await get("SELECT id FROM usuarios WHERE codigo_convite = ?", [codigo]));
-    await run("UPDATE usuarios SET codigo_convite = ? WHERE id = ?", [codigo, u.id]);
   }
 
   // Migração 2026-06-10: coluna palpite_limite (admin pode alterar prazo de cada jogo)
