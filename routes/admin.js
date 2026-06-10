@@ -309,7 +309,8 @@ router.post('/resetar-todos-palpites', verificarAdmin, async (req, res) => {
   try {
     await run('DELETE FROM palpites');
     await run('DELETE FROM palpites_extras');
-    req.flash('sucesso', 'Todos os palpites foram resetados.');
+    await run('DELETE FROM resultados_extras');
+    req.flash('sucesso', 'Todos os palpites (incluindo extras e resultados oficiais) foram resetados.');
   } catch (err) {
     req.flash('erro', 'Erro ao resetar.');
   }
