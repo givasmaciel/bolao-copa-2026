@@ -3,7 +3,7 @@
 <%- include('partials/flash') %>
 
 <h1>⚽ Meus palpites</h1>
-<p class="subtitulo">Dê o placar dos jogos da fase de grupos. Você pode editar até a hora do jogo começar.</p>
+<p class="subtitulo">Dê o placar dos jogos da fase de grupos. Você pode editar até <strong>2 minutos antes</strong> do jogo começar.</p>
 
 <div class="grid grid-3 mb-2">
   <div class="stat-card">
@@ -29,12 +29,13 @@
     <% rodadas[rodada].forEach(function(jogo) { %>
       <%
         const dataJogo = new Date(jogo.data);
-        const jaIniciou = agora >= dataJogo;
+        const margem = new Date(dataJogo.getTime() - 2 * 60 * 1000);
+        const fechado = agora >= margem;
         const finalizado = jogo.finalizado === 1;
         const temPalpite = jogo.palpite_gols_casa !== null && jogo.palpite_gols_casa !== undefined;
         const pontos = jogo.pontos_obtidos || 0;
       %>
-      <div class="jogo-card <%= finalizado ? 'finalizado' : (jaIniciou ? 'iniciado' : '') %>">
+      <div class="jogo-card <%= finalizado ? 'finalizado' : (fechado ? 'iniciado' : '') %>">
         <div class="jogo-time">
           <img src="<%= jogo.casa_bandeira %>" alt="<%= jogo.casa_pt %>">
           <span><%= jogo.casa_pt %></span>
@@ -53,14 +54,14 @@
             <div class="jogo-data"><%= new Date(jogo.data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) %></div>
             <div class="jogo-estadio">📍 <%= jogo.estadio %>, <%= jogo.cidade %></div>
             <div style="margin-top:4px"><span class="badge badge-finalizado">Final</span></div>
-          <% } else if (jaIniciou) { %>
+          <% } else if (fechado) { %>
             <div class="jogo-placar-display">? × ?</div>
             <% if (temPalpite) { %>
               <div class="texto-aux">Seu palpite: <strong><%= jogo.palpite_gols_casa %> × <%= jogo.palpite_gols_visitante %></strong></div>
             <% } %>
             <div class="jogo-data"><%= new Date(jogo.data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) %></div>
             <div class="jogo-estadio">📍 <%= jogo.estadio %>, <%= jogo.cidade %></div>
-            <div style="margin-top:4px"><span class="badge badge-pendente">Em breve</span></div>
+            <div style="margin-top:4px"><span class="badge badge-pendente">Fechado</span></div>
           <% } else { %>
             <div class="jogo-placar">
               <input
@@ -98,7 +99,7 @@
 
   <div class="text-center mt-3 mb-2">
     <button type="submit" class="btn btn-primary btn-lg">💾 Salvar todos os palpites</button>
-    <p class="texto-aux mt-1">Você pode alterar seus palpites a qualquer momento antes do jogo começar.</p>
+    <p class="texto-aux mt-1">Você pode alterar seus palpites até 2 minutos antes do jogo começar.</p>
   </div>
 </form>
 

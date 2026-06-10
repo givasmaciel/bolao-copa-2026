@@ -108,10 +108,11 @@ router.post('/', verificarAutenticado, async (req, res) => {
         continue;
       }
 
-      // Verifica se o jogo já começou ou já foi finalizado
+      // Verifica se o jogo já começou (fecha 2 min antes) ou já foi finalizado
       const agora = new Date();
       const dataJogo = new Date(jogo.data);
-      if (agora >= dataJogo || jogo.finalizado === 1) {
+      const margem = new Date(dataJogo.getTime() - 2 * 60 * 1000);
+      if (agora >= margem || jogo.finalizado === 1) {
         ignorados++;
         continue;
       }
