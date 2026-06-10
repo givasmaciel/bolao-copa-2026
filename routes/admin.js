@@ -6,9 +6,10 @@ const router = express.Router();
 
 // Sistema de pontuação
 // - Placar exato: 10 pts
+// - Empate (qualquer placar): 7 pts
 // - Resultado certo + gols de 1 time: 7 pts (5 + 2)
-// - Só resultado (V/E/D): 3 pts
-// - Errou resultado mas acertou gols de 1 time: 2 pts
+// - Só resultado exceto empate (V/D): 3 pts
+// - Errou resultado mas acertou gol de 1 time: 2 pts
 // - Errou tudo: 0 pts
 function calcularPontos(golsCasa, golsVisitante, palpiteCasa, palpiteVisitante) {
   if (golsCasa === null || golsVisitante === null ||
@@ -30,6 +31,9 @@ function calcularPontos(golsCasa, golsVisitante, palpiteCasa, palpiteVisitante) 
   if (palpiteCasa > palpiteVisitante) { resPalpite = 'C'; }
   else if (palpiteCasa < palpiteVisitante) { resPalpite = 'V'; }
   else { resPalpite = 'E'; }
+
+  // Empate (qualquer placar) vale 7 pts
+  if (resReal === 'E' && resPalpite === 'E') return 7;
 
   const acertouGolCasa = golsCasa === palpiteCasa;
   const acertouGolVisitante = golsVisitante === palpiteVisitante;
