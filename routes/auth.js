@@ -15,10 +15,10 @@ router.get('/cadastro', jaLogado, (req, res) => {
 
 // POST /cadastro
 router.post('/cadastro', jaLogado, async (req, res) => {
-  const { nome, email, senha, confirmar, username } = req.body;
+  const { nome, email, senha, confirmar, codigo } = req.body;
 
   // Validações
-  if (!nome || !email || !senha) {
+  if (!nome || !email || !senha || !codigo) {
     req.flash('erro', 'Preencha todos os campos.');
     return res.render('cadastro', { title: 'Criar conta', dados: req.body });
   }
@@ -32,6 +32,13 @@ router.post('/cadastro', jaLogado, async (req, res) => {
   }
 
   try {
+    // Valida código de convite
+    const convidante = await get('SELECT id FROM usuarios WHERE codigo_convite = ?', [codigo.trim().toLowerCase()]);
+    if (!convidante) {
+      req.flash('erro', 'Código de convite inválido. Você precisa de um convite de quem já participa.');
+      return res.render('cadastro', { title: 'Criar conta', dados: req.body });
+    }
+
     const emailLimpo = email.toLowerCase().trim();
     const existe = await get('SELECT id FROM usuarios WHERE email = ?', [emailLimpo]);
     if (existe) {
@@ -39,30 +46,38 @@ router.post('/cadastro', jaLogado, async (req, res) => {
       return res.render('cadastro', { title: 'Criar conta', dados: req.body });
     }
 
-    const usernameLimpo = username ? username.trim().toLowerCase() : null;
-    if (usernameLimpo) {
-      const existeUser = await get('SELECT id FROM usuarios WHERE username = ?', [usernameLimpo]);
-      if (existeUser) {
-        req.flash('erro', 'Este nome de usuário já está em uso.');
-        return res.render('cadastro', { title: 'Criar conta', dados: req.body });
-      }
+    const nomeLimpo = nome.trim();
+    const loginLimpo = nomeLimpo.toLowerCase();
+
+    // Verifica se já existe alguém com este nome (como username)
+    const existeNome = await get('SELECT id FROM usuarios WHERE nome = ? OR username = ?', [nomeLimpo, loginLimpo]);
+    if (existeNome) {
+      req.flash('erro', 'Este nome já está em uso. Escolha outro.');
+      return res.render('cadastro', { title: 'Criar conta', dados: req.body });
     }
+
+    // Gera código de convite para o novo usuário
+    let novoCodigo;
+    do {
+      novoCodigo = Math.random().toString(36).substring(2, 10);
+    } while (await get('SELECT id FROM usuarios WHERE codigo_convite = ?', [novoCodigo]));
 
     const senhaHash = await bcrypt.hash(senha, 10);
     const result = await run(
-      'INSERT INTO usuarios (nome, email, username, senha_hash) VALUES (?, ?, ?, ?)',
-      [nome.trim(), emailLimpo, usernameLimpo, senhaHash]
+      'INSERT INTO usuarios (nome, email, username, codigo_convite, senha_hash) VALUES (?, ?, ?, ?, ?)',
+      [nomeLimpo, emailLimpo, loginLimpo, novoCodigo, senhaHash]
     );
 
     req.session.usuario = {
       id: result.lastID,
-      nome: nome.trim(),
+      nome: nomeLimpo,
       email: emailLimpo,
+      username: loginLimpo,
       is_admin: 0
     };
 
-    req.flash('sucesso', `Bem-vindo ao bolão, ${nome}!`);
-    res.redirect('/palpites');
+    req.flash('sucesso', `Bem-vindo ao bolão, ${nome}! Compartilhe seu código de convite para convidar amigos.`);
+    res.redirect('/dashboard');
   } catch (err) {
     console.error('Erro no cadastro:', err);
     req.flash('erro', 'Erro ao criar conta. Tente novamente.');
@@ -123,7 +138,7 @@ router.post('/login', jaLogado, async (req, res) => {
         console.log('[LOGIN] sessão salva com sucesso');
       }
       req.flash('sucesso', `Olá, ${usuario.nome}!`);
-      res.redirect('/palpites');
+      res.redirect('/dashboard');
     });
   } catch (err) {
     console.error('Erro no login:', err);

@@ -15,6 +15,8 @@ const senhaRoutes = require('./routes/senha');
 const extrasRoutes = require('./routes/extras');
 const { router: adminRoutes } = require('./routes/admin');
 const configRoutes = require('./routes/config');
+const dashboardRoutes = require('./routes/dashboard');
+const resumoRoutes = require('./routes/resumo');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -56,6 +58,9 @@ app.use((req, res, next) => {
 
 // Rotas
 app.get('/', (req, res) => {
+  if (req.session && req.session.usuario) {
+    return res.redirect('/dashboard');
+  }
   res.render('home', { title: 'Bolão da Copa 2026' });
 });
 
@@ -68,6 +73,8 @@ app.use('/palpites-extras', extrasRoutes.router);
 app.use('/admin', adminRoutes);
 app.use('/admin', extrasRoutes.adminRouter);
 app.use('/config', configRoutes);
+app.use('/dashboard', dashboardRoutes);
+app.use('/resumo', resumoRoutes);
 
 // 404
 app.use((req, res) => {

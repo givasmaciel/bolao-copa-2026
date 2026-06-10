@@ -644,6 +644,9 @@ h3 {
   background: #fffde7;
 }
 .ranking-tabela tr.voce:hover { background: #fff9c4; }
+.ranking-tabela tr.highlight { background: #fffde7; }
+.ranking-tabela tr.erro td { color: #742a2a; }
+.ranking-tabela tr.erro:hover { background: #fff5f5; }
 
 /* ============== Footer ============== */
 footer {

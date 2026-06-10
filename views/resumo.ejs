@@ -1,0 +1,142 @@
+<%- include('partials/header', { active: 'resumo' }) %>
+
+<%- include('partials/flash') %>
+
+<h1>📊 Meu resumo</h1>
+
+<div class="grid grid-4 mb-2">
+  <div class="stat-card">
+    <div class="stat-valor"><%= stats.total_pontos %></div>
+    <div class="stat-label">Pontos</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-valor"><%= stats.total_palpites %></div>
+    <div class="stat-label">Palpites</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-valor"><%= stats.placares_exatos %></div>
+    <div class="stat-label">Placar exato (10pts)</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-valor"><%= stats.resultados_exatos %></div>
+    <div class="stat-label">Acerto c/ gol (7pts)</div>
+  </div>
+</div>
+
+<div class="grid grid-4 mb-2">
+  <div class="stat-card">
+    <div class="stat-valor"><%= stats.so_resultados %></div>
+    <div class="stat-label">Só resultado (3pts)</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-valor"><%= stats.acertou_um_gol %></div>
+    <div class="stat-label">Um gol certo (2pts)</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-valor"><%= stats.errou_tudo %></div>
+    <div class="stat-label">Errou tudo (0pt)</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-valor"><%= aproveitamento %>%</div>
+    <div class="stat-label">Aproveitamento</div>
+  </div>
+</div>
+
+<div class="card">
+  <h3 style="margin-top:0">📈 Pontos por rodada</h3>
+  <div style="display:flex;gap:12px;flex-wrap:wrap">
+    <% porRodada.forEach(function(r) { %>
+      <div style="flex:1;min-width:80px;text-align:center;padding:12px;background:var(--cinza-claro);border-radius:8px">
+        <div style="font-size:0.75rem;color:var(--cinza-escuro)">Rodada <%= r.rodada %></div>
+        <div style="font-size:1.3rem;font-weight:700;color:var(--verde)"><%= r.pontos %></div>
+      </div>
+    <% }); %>
+  </div>
+</div>
+
+<!-- Jogos finalizados -->
+<div class="card">
+  <h3 style="margin-top:0">📋 Histórico de jogos finalizados</h3>
+  <% if (jogosFinalizados.length === 0) { %>
+    <p class="texto-aux">Nenhum jogo finalizado ainda.</p>
+  <% } else { %>
+    <div style="overflow-x:auto">
+      <table class="ranking-tabela" style="min-width:500px">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Jogo</th>
+            <th class="text-center">Resultado</th>
+            <th class="text-center">Seu palpite</th>
+            <th class="text-center">Pontos</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% jogosFinalizados.forEach(function(j) { %>
+            <tr class="<%= j.pontos_obtidos > 0 ? '' : 'erro' %>">
+              <td style="font-size:0.8rem;color:var(--cinza-escuro)"><%= j.rodada %>ªR</td>
+              <td>
+                <span style="display:flex;align-items:center;gap:6px">
+                  <img src="<%= j.casa_bandeira %>" style="width:18px;height:13px;border-radius:2px"><%= j.casa_pt %>
+                  ×
+                  <%= j.visitante_pt %><img src="<%= j.visitante_bandeira %>" style="width:18px;height:13px;border-radius:2px">
+                </span>
+              </td>
+              <td class="text-center" style="font-weight:700"><%= j.gols_casa %> × <%= j.gols_visitante %></td>
+              <td class="text-center">
+                <% if (j.palpite_gols_casa !== null) { %>
+                  <%= j.palpite_gols_casa %> × <%= j.palpite_gols_visitante %>
+                <% } else { %>
+                  <span class="texto-aux">—</span>
+                <% } %>
+              </td>
+              <td class="text-center">
+                <% if (j.pontos_obtidos !== null) { %>
+                  <span class="pontos-badge <%= j.pontos_obtidos === 0 ? 'zero' : '' %>"><%= j.pontos_obtidos %></span>
+                <% } else { %>
+                  <span class="texto-aux">—</span>
+                <% } %>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</div>
+
+<!-- Racha -->
+<div class="card">
+  <h3 style="margin-top:0">⚔️ Comparar com outro participante</h3>
+  <form method="GET" action="/resumo" style="display:flex;gap:8px;align-items:end;flex-wrap:wrap">
+    <div class="form-group" style="margin:0;flex:1;min-width:200px">
+      <select name="com" class="form-control">
+        <option value="">— Selecione —</option>
+        <% participantes.forEach(function(p) { %>
+          <option value="<%= p.id %>" <%= String(p.id) === rachaId ? 'selected' : '' %>><%= p.nome %></option>
+        <% }); %>
+      </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Comparar</button>
+  </form>
+
+  <% if (racha) { %>
+    <div style="margin-top:16px;display:flex;gap:16px;flex-wrap:wrap">
+      <div style="flex:1;min-width:140px;text-align:center;padding:16px;background:var(--verde);color:white;border-radius:8px">
+        <div style="font-size:0.8rem;opacity:0.9">Você</div>
+        <div style="font-size:1.8rem;font-weight:800"><%= racha.pontosEu %></div>
+      </div>
+      <div style="flex:1;min-width:140px;text-align:center;padding:16px;background:var(--cinza);border-radius:8px">
+        <div style="font-size:0.8rem;color:var(--cinza-escuro)"><%= racha.usuario.nome %></div>
+        <div style="font-size:1.8rem;font-weight:800"><%= racha.pontosEle %></div>
+      </div>
+    </div>
+    <div style="margin-top:12px;text-align:center">
+      <span style="padding:4px 12px;background:var(--verde);color:white;border-radius:4px;margin:0 4px"><%= racha.vitorias %> vitórias</span>
+      <span style="padding:4px 12px;background:var(--cinza);border-radius:4px;margin:0 4px"><%= racha.empates %> empates</span>
+      <span style="padding:4px 12px;background:var(--erro);color:white;border-radius:4px;margin:0 4px"><%= racha.derrotas %> derrotas</span>
+    </div>
+  <% } %>
+</div>
+
+<%- include('partials/footer') %>

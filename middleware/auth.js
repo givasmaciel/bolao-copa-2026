@@ -18,7 +18,7 @@ function verificarAdmin(req, res, next) {
 
 function jaLogado(req, res, next) {
   if (req.session && req.session.usuario) {
-    return res.redirect('/palpites');
+    return res.redirect('/dashboard');
   }
   return next();
 }
