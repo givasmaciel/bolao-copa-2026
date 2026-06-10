@@ -17,7 +17,13 @@ const CATEGORIAS = [
 ];
 
 const MULTI_CATS = new Set(['r32', 'oitavas', 'quartas', 'semi', 'finalista']);
-const DATA_LIMITE = new Date('2026-06-11T11:00:00');
+const DATA_LIMITE_PADRAO = '2026-06-11T11:00';
+
+async function getDataLimite() {
+  const row = await get("SELECT valor FROM config WHERE chave = 'extras_data_limite'");
+  if (row) return new Date(row.valor);
+  return new Date(DATA_LIMITE_PADRAO);
+}
 
 router.get('/', verificarAutenticado, async (req, res) => {
   try {
@@ -37,7 +43,7 @@ router.get('/', verificarAutenticado, async (req, res) => {
       mapa[p.categoria].push(p.selecao_id);
     }
 
-    const prazoPassou = new Date() >= DATA_LIMITE;
+    const prazoPassou = new Date() >= await getDataLimite();
 
     res.render('palpites-extras', {
       title: 'Palpites Extras',
@@ -46,7 +52,7 @@ router.get('/', verificarAutenticado, async (req, res) => {
       palpites: mapa,
       multiCats: MULTI_CATS,
       prazoPassou,
-      dataLimite: DATA_LIMITE
+      dataLimite: await getDataLimite()
     });
   } catch (err) {
     console.error('Erro ao carregar palpites extras:', err);
@@ -60,7 +66,7 @@ router.post('/', verificarAutenticado, async (req, res) => {
     req.flash('erro', 'Administradores não podem participar do bolão.');
     return res.redirect('/admin');
   }
-  if (new Date() >= DATA_LIMITE) {
+  if (new Date() >= await getDataLimite()) {
     req.flash('erro', 'O prazo para palpites extras já encerrou.');
     return res.redirect('/palpites-extras');
   }
@@ -110,12 +116,15 @@ adminRouter.get('/extras', verificarAdmin, async (req, res) => {
       mapa[r.categoria].add(r.selecao_id);
     }
 
+    const dataLimite = await getDataLimite();
+
     res.render('admin-extras', {
       title: 'Resultados Extras',
       categorias: CATEGORIAS,
       selecoes,
       resultados: mapa,
-      multiCats: MULTI_CATS
+      multiCats: MULTI_CATS,
+      dataLimite
     });
   } catch (err) {
     console.error('Erro:', err);
@@ -154,6 +163,22 @@ adminRouter.post('/extras', verificarAdmin, async (req, res) => {
   } catch (err) {
     console.error('Erro ao salvar resultados:', err);
     req.flash('erro', 'Erro ao salvar.');
+    res.redirect('/admin/extras');
+  }
+});
+
+adminRouter.post('/extras/config', verificarAdmin, async (req, res) => {
+  try {
+    const { data_limite } = req.body;
+    if (data_limite) {
+      await run("DELETE FROM config WHERE chave = 'extras_data_limite'");
+      await run('INSERT INTO config (chave, valor) VALUES (?, ?)', ['extras_data_limite', data_limite]);
+      req.flash('sucesso', 'Prazo dos palpites extras atualizado!');
+    }
+    res.redirect('/admin/extras');
+  } catch (err) {
+    console.error('Erro ao salvar config:', err);
+    req.flash('erro', 'Erro ao salvar prazo.');
     res.redirect('/admin/extras');
   }
 });

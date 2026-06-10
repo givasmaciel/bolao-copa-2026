@@ -202,6 +202,21 @@ async function criarSchema() {
   `;
   await run(usandoPG ? tabelaResultPG : tabelaResultSQLite);
 
+  // Tabela de configuração
+  const configPG = `
+    CREATE TABLE IF NOT EXISTS config (
+      chave TEXT PRIMARY KEY,
+      valor TEXT NOT NULL
+    )
+  `;
+  const configSQLite = `
+    CREATE TABLE IF NOT EXISTS config (
+      chave TEXT PRIMARY KEY,
+      valor TEXT NOT NULL
+    )
+  `;
+  await run(usandoPG ? configPG : configSQLite);
+
   // Migração: remover coluna tipo (não usada mais)
   try {
     if (usandoPG) {

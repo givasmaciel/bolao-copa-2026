@@ -5,6 +5,22 @@
 <h1>🏆 Resultados Extras</h1>
 <p class="subtitulo">Marque as seleções vencedoras de cada categoria. Os pontos extras serão somados ao ranking automaticamente.</p>
 
+<div class="card mb-2">
+  <h3>📅 Prazo dos palpites extras</h3>
+  <form method="POST" action="/admin/extras/config" class="flex gap-1" style="align-items:end; flex-wrap:wrap">
+    <div class="form-group" style="margin:0">
+      <label>Data e hora limite (formato: <code>YYYY-MM-DDTHH:MM</code>)</label>
+      <input type="text" name="data_limite" class="form-control" style="width:220px"
+        value="<%= dataLimite.toISOString().slice(0, 16) %>" required>
+    </div>
+    <button type="submit" class="btn btn-sm btn-primary">💾 Salvar prazo</button>
+  </form>
+  <p class="texto-aux mt-1">
+    Atual: <strong><%= dataLimite.toLocaleString('pt-BR', { dateStyle: 'long', timeStyle: 'short' }) %></strong>.
+    Os participantes <strong>não poderão</strong> alterar os palpites extras após essa data.
+  </p>
+</div>
+
 <form method="POST" action="/admin/extras">
   <div class="grid grid-2">
     <% categorias.forEach(function(cat) { %>
