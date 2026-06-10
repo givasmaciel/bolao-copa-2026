@@ -50,16 +50,10 @@ router.post('/cadastro', jaLogado, async (req, res) => {
       return res.render('cadastro', { title: 'Criar conta', dados: req.body });
     }
 
-    // Gera código de convite para o novo usuário
-    let novoCodigo;
-    do {
-      novoCodigo = Math.random().toString(36).substring(2, 10);
-    } while (await get('SELECT id FROM usuarios WHERE codigo_convite = ?', [novoCodigo]));
-
     const senhaHash = await bcrypt.hash(senha, 10);
     const result = await run(
-      'INSERT INTO usuarios (nome, email, username, codigo_convite, senha_hash) VALUES (?, ?, ?, ?, ?)',
-      [nomeLimpo, emailLimpo, loginLimpo, novoCodigo, senhaHash]
+      'INSERT INTO usuarios (nome, email, username, senha_hash) VALUES (?, ?, ?, ?)',
+      [nomeLimpo, emailLimpo, loginLimpo, senhaHash]
     );
 
     req.session.usuario = {
@@ -70,7 +64,7 @@ router.post('/cadastro', jaLogado, async (req, res) => {
       is_admin: 0
     };
 
-    req.flash('sucesso', `Bem-vindo ao bolão, ${nome}! Compartilhe seu código de convite para convidar amigos.`);
+    req.flash('sucesso', `Bem-vindo ao bolão, ${nome}!`);
     res.redirect('/dashboard');
   } catch (err) {
     console.error('Erro no cadastro:', err);

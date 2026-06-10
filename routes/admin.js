@@ -235,7 +235,7 @@ router.post('/recalcular', verificarAdmin, async (req, res) => {
 router.get('/usuarios', verificarAdmin, async (req, res) => {
   try {
     const usuarios = await all(
-      'SELECT id, nome, email, username, codigo_convite, is_admin, criado_em FROM usuarios ORDER BY nome'
+      'SELECT id, nome, email, username, is_admin, criado_em FROM usuarios ORDER BY nome'
     );
     res.render('admin-usuarios', { title: 'Gerenciar participantes', usuarios });
   } catch (err) {
@@ -356,12 +356,8 @@ router.post('/usuarios/criar', verificarAdmin, async (req, res) => {
       }
     }
     const hash = await bcrypt.hash(senha, 10);
-    let novoCodigo;
-    do {
-      novoCodigo = Math.random().toString(36).substring(2, 10);
-    } while (await get('SELECT id FROM usuarios WHERE codigo_convite = ?', [novoCodigo]));
-    await run('INSERT INTO usuarios (nome, email, username, codigo_convite, senha_hash, is_admin) VALUES (?, ?, ?, ?, ?, 0)', [
-      nome.trim(), emailLimpo, usernameLimpo, novoCodigo, hash
+    await run('INSERT INTO usuarios (nome, email, username, senha_hash, is_admin) VALUES (?, ?, ?, ?, 0)', [
+      nome.trim(), emailLimpo, usernameLimpo, hash
     ]);
     req.flash('sucesso', `Participante ${nome} criado com sucesso!`);
   } catch (err) {
