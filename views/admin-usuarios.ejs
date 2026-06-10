@@ -32,6 +32,9 @@
               <button type="submit" class="btn btn-sm btn-secondary" onclick="return confirm('Rebaixar <%= u.nome %> para participante?')">Rebaixar</button>
             </form>
           <% } %>
+          <form method="POST" action="/admin/usuarios/<%= u.id %>/resetar-palpites" style="display:inline">
+            <button type="submit" class="btn btn-sm btn-secondary" onclick="return confirm('Resetar TODOS os palpites de <%= u.nome %>?')">Resetar palpites</button>
+          </form>
           <form method="POST" action="/admin/usuarios/<%= u.id %>/excluir" style="display:inline">
             <button type="submit" class="btn btn-sm" style="background:var(--erro);color:white" onclick="return confirm('Excluir <%= u.nome %> e todos os palpites dele?')">Excluir</button>
           </form>

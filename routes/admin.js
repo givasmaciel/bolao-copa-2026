@@ -218,6 +218,32 @@ router.post('/usuarios/:id/rebaixar', verificarAdmin, async (req, res) => {
   res.redirect('/admin/usuarios');
 });
 
+// POST /admin/usuarios/:id/resetar-palpites
+router.post('/usuarios/:id/resetar-palpites', verificarAdmin, async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.redirect('/admin/usuarios');
+  try {
+    await run('DELETE FROM palpites WHERE usuario_id = ?', [id]);
+    await run('DELETE FROM palpites_extras WHERE usuario_id = ?', [id]);
+    req.flash('sucesso', 'Palpites do participante foram resetados.');
+  } catch (err) {
+    req.flash('erro', 'Erro ao resetar.');
+  }
+  res.redirect('/admin/usuarios');
+});
+
+// POST /admin/resetar-todos-palpites
+router.post('/resetar-todos-palpites', verificarAdmin, async (req, res) => {
+  try {
+    await run('DELETE FROM palpites');
+    await run('DELETE FROM palpites_extras');
+    req.flash('sucesso', 'Todos os palpites foram resetados.');
+  } catch (err) {
+    req.flash('erro', 'Erro ao resetar.');
+  }
+  res.redirect('/admin');
+});
+
 // POST /admin/usuarios/:id/excluir
 router.post('/usuarios/:id/excluir', verificarAdmin, async (req, res) => {
   const id = parseInt(req.params.id, 10);

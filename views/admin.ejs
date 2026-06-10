@@ -37,6 +37,11 @@
         🔄 Recalcular todos os pontos
       </button>
     </form>
+    <form method="POST" action="/admin/resetar-todos-palpites" style="display:contents">
+      <button type="submit" class="btn btn-lg" style="background:var(--erro);color:white" onclick="return confirm('⚠️ Resetar TODOS os palpites de TODOS os participantes? Essa ação não pode ser desfeita.')">
+        🗑 Resetar todos os palpites
+      </button>
+    </form>
   </div>
   <p class="texto-aux mt-2">
     💡 <strong>Como funciona:</strong> a cada vez que você marca um jogo como finalizado e informa o placar, o sistema
