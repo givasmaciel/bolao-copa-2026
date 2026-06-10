@@ -66,4 +66,35 @@
   </table>
 <% } %>
 
+<div class="card mt-3">
+  <h2>📊 Ranking por rodada</h2>
+  <p class="texto-aux">Pontos acumulados em cada rodada. <strong>R1</strong> a <strong>R3</strong> = grupos, <strong>32av</strong> a <strong>Final</strong> = mata-mata.</p>
+  <div style="overflow-x:auto">
+    <table class="ranking-tabela">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Participante</th>
+          <% rodadas.forEach(function(r) { %>
+            <th class="text-center"><%= labels[r] %></th>
+          <% }); %>
+          <th class="text-center">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% ranking.forEach(function(u, idx) { %>
+          <tr class="<%= typeof usuario !== 'undefined' && usuario && usuario.id === u.id ? 'voce' : '' %>">
+            <td class="text-center"><%= idx + 1 %></td>
+            <td><%= u.nome %></td>
+            <% rodadas.forEach(function(r) { %>
+              <td class="text-center"><%= (rodadaMap[u.id] && rodadaMap[u.id][r]) || '—' %></td>
+            <% }); %>
+            <td class="text-center pontos"><%= u.total_pontos %></td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
 <%- include('partials/footer') %>

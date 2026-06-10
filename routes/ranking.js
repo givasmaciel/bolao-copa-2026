@@ -56,7 +56,28 @@ router.get('/', async (req, res) => {
         (SELECT COUNT(*) FROM palpites) AS total_palpites
     `);
 
-    res.render('ranking', { title: 'Ranking do Bolão', ranking, totais });
+    // Busca pontos por rodada para cada usuário
+    const pontosPorRodada = await all(`
+      SELECT p.usuario_id, j.rodada, SUM(p.pontos_obtidos) AS pontos
+      FROM palpites p
+      JOIN jogos j ON j.id = p.jogo_id
+      JOIN usuarios u ON u.id = p.usuario_id
+      WHERE u.is_admin = 0
+      GROUP BY p.usuario_id, j.rodada
+      ORDER BY p.usuario_id, j.rodada
+    `);
+
+    // Converte em mapa: usuario_id -> { rodada: pontos }
+    const rodadaMap = {};
+    pontosPorRodada.forEach(r => {
+      if (!rodadaMap[r.usuario_id]) rodadaMap[r.usuario_id] = {};
+      rodadaMap[r.usuario_id][r.rodada] = r.pontos;
+    });
+
+    const rodadas = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+    const labels = { 1:'R1', 2:'R2', 3:'R3', 4:'32av', 5:'16av', 6:'QF', 7:'SF', 8:'3º', 9:'Final' };
+
+    res.render('ranking', { title: 'Ranking do Bolão', ranking, totais, rodadaMap, rodadas, labels });
   } catch (err) {
     console.error('Erro ao listar ranking:', err);
     req.flash('erro', 'Erro ao carregar ranking.');
