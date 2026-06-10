@@ -42,7 +42,7 @@ async function criarSchema() {
         grupo_id INTEGER REFERENCES grupos(id),
         selecao_casa_id INTEGER REFERENCES selecoes(id),
         selecao_visitante_id INTEGER REFERENCES selecoes(id),
-        data TIMESTAMP NOT NULL,
+        data TIMESTAMPTZ NOT NULL,
         estadio TEXT,
         cidade TEXT,
         pais TEXT,
