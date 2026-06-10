@@ -73,6 +73,19 @@ router.post('/', verificarAutenticado, async (req, res) => {
 
   const usuarioId = req.session.usuario.id;
 
+  // Valida campos obrigatórios
+  const obrigatorios = ['campeao', 'vice', 'terceiro'];
+  const erros = [];
+  for (const cat of obrigatorios) {
+    if (!req.body[cat]) {
+      erros.push(cat);
+    }
+  }
+  if (erros.length > 0) {
+    req.flash('erro', 'Selecione: Campeão, Vice-campeão e Terceiro lugar.');
+    return res.redirect('/palpites-extras');
+  }
+
   try {
     await run('DELETE FROM palpites_extras WHERE usuario_id = ?', [usuarioId]);
 
