@@ -1,4 +1,5 @@
 const express = require('express');
+const bcrypt = require('bcryptjs');
 const { run, get, all } = require('../database/db');
 const { verificarAdmin } = require('../middleware/auth');
 
@@ -228,6 +229,26 @@ router.post('/usuarios/:id/resetar-palpites', verificarAdmin, async (req, res) =
     req.flash('sucesso', 'Palpites do participante foram resetados.');
   } catch (err) {
     req.flash('erro', 'Erro ao resetar.');
+  }
+  res.redirect('/admin/usuarios');
+});
+
+// POST /admin/usuarios/:id/resetar-senha
+router.post('/usuarios/:id/resetar-senha', verificarAdmin, async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.redirect('/admin/usuarios');
+  const { nova_senha } = req.body;
+  if (!nova_senha || nova_senha.length < 4) {
+    req.flash('erro', 'A senha deve ter pelo menos 4 caracteres.');
+    return res.redirect('/admin/usuarios');
+  }
+  try {
+    const hash = await bcrypt.hash(nova_senha, 10);
+    await run('UPDATE usuarios SET senha_hash = ? WHERE id = ?', [hash, id]);
+    req.flash('sucesso', 'Senha do participante foi redefinida.');
+  } catch (err) {
+    console.error('Erro ao resetar senha:', err);
+    req.flash('erro', 'Erro ao redefinir senha.');
   }
   res.redirect('/admin/usuarios');
 });

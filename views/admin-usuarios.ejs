@@ -23,6 +23,15 @@
         <td class="text-center"><%= u.is_admin ? '✅' : '—' %></td>
         <td class="text-center"><%= new Date(u.criado_em).toLocaleDateString('pt-BR') %></td>
         <td class="text-center" style="white-space:nowrap">
+          <details style="display:inline-block;vertical-align:middle">
+            <summary class="btn btn-sm btn-secondary" style="cursor:pointer">🔑 Senha</summary>
+            <div style="position:absolute;background:var(--card-bg);border:1px solid var(--border);padding:8px;border-radius:8px;z-index:10;margin-top:4px">
+              <form method="POST" action="/admin/usuarios/<%= u.id %>/resetar-senha" style="display:flex;gap:4px">
+                <input type="password" name="nova_senha" placeholder="Nova senha" minlength="4" required class="form-control" style="width:140px">
+                <button type="submit" class="btn btn-sm btn-primary">Salvar</button>
+              </form>
+            </div>
+          </details>
           <% if (!u.is_admin) { %>
             <form method="POST" action="/admin/usuarios/<%= u.id %>/tornar-admin" style="display:inline">
               <button type="submit" class="btn btn-sm btn-amarelo" onclick="return confirm('Promover <%= u.nome %> a admin?')">Tornar admin</button>
