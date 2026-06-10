@@ -257,7 +257,7 @@ async function criarSchema() {
     if (usandoPG) {
       await run("ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS codigo_convite TEXT UNIQUE");
     } else {
-      await run("ALTER TABLE usuarios ADD COLUMN codigo_convite TEXT UNIQUE");
+      await run("ALTER TABLE usuarios ADD COLUMN codigo_convite TEXT");
     }
   } catch (e) {
     // Coluna já existe, ignorar
