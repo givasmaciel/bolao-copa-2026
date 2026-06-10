@@ -14,6 +14,7 @@ const rankingRoutes = require('./routes/ranking');
 const senhaRoutes = require('./routes/senha');
 const extrasRoutes = require('./routes/extras');
 const { router: adminRoutes } = require('./routes/admin');
+const configRoutes = require('./routes/config');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -66,6 +67,7 @@ app.use('/', senhaRoutes);
 app.use('/palpites-extras', extrasRoutes.router);
 app.use('/admin', adminRoutes);
 app.use('/admin', extrasRoutes.adminRouter);
+app.use('/config', configRoutes);
 
 // 404
 app.use((req, res) => {
