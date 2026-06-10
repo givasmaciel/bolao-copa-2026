@@ -7,6 +7,7 @@ const flash = require('connect-flash');
 const methodOverride = require('method-override');
 
 const { criarSchema } = require('./database/schema');
+const { get } = require('./database/db');
 const authRoutes = require('./routes/auth');
 const palpitesRoutes = require('./routes/palpites');
 const jogosRoutes = require('./routes/jogos');
@@ -75,6 +76,12 @@ app.use('/admin', extrasRoutes.adminRouter);
 app.use('/config', configRoutes);
 app.use('/dashboard', dashboardRoutes);
 app.use('/resumo', resumoRoutes);
+
+// Debug: verificar dado bruto no banco
+app.get('/debug/jogo/:id', async (req, res) => {
+  const jogo = await get('SELECT id, data, estadio, cidade, pais FROM jogos WHERE id = ?', [req.params.id]);
+  res.json(jogo);
+});
 
 // 404
 app.use((req, res) => {

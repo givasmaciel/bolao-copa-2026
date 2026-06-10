@@ -102,6 +102,16 @@ async function setup() {
     console.log(`✅ Horários de ${updates.length} jogos atualizados`);
   }
 
+  // Diagnóstico: verifica o dado salvo
+  const verificacao = await get("SELECT id, data, estadio FROM jogos WHERE id = 1");
+  if (verificacao) {
+    console.log(`🔍 Jogo 1: data=${verificacao.data}, estadio=${verificacao.estadio}, cidade=${verificacao.cidade}`);
+  }
+  const verificacao10 = await get("SELECT id, data, estadio FROM jogos WHERE id = 10");
+  if (verificacao10) {
+    console.log(`🔍 Jogo 10: data=${verificacao10.data}, estadio=${verificacao10.estadio}`);
+  }
+
   // 4. Cria admin se as env vars estiverem definidas
   const adminEmail = process.env.ADMIN_EMAIL;
   const adminSenha = process.env.ADMIN_SENHA;
