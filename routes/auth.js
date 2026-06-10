@@ -74,6 +74,8 @@ router.post('/login', jaLogado, async (req, res) => {
     return res.render('login', { title: 'Entrar' });
   }
 
+  console.log('[LOGIN] req.secure:', req.secure, '| headers x-forwarded-proto:', req.headers['x-forwarded-proto'], '| NODE_ENV:', process.env.NODE_ENV, '| cookie:', req.headers.cookie);
+
   try {
     const usuario = await get(
       'SELECT id, nome, email, senha_hash, is_admin FROM usuarios WHERE email = ?',
@@ -81,15 +83,19 @@ router.post('/login', jaLogado, async (req, res) => {
     );
 
     if (!usuario) {
+      console.log('[LOGIN] usuário não encontrado:', email);
       req.flash('erro', 'E-mail ou senha inválidos.');
       return res.render('login', { title: 'Entrar' });
     }
 
     const ok = await bcrypt.compare(senha, usuario.senha_hash);
     if (!ok) {
+      console.log('[LOGIN] senha inválida para:', email);
       req.flash('erro', 'E-mail ou senha inválidos.');
       return res.render('login', { title: 'Entrar' });
     }
+
+    console.log('[LOGIN] sucesso para:', email, '| sessionID:', req.sessionID);
 
     req.session.usuario = {
       id: usuario.id,
@@ -98,8 +104,16 @@ router.post('/login', jaLogado, async (req, res) => {
       is_admin: usuario.is_admin
     };
 
-    req.flash('sucesso', `Olá, ${usuario.nome}!`);
-    res.redirect('/palpites');
+    // Salva explicitamente antes do redirect
+    req.session.save((err) => {
+      if (err) {
+        console.error('[LOGIN] erro ao salvar sessão:', err);
+      } else {
+        console.log('[LOGIN] sessão salva com sucesso');
+      }
+      req.flash('sucesso', `Olá, ${usuario.nome}!`);
+      res.redirect('/palpites');
+    });
   } catch (err) {
     console.error('Erro no login:', err);
     req.flash('erro', 'Erro ao fazer login.');
