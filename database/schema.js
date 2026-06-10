@@ -204,6 +204,17 @@ async function criarSchema() {
   `;
   await run(usandoPG ? tabelaResultPG : tabelaResultSQLite);
 
+  // Migração: adicionar coluna tipo em jogos (se não existir)
+  try {
+    if (usandoPG) {
+      await run("ALTER TABLE jogos ADD COLUMN IF NOT EXISTS tipo TEXT DEFAULT 'oficial'");
+    } else {
+      await run("ALTER TABLE jogos ADD COLUMN tipo TEXT DEFAULT 'oficial'");
+    }
+  } catch (e) {
+    // Coluna já existe, ignorar
+  }
+
   console.log('✅ Schema criado/verificado');
 }
 
