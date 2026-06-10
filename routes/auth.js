@@ -87,10 +87,10 @@ router.post('/login', jaLogado, async (req, res) => {
   console.log('[LOGIN] req.secure:', req.secure, '| headers x-forwarded-proto:', req.headers['x-forwarded-proto'], '| NODE_ENV:', process.env.NODE_ENV, '| cookie:', req.headers.cookie);
 
   try {
-    const identifier = email; // campo do form chama 'email' mas aceita username também
+    const identifier = email; // campo do form chama 'email' mas aceita qualquer identificador
     const usuario = await get(
-      'SELECT id, nome, email, senha_hash, is_admin FROM usuarios WHERE email = ? OR username = ?',
-      [identifier.toLowerCase().trim(), identifier.toLowerCase().trim()]
+      'SELECT id, nome, email, senha_hash, is_admin FROM usuarios WHERE email = ? OR username = ? OR nome = ?',
+      [identifier.toLowerCase().trim(), identifier.toLowerCase().trim(), identifier.trim()]
     );
 
     if (!usuario) {

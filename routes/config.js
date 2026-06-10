@@ -16,31 +16,33 @@ router.get('/', verificarAutenticado, async (req, res) => {
   }
 });
 
-// POST /config/username - altera o nome de usuário
-router.post('/username', verificarAutenticado, async (req, res) => {
-  const { username } = req.body;
-  if (!username || !username.trim()) {
-    req.flash('erro', 'Informe um nome de usuário.');
+// POST /config/nome - altera o nome (que também serve como username pra login)
+router.post('/nome', verificarAutenticado, async (req, res) => {
+  const { nome } = req.body;
+  if (!nome || !nome.trim()) {
+    req.flash('erro', 'Informe um nome.');
     return res.redirect('/config');
   }
 
-  const usernameLimpo = username.trim().toLowerCase();
+  const nomeLimpo = nome.trim();
+  const loginLimpo = nomeLimpo.toLowerCase();
 
   try {
-    // Verifica se já existe outro usuário com este username
-    const existe = await get('SELECT id FROM usuarios WHERE username = ? AND id != ?', [usernameLimpo, req.session.usuario.id]);
+    // Verifica se já existe outro usuário com este nome como login
+    const existe = await get('SELECT id FROM usuarios WHERE (nome = ? OR username = ?) AND id != ?', [nomeLimpo, loginLimpo, req.session.usuario.id]);
     if (existe) {
-      req.flash('erro', 'Este nome de usuário já está em uso por outro participante.');
+      req.flash('erro', 'Este nome já está em uso por outro participante.');
       return res.redirect('/config');
     }
 
-    await run('UPDATE usuarios SET username = ? WHERE id = ?', [usernameLimpo, req.session.usuario.id]);
-    req.session.usuario.username = usernameLimpo;
-    req.flash('sucesso', 'Nome de usuário atualizado com sucesso!');
+    await run('UPDATE usuarios SET nome = ?, username = ? WHERE id = ?', [nomeLimpo, loginLimpo, req.session.usuario.id]);
+    req.session.usuario.nome = nomeLimpo;
+    req.session.usuario.username = loginLimpo;
+    req.flash('sucesso', 'Nome atualizado com sucesso!');
     res.redirect('/config');
   } catch (err) {
-    console.error('Erro ao alterar username:', err);
-    req.flash('erro', 'Erro ao alterar nome de usuário.');
+    console.error('Erro ao alterar nome:', err);
+    req.flash('erro', 'Erro ao alterar nome.');
     res.redirect('/config');
   }
 });

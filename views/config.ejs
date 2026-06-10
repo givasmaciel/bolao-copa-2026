@@ -5,13 +5,13 @@
 <h1>⚙️ Minha conta</h1>
 
 <div class="card">
-  <h3>Alterar nome de usuário</h3>
-  <p class="texto-aux">Seu nome de usuário é usado para fazer login. Escolha um único se quiser.</p>
+  <h3>Alterar nome</h3>
+  <p class="texto-aux">Seu nome aparece no ranking e também serve para fazer login.</p>
 
-  <form method="POST" action="/config/username" class="form-inline" style="display:flex; gap:8px; align-items:end; flex-wrap:wrap">
+  <form method="POST" action="/config/nome" class="form-inline" style="display:flex; gap:8px; align-items:end; flex-wrap:wrap">
     <div class="form-group" style="margin:0;flex:1;min-width:200px">
-      <label for="username">Usuário</label>
-      <input type="text" id="username" name="username" class="form-control" value="<%= usuario.username || '' %>" placeholder="nome de usuário" required>
+      <label for="nome">Nome</label>
+      <input type="text" id="nome" name="nome" class="form-control" value="<%= usuario.nome %>" placeholder="Seu nome" required>
     </div>
     <button type="submit" class="btn btn-primary">💾 Salvar</button>
   </form>
@@ -22,7 +22,6 @@
   <table style="width:100%">
     <tr><td style="padding:6px 0;font-weight:600;width:120px">Nome:</td><td><%= usuario.nome %></td></tr>
     <tr><td style="padding:6px 0;font-weight:600">E-mail:</td><td><%= usuario.email %></td></tr>
-    <tr><td style="padding:6px 0;font-weight:600">Usuário:</td><td style="font-family:monospace"><%= usuario.username || '—' %></td></tr>
   </table>
 </div>
 
