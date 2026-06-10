@@ -229,10 +229,6 @@ adminRouter.post('/extras', verificarAdmin, async (req, res) => {
             erros.push(`${cat.nome}: máximo ${cat.max} seleções.`);
           }
         }
-      } else {
-        if (!req.body[cat.id]) {
-          erros.push(`Selecione ${cat.nome}.`);
-        }
       }
     }
     if (erros.length > 0) {
