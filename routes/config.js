@@ -7,7 +7,7 @@ const router = express.Router();
 // GET /config - página de configurações da conta
 router.get('/', verificarAutenticado, async (req, res) => {
   try {
-    const usuario = await get('SELECT nome, email, username, codigo_convite FROM usuarios WHERE id = ?', [req.session.usuario.id]);
+    const usuario = await get('SELECT nome, email, username FROM usuarios WHERE id = ?', [req.session.usuario.id]);
     res.render('config', { title: 'Minha conta', usuario: { ...req.session.usuario, ...usuario } });
   } catch (err) {
     console.error('Erro ao carregar config:', err);
