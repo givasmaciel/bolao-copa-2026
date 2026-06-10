@@ -7,6 +7,10 @@ const router = express.Router();
 // GET /palpites - mostra todos os jogos (fase de grupos) para o usuário dar palpites
 router.get('/', verificarAutenticado, async (req, res) => {
   try {
+    if (req.session.usuario.is_admin) {
+      req.flash('erro', 'Administradores não podem participar do bolão.');
+      return res.redirect('/admin');
+    }
     const jogos = await all(`
       SELECT
         j.id, j.fase, j.rodada, j.data, j.estadio, j.cidade, j.pais,
@@ -57,6 +61,10 @@ router.get('/', verificarAutenticado, async (req, res) => {
 // Espera-se: palpites_json = '[ { jogoId, casa, visitante }, ... ]' (JSON stringificado)
 router.post('/', verificarAutenticado, async (req, res) => {
   const usuarioId = req.session.usuario.id;
+  if (req.session.usuario.is_admin) {
+    req.flash('erro', 'Administradores não podem participar do bolão.');
+    return res.redirect('/admin');
+  }
   let palpites = [];
   if (req.body.palpites_json) {
     try {
@@ -149,7 +157,11 @@ router.post('/', verificarAutenticado, async (req, res) => {
 });
 
 // GET /palpites/knockout - placeholder
-router.get('/knockout', verificarAutenticado, (req, res) => {
+router.get('/knockout', verificarAutenticado, async (req, res) => {
+  if (req.session.usuario.is_admin) {
+    req.flash('erro', 'Administradores não podem participar do bolão.');
+    return res.redirect('/admin');
+  }
   req.flash('aviso', 'Os palpites do mata-mata serão liberados após o fim da fase de grupos.');
   res.redirect('/palpites');
 });

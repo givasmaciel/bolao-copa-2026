@@ -29,6 +29,7 @@ router.get('/', async (req, res) => {
         COALESCE(MAX(p.pontos_obtidos), 0) AS maior_palpite
       FROM usuarios u
       LEFT JOIN palpites p ON p.usuario_id = u.id
+      WHERE u.is_admin = 0
       GROUP BY u.id
       ORDER BY total_pontos DESC, palpites_com_pontos DESC, u.nome ASC
     `);
@@ -49,7 +50,7 @@ router.get('/', async (req, res) => {
     // Calcula totais
     const totais = await get(`
       SELECT
-        (SELECT COUNT(*) FROM usuarios) AS total_usuarios,
+        (SELECT COUNT(*) FROM usuarios WHERE is_admin = 0) AS total_usuarios,
         (SELECT COUNT(*) FROM jogos WHERE fase = 'grupo') AS total_jogos,
         (SELECT COUNT(*) FROM jogos WHERE fase = 'grupo' AND finalizado = 1) AS jogos_finalizados,
         (SELECT COUNT(*) FROM palpites) AS total_palpites

@@ -21,6 +21,10 @@ const DATA_LIMITE = new Date('2026-06-11T11:00:00');
 
 router.get('/', verificarAutenticado, async (req, res) => {
   try {
+    if (req.session.usuario.is_admin) {
+      req.flash('erro', 'Administradores não podem participar do bolão.');
+      return res.redirect('/admin');
+    }
     const selecoes = await all('SELECT id, nome_pt, sigla FROM selecoes ORDER BY nome_pt');
     const palpites = await all(
       'SELECT categoria, selecao_id FROM palpites_extras WHERE usuario_id = ? ORDER BY categoria',
@@ -52,6 +56,10 @@ router.get('/', verificarAutenticado, async (req, res) => {
 });
 
 router.post('/', verificarAutenticado, async (req, res) => {
+  if (req.session.usuario.is_admin) {
+    req.flash('erro', 'Administradores não podem participar do bolão.');
+    return res.redirect('/admin');
+  }
   if (new Date() >= DATA_LIMITE) {
     req.flash('erro', 'O prazo para palpites extras já encerrou.');
     return res.redirect('/palpites-extras');
