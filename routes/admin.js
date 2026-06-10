@@ -304,14 +304,25 @@ router.post('/usuarios/:id/resetar-senha', verificarAdmin, async (req, res) => {
   res.redirect('/admin/usuarios');
 });
 
-// POST /admin/resetar-todos-palpites
+// POST /admin/resetar-todos-palpites - só reseta palpites de jogos não finalizados + extras se prazo não passou
 router.post('/resetar-todos-palpites', verificarAdmin, async (req, res) => {
   try {
-    await run('DELETE FROM palpites');
-    await run('DELETE FROM palpites_extras');
+    // Só apaga palpites de jogos que ainda não foram finalizados
+    await run("DELETE FROM palpites WHERE jogo_id IN (SELECT id FROM jogos WHERE finalizado = 0)");
+
+    // Só apaga palpites extras se a data limite ainda não passou
+    const config = await get("SELECT valor FROM config WHERE chave = 'extras_data_limite'");
+    const dataLimite = config ? new Date(config.valor) : null;
+    if (!dataLimite || new Date() < dataLimite) {
+      await run('DELETE FROM palpites_extras');
+    }
+
+    // Resultados oficiais (admin) podem ser resetados sempre
     await run('DELETE FROM resultados_extras');
-    req.flash('sucesso', 'Todos os palpites (incluindo extras e resultados oficiais) foram resetados.');
+
+    req.flash('sucesso', 'Palpites pendentes resetados (jogos já finalizados e bets após prazo foram preservados).');
   } catch (err) {
+    console.error('Erro ao resetar:', err);
     req.flash('erro', 'Erro ao resetar.');
   }
   res.redirect('/admin');
