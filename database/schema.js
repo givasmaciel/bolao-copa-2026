@@ -43,7 +43,6 @@ async function criarSchema() {
         selecao_casa_id INTEGER REFERENCES selecoes(id),
         selecao_visitante_id INTEGER REFERENCES selecoes(id),
         data TIMESTAMPTZ NOT NULL,
-        tipo TEXT DEFAULT 'oficial',
         estadio TEXT,
         cidade TEXT,
         pais TEXT,
@@ -107,7 +106,6 @@ async function criarSchema() {
         selecao_casa_id INTEGER,
         selecao_visitante_id INTEGER,
         data DATETIME NOT NULL,
-        tipo TEXT DEFAULT 'oficial',
         estadio TEXT,
         cidade TEXT,
         pais TEXT,
@@ -204,15 +202,15 @@ async function criarSchema() {
   `;
   await run(usandoPG ? tabelaResultPG : tabelaResultSQLite);
 
-  // Migração: adicionar coluna tipo em jogos (se não existir)
+  // Migração: remover coluna tipo (não usada mais)
   try {
     if (usandoPG) {
-      await run("ALTER TABLE jogos ADD COLUMN IF NOT EXISTS tipo TEXT DEFAULT 'oficial'");
+      await run("ALTER TABLE jogos DROP COLUMN IF EXISTS tipo");
     } else {
-      await run("ALTER TABLE jogos ADD COLUMN tipo TEXT DEFAULT 'oficial'");
+      await run("ALTER TABLE jogos DROP COLUMN tipo");
     }
   } catch (e) {
-    // Coluna já existe, ignorar
+    // Coluna já não existe ou SQLite antigo, ignorar
   }
 
   console.log('✅ Schema criado/verificado');
