@@ -18,7 +18,8 @@ router.get('/', verificarAutenticado, async (req, res) => {
         g.letra AS grupo_letra,
         sc.nome AS casa_nome, sc.nome_pt AS casa_pt, sc.sigla AS casa_sigla, sc.bandeira_url AS casa_bandeira,
         sv.nome AS visitante_nome, sv.nome_pt AS visitante_pt, sv.sigla AS visitante_sigla, sv.bandeira_url AS visitante_bandeira,
-        p.palpite_gols_casa, p.palpite_gols_visitante, p.pontos_obtidos
+        p.palpite_gols_casa, p.palpite_gols_visitante, p.pontos_obtidos,
+        (SELECT COUNT(*) FROM palpites WHERE jogo_id = j.id) AS total_bets
       FROM jogos j
       LEFT JOIN grupos g ON j.grupo_id = g.id
       LEFT JOIN selecoes sc ON j.selecao_casa_id = sc.id

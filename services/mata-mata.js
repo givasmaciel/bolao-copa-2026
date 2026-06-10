@@ -78,6 +78,14 @@ async function resolverDescricao(descricao) {
 async function gerarMataMata() {
   await carregarGrupos();
 
+  // Verifica se a fase anterior está completamente finalizada
+  const gruposIncompletos = await all(
+    "SELECT COUNT(*) AS total, SUM(finalizado) AS finalizados FROM jogos WHERE fase = 'grupo'"
+  );
+  if (gruposIncompletos[0] && gruposIncompletos[0].total > gruposIncompletos[0].finalizados) {
+    throw new Error('Fase de grupos ainda não está completa. Finalize todos os 72 jogos primeiro.');
+  }
+
   const jogosMM = await all(
     "SELECT id, descricao, selecao_casa_id, selecao_visitante_id, finalizado FROM jogos WHERE fase != 'grupo' ORDER BY id"
   );
@@ -88,6 +96,7 @@ async function gerarMataMata() {
 
     const { casa, visitante } = await resolverDescricao(jogo.descricao);
 
+    // Só atualiza se a descrição foi resolvida (casa e visitante não são null)
     const mudouCasa = casa !== null && casa !== jogo.selecao_casa_id && !jogo.finalizado;
     const mudouVisitante = visitante !== null && visitante !== jogo.selecao_visitante_id && !jogo.finalizado;
 
@@ -101,11 +110,19 @@ async function gerarMataMata() {
       descricao: jogo.descricao,
       casa_id: mudouCasa ? casa : jogo.selecao_casa_id,
       visitante_id: mudouVisitante ? visitante : jogo.selecao_visitante_id,
-      atualizado: mudouCasa || mudouVisitante
+      atualizado: mudouCasa || mudouVisitante,
+      ignorado: !mudouCasa && !mudouVisitante && (casa === null || visitante === null)
     });
   }
 
   return resultados;
+}
+
+async function limparMataMata() {
+  const result = await run(
+    "UPDATE jogos SET selecao_casa_id = NULL, selecao_visitante_id = NULL WHERE fase != 'grupo' AND finalizado = 0"
+  );
+  return result.changes || 0;
 }
 
 async function listarConfrontos() {

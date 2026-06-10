@@ -2,7 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const { run, get, all } = require('../database/db');
 const { verificarAdmin } = require('../middleware/auth');
-const { gerarMataMata, listarConfrontos } = require('../services/mata-mata');
+const { gerarMataMata, listarConfrontos, limparMataMata } = require('../services/mata-mata');
 
 const router = express.Router();
 
@@ -461,10 +461,21 @@ router.post('/mata-mata/gerar', verificarAdmin, async (req, res) => {
   try {
     const resultados = await gerarMataMata();
     const atualizados = resultados.filter(r => r.atualizado).length;
-    req.flash('sucesso', `Confrontos gerados! ${atualizados} jogos atualizados.`);
+    const ignorados = resultados.filter(r => r.ignorado).length;
+    req.flash('sucesso', `Confrontos gerados! ${atualizados} jogos atualizados, ${ignorados} aguardando fase anterior.`);
   } catch (err) {
-    console.error('Erro ao gerar confrontos:', err);
-    req.flash('erro', 'Erro ao gerar confrontos.');
+    req.flash('erro', err.message);
+  }
+  res.redirect('/admin/mata-mata');
+});
+
+// POST /admin/mata-mata/limpar - limpa todos os confrontos
+router.post('/mata-mata/limpar', verificarAdmin, async (req, res) => {
+  try {
+    const total = await limparMataMata();
+    req.flash('sucesso', `${total} confrontos foram limpos.`);
+  } catch (err) {
+    req.flash('erro', 'Erro ao limpar confrontos.');
   }
   res.redirect('/admin/mata-mata');
 });

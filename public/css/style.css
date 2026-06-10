@@ -675,15 +675,61 @@ footer a:hover { text-decoration: underline; }
 .hidden { display: none; }
 
 /* ============== Responsivo ============== */
-@media (max-width: 600px) {
+@media (max-width: 768px) {
   .jogo-card { grid-template-columns: 1fr; gap: 8px; }
   .jogo-time.visitante { justify-content: flex-start; text-align: left; }
   .jogo-time img { width: 28px; height: 20px; }
   .jogo-info { width: 100%; }
   .hero { padding: 40px 20px; }
-  .hero h1 { font-size: 1.8rem; }
+  .hero h1 { font-size: 1.5rem; }
   .header-container { flex-direction: column; align-items: flex-start; }
-  nav ul { width: 100%; justify-content: flex-start; }
-  h1 { font-size: 1.5rem; }
+  nav ul { width: 100%; justify-content: flex-start; flex-wrap: wrap; gap: 2px; }
+  nav ul li a { font-size: 0.75rem; padding: 4px 5px; }
+  h1 { font-size: 1.3rem; }
   .form-row { grid-template-columns: 1fr; }
+  .grid-3 { grid-template-columns: 1fr; }
+  .grid-2 { grid-template-columns: 1fr; }
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+  .stat-card { padding: 10px; }
+  .card { padding: 12px; }
+  .col-desktop { display: none; }
+  .btn-lg { padding: 10px 18px; font-size: 0.95rem; }
+  .jogo-card .jogo-placar select { max-width: 100px; font-size: 0.72rem; }
+  .user-pill { width: 100%; justify-content: center; margin-top: 4px; font-size: 0.85rem; }
+  .ranking-tabela { font-size: 0.8rem; }
+  .ranking-tabela th, .ranking-tabela td { padding: 4px 6px; }
+  .jogo-card .jogo-placar input { width: 40px !important; font-size: 0.85rem; }
+  .jogo-form .btn { font-size: 0.75rem; padding: 4px 8px; }
+  .countdown { font-size: 0.68rem !important; }
+  .subtitulo { font-size: 0.85rem; }
+}
+@media (max-width: 480px) {
+  nav ul li a { font-size: 0.7rem; padding: 3px 4px; }
+  .grid-4 { grid-template-columns: 1fr 1fr; }
+  .logo-text { font-size: 0.9rem; }
+  .logo-text small { font-size: 0.65rem; }
+}
+
+/* ============== Classificação ============== */
+.classif-tabela { width: 100%; border-collapse: collapse; }
+.classif-tabela th, .classif-tabela td { text-align: center; padding: 5px 5px; font-size: 0.82rem; }
+.classif-tabela th { font-weight: 600; color: var(--cinza-escuro); border-bottom: 2px solid var(--verde); }
+.classif-tabela td:first-child { text-align: center; width: 24px; }
+.td-time { text-align: left !important; min-width: 80px; }
+.td-pontos { font-weight: 700; font-size: 0.95rem !important; color: var(--verde); }
+.td-sg { font-weight: 600; }
+.classif-classificado { background: #e8f5e9; }
+.classif-classificado .td-pontos { color: #2e7d32; }
+.classif-terceiro { background: #fff8e1; }
+.sg-positivo { color: #2e7d32; }
+.sg-negativo { color: #c0392b; }
+.bandeira-mini { width: 16px; height: 12px; vertical-align: middle; margin-right: 4px; }
+@media (max-width: 768px) {
+  .classif-tabela { font-size: 0.72rem !important; }
+  .classif-tabela th, .classif-tabela td { padding: 3px 3px; }
+  .td-pontos { font-size: 0.85rem !important; }
+  .bandeira-mini { width: 14px; height: 10px; }
+}
+@media (min-width: 769px) {
+  .sigla-time { display: none; }
 }

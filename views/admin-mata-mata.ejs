@@ -9,6 +9,9 @@
   <form method="POST" action="/admin/mata-mata/gerar">
     <button type="submit" class="btn btn-primary">⚡ Gerar automaticamente</button>
   </form>
+  <form method="POST" action="/admin/mata-mata/limpar" onsubmit="return confirm('Limpar TODOS os confrontos do mata-mata?')">
+    <button type="submit" class="btn btn-secondary" style="background:var(--erro);color:white">🗑 Limpar todos</button>
+  </form>
   <a href="/admin/jogos" class="btn btn-secondary">📝 Editar resultados/placares</a>
 </div>
 

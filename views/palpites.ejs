@@ -23,7 +23,20 @@
 <% const agora = new Date(); %>
 
 <% Object.keys(rodadas).sort(function(a,b) { return parseInt(a) - parseInt(b); }).forEach(function(rodada) { %>
-  <h2 class="jogo-rodada-titulo">Rodada <%= rodada %></h2>
+  <div class="flex" style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+    <h2 class="jogo-rodada-titulo" style="margin:0">Rodada <%= rodada %></h2>
+    <button class="btn btn-sm btn-secondary" onclick="palpitarRodada(<%= rodada %>)" style="font-size:0.8rem">⚡ Palpitar todos</button>
+  </div>
+  <div id="rodada-<%= rodada %>-preencher" style="display:none;margin-bottom:8px;background:var(--bg-card);padding:8px;border-radius:8px">
+    <form onsubmit="return preencherRodada(event, <%= rodada %>)" class="flex gap-1" style="align-items:center;flex-wrap:wrap">
+      <span style="font-size:0.85rem">Preencher todos com:</span>
+      <input type="number" id="rd-casa-<%= rodada %>" min="0" max="99" placeholder="0" style="width:50px;padding:4px" required>
+      <span class="x">×</span>
+      <input type="number" id="rd-visit-<%= rodada %>" min="0" max="99" placeholder="0" style="width:50px;padding:4px" required>
+      <button type="submit" class="btn btn-sm btn-primary">Aplicar</button>
+      <button type="button" class="btn btn-sm btn-secondary" onclick="fecharPreencher(<%= rodada %>)">✕</button>
+    </form>
+  </div>
   <% rodadas[rodada].forEach(function(jogo) { %>
     <%
       const dataJogo = new Date(jogo.data);
@@ -39,7 +52,7 @@
         Prazo: <%= palpiteLimite.toLocaleString('pt-BR', { dateStyle:'short', timeStyle:'short', timeZone:'America/Sao_Paulo' }) %>
       </div>
     <% } %>
-    <div class="jogo-card <%= finalizado ? 'finalizado' : (fechado ? 'iniciado' : '') %>">
+    <div class="jogo-card <%= finalizado ? 'finalizado' : (fechado ? 'iniciado' : '') %>" data-fecha="<%= margem.toISOString() %>">
       <div class="jogo-time">
         <img src="<%= jogo.casa_bandeira %>" alt="<%= jogo.casa_pt %>">
         <span><%= jogo.casa_pt %></span>
@@ -58,6 +71,7 @@
           <div class="jogo-data"><%= new Date(jogo.data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'America/Sao_Paulo' }) %></div>
           <div class="jogo-estadio">📍 <%= jogo.estadio %>, <%= jogo.cidade %></div>
           <div style="margin-top:4px"><span class="badge badge-finalizado">Final</span></div>
+          <div class="texto-aux" style="font-size:0.72rem;margin-top:2px"><%= jogo.total_bets %> palpites</div>
         <% } else if (fechado) { %>
           <div class="jogo-placar-display">? × ?</div>
           <% if (temPalpite) { %>
@@ -66,12 +80,14 @@
           <div class="jogo-data"><%= new Date(jogo.data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'America/Sao_Paulo' }) %></div>
           <div class="jogo-estadio">📍 <%= jogo.estadio %>, <%= jogo.cidade %></div>
           <div style="margin-top:4px"><span class="badge badge-pendente">Fechado</span></div>
+          <div class="texto-aux" style="font-size:0.72rem;margin-top:2px"><%= jogo.total_bets %> palpites</div>
         <% } else { %>
           <form method="POST" action="/palpites/<%= jogo.id %>" class="jogo-form">
             <div class="jogo-placar">
               <input
                 type="number"
                 name="casa"
+                class="input-casa-rd<%= rodada %>"
                 min="0" max="99"
                 value="<%= temPalpite ? jogo.palpite_gols_casa : '' %>"
                 placeholder="0"
@@ -81,6 +97,7 @@
               <input
                 type="number"
                 name="visitante"
+                class="input-visit-rd<%= rodada %>"
                 min="0" max="99"
                 value="<%= temPalpite ? jogo.palpite_gols_visitante : '' %>"
                 placeholder="0"
@@ -91,6 +108,8 @@
           </form>
           <div class="jogo-data"><%= new Date(jogo.data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'America/Sao_Paulo' }) %></div>
           <div class="jogo-estadio">📍 <%= jogo.estadio %>, <%= jogo.cidade %></div>
+          <div class="countdown" style="font-size:0.75rem;color:var(--verde);font-weight:bold;margin-top:2px"></div>
+          <div class="texto-aux" style="font-size:0.72rem;margin-top:2px"><%= jogo.total_bets %> palpites</div>
         <% } %>
       </div>
 
@@ -101,5 +120,50 @@
     </div>
   <% }); %>
 <% }); %>
+
+<script>
+function atualizarCountdowns() {
+  const agora = new Date();
+  document.querySelectorAll('.jogo-card[data-fecha]').forEach(function(card) {
+    const fecha = new Date(card.getAttribute('data-fecha'));
+    const diff = fecha.getTime() - agora.getTime();
+    const cd = card.querySelector('.countdown');
+    if (!cd) return;
+    if (diff <= 0) {
+      cd.textContent = '⏰ Fechado!';
+      cd.style.color = '#c0392b';
+      card.classList.add('iniciado');
+      // Recarrega em 5s para refletir estado fechado
+      setTimeout(function() { location.reload(); }, 5000);
+    } else {
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      cd.textContent = '⏱ Fecha em ' + h + 'h ' + m + 'min ' + s + 's';
+    }
+  });
+}
+setInterval(atualizarCountdowns, 1000);
+atualizarCountdowns();
+
+function palpitarRodada(rd) {
+  document.getElementById('rodada-' + rd + '-preencher').style.display = 'block';
+}
+
+function fecharPreencher(rd) {
+  document.getElementById('rodada-' + rd + '-preencher').style.display = 'none';
+}
+
+function preencherRodada(ev, rd) {
+  ev.preventDefault();
+  const casa = document.getElementById('rd-casa-' + rd).value;
+  const visit = document.getElementById('rd-visit-' + rd).value;
+  if (casa === '' || visit === '') return false;
+  document.querySelectorAll('.input-casa-rd' + rd).forEach(function(inp) { inp.value = casa; });
+  document.querySelectorAll('.input-visit-rd' + rd).forEach(function(inp) { inp.value = visit; });
+  fecharPreencher(rd);
+  return false;
+}
+</script>
 
 <%- include('partials/footer') %>
