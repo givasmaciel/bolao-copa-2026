@@ -7,3 +7,6 @@ data/
 npm-debug.log
 *.log
 .claude/
+TestSprite.html
+TestSprite.pdf
+TestSprite_files/
