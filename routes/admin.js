@@ -71,7 +71,17 @@ router.get('/', verificarAdmin, async (req, res) => {
       LIMIT 10
     `);
 
-    res.render('admin', { title: 'Painel Admin', totais, proximosJogos });
+    const resumoRanking = await all(`
+      SELECT u.nome, COALESCE(SUM(p.pontos_obtidos), 0) AS pontos
+      FROM usuarios u
+      LEFT JOIN palpites p ON p.usuario_id = u.id
+      WHERE u.is_admin = 0
+      GROUP BY u.id
+      ORDER BY pontos DESC
+      LIMIT 5
+    `);
+
+    res.render('admin', { title: 'Painel Admin', totais, proximosJogos, resumoRanking });
   } catch (err) {
     console.error('Erro no admin:', err);
     req.flash('erro', 'Erro ao carregar painel.');

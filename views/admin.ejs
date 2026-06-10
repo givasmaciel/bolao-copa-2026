@@ -93,4 +93,30 @@
   <% } %>
 </div>
 
+<div class="card">
+  <h2>🏅 Ranking rápido</h2>
+  <% if (!resumoRanking || resumoRanking.length === 0) { %>
+    <p class="texto-aux">Nenhum participante ainda.</p>
+  <% } else { %>
+    <table class="ranking-tabela" style="margin-top:8px">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Participante</th>
+          <th class="text-center">Pontos</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% resumoRanking.forEach(function(u, idx) { %>
+          <tr>
+            <td class="text-center"><%= idx + 1 %></td>
+            <td><%= u.nome %></td>
+            <td class="text-center pontos"><%= u.pontos %></td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
 <%- include('partials/footer') %>

@@ -34,7 +34,9 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    maxAge: 1000 * 60 * 60 * 24 * 30 // 30 dias
+    maxAge: 1000 * 60 * 60 * 24 * 30, // 30 dias
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax'
   }
 }));
 app.use(flash());
