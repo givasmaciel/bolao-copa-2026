@@ -73,16 +73,25 @@ router.post('/', verificarAutenticado, async (req, res) => {
 
   const usuarioId = req.session.usuario.id;
 
-  // Valida campos obrigatórios
-  const obrigatorios = ['campeao', 'vice', 'terceiro'];
+  // Valida campos obrigatórios e limites
   const erros = [];
-  for (const cat of obrigatorios) {
-    if (!req.body[cat]) {
-      erros.push(cat);
+  for (const cat of CATEGORIAS) {
+    if (MULTI_CATS.has(cat.id)) {
+      const selecoes = req.body[cat.id];
+      if (selecoes) {
+        const ids = Array.isArray(selecoes) ? selecoes : [selecoes];
+        if (ids.length > cat.max) {
+          erros.push(`${cat.nome}: máximo ${cat.max} seleções.`);
+        }
+      }
+    } else {
+      if (!req.body[cat.id]) {
+        erros.push(`Selecione ${cat.nome}.`);
+      }
     }
   }
   if (erros.length > 0) {
-    req.flash('erro', 'Selecione: Campeão, Vice-campeão e Terceiro lugar.');
+    req.flash('erro', erros.join(' '));
     return res.redirect('/palpites-extras');
   }
 
@@ -148,6 +157,28 @@ adminRouter.get('/extras', verificarAdmin, async (req, res) => {
 
 adminRouter.post('/extras', verificarAdmin, async (req, res) => {
   try {
+    // Valida limites
+    const erros = [];
+    for (const cat of CATEGORIAS) {
+      if (MULTI_CATS.has(cat.id)) {
+        const selecoes = req.body[cat.id];
+        if (selecoes) {
+          const ids = Array.isArray(selecoes) ? selecoes : [selecoes];
+          if (ids.length > cat.max) {
+            erros.push(`${cat.nome}: máximo ${cat.max} seleções.`);
+          }
+        }
+      } else {
+        if (!req.body[cat.id]) {
+          erros.push(`Selecione ${cat.nome}.`);
+        }
+      }
+    }
+    if (erros.length > 0) {
+      req.flash('erro', erros.join(' '));
+      return res.redirect('/admin/extras');
+    }
+
     await run('DELETE FROM resultados_extras');
 
     for (const cat of CATEGORIAS) {
