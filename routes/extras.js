@@ -218,48 +218,44 @@ adminRouter.get('/extras', verificarAdmin, async (req, res) => {
 
 adminRouter.post('/extras', verificarAdmin, async (req, res) => {
   try {
-    // Valida limites
-    const erros = [];
-    for (const cat of CATEGORIAS) {
-      if (MULTI_CATS.has(cat.id)) {
-        const selecoes = req.body[cat.id];
-        if (selecoes) {
-          const ids = Array.isArray(selecoes) ? selecoes : [selecoes];
-          if (ids.length > cat.max) {
-            erros.push(`${cat.nome}: máximo ${cat.max} seleções.`);
-          }
-        }
-      }
-    }
-    if (erros.length > 0) {
-      req.flash('erro', erros.join(' '));
+    // A categoria vem do hidden input _categoria (ou fallback)
+    const catId = req.body._categoria;
+    const cat = CATEGORIAS.find(c => c.id === catId);
+    if (!cat) {
+      req.flash('erro', 'Categoria inválida.');
       return res.redirect('/admin/extras');
     }
 
-    await run('DELETE FROM resultados_extras');
-
-    for (const cat of CATEGORIAS) {
-      if (MULTI_CATS.has(cat.id)) {
-        const selecoes = req.body[cat.id];
-        if (!selecoes) continue;
-        const ids = Array.isArray(selecoes) ? selecoes : [selecoes];
-        for (const sId of ids) {
-          await run(
-            'INSERT INTO resultados_extras (categoria, selecao_id, pontos) VALUES (?, ?, ?)',
-            [cat.id, parseInt(sId, 10), cat.pts]
-          );
-        }
-      } else {
-        const sId = req.body[cat.id];
-        if (!sId) continue;
-        await run(
-          'INSERT INTO resultados_extras (categoria, selecao_id, pontos) VALUES (?, ?, ?)',
-          [cat.id, parseInt(sId, 10), cat.pts]
-        );
+    // Valida limite se for multi-select
+    if (MULTI_CATS.has(cat.id)) {
+      const selecoes = req.body[cat.id];
+      if (selecoes && Array.isArray(selecoes) && selecoes.length > cat.max) {
+        req.flash('erro', `${cat.nome}: máximo ${cat.max} seleções.`);
+        return res.redirect('/admin/extras');
       }
     }
 
-    req.flash('sucesso', 'Resultados extras salvos! Pontos serão computados no ranking.');
+    // Substitui os resultados desta categoria
+    await run('DELETE FROM resultados_extras WHERE categoria = ?', [cat.id]);
+
+    if (MULTI_CATS.has(cat.id)) {
+      const selecoes = req.body[cat.id];
+      if (selecoes) {
+        const ids = Array.isArray(selecoes) ? selecoes : [selecoes];
+        for (const sId of ids) {
+          await run('INSERT INTO resultados_extras (categoria, selecao_id, pontos) VALUES (?, ?, ?)',
+            [cat.id, parseInt(sId, 10), cat.pts]);
+        }
+      }
+    } else {
+      const sId = req.body[cat.id];
+      if (sId) {
+        await run('INSERT INTO resultados_extras (categoria, selecao_id, pontos) VALUES (?, ?, ?)',
+          [cat.id, parseInt(sId, 10), cat.pts]);
+      }
+    }
+
+    req.flash('sucesso', `${cat.nome} salvo!`);
     res.redirect('/admin/extras');
   } catch (err) {
     console.error('Erro ao salvar resultados:', err);

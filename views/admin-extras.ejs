@@ -21,17 +21,24 @@
   </p>
 </div>
 
-<form method="POST" action="/admin/extras">
-  <div class="grid grid-2">
-    <% categorias.forEach(function(cat) { %>
-      <div class="card">
+<%
+  // Ordem: final → início (r32 por último)
+  const ordemAdmin = ['campeao', 'vice', 'terceiro', 'finalista', 'semi', 'quartas', 'oitavas', 'r32'];
+  const catsOrdenadas = ordemAdmin.map(function(id) { return categorias.find(function(c) { return c.id === id; }); }).filter(function(c) { return c; });
+%>
+
+<div class="grid grid-2">
+  <% catsOrdenadas.forEach(function(cat) { %>
+    <form method="POST" action="/admin/extras" class="card">
+      <input type="hidden" name="_categoria" value="<%= cat.id %>">
+      <div>
         <div class="flex-between">
           <h3 style="margin:0"><%= cat.nome %></h3>
           <span class="pontos-badge"><%= cat.pts %> pts</span>
         </div>
         <div class="form-group mt-2" style="margin-bottom:0">
           <% if (multiCats.has(cat.id)) { %>
-            <div style="max-height:320px; overflow-y:auto; border:1px solid var(--cinza); border-radius:8px; padding:8px">
+            <div style="max-height:280px; overflow-y:auto; border:1px solid var(--cinza); border-radius:8px; padding:8px">
               <% selecoes.forEach(function(s) { %>
                 <label style="display:flex; align-items:center; gap:8px; padding:4px 6px; border-radius:4px; cursor:pointer; <%= resultados[cat.id] && resultados[cat.id].has(s.id) ? 'background:var(--cinza-claro);font-weight:600' : '' %>">
                   <input type="checkbox" name="<%= cat.id %>" value="<%= s.id %>"
@@ -52,12 +59,11 @@
           <% } %>
         </div>
       </div>
-    <% }); %>
-  </div>
-
-  <div class="text-center mt-3 mb-2">
-    <button type="submit" class="btn btn-primary btn-lg">💾 Salvar resultados</button>
-  </div>
-</form>
+      <div class="text-center mt-2">
+        <button type="submit" class="btn btn-sm btn-primary">💾 Salvar <%= cat.nome %></button>
+      </div>
+    </form>
+  <% }); %>
+</div>
 
 <%- include('partials/footer') %>
