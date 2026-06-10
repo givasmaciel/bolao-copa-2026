@@ -60,12 +60,12 @@ function sqliteAll(sql, params) {
 function pgRun(sql, params) {
   const trimmed = sql.trim().toUpperCase();
   if (trimmed.startsWith('INSERT') && !trimmed.includes('RETURNING')) {
-    sql += ' RETURNING id';
+    sql += ' RETURNING *';
   }
   let idx = 0;
   const pgSql = sql.replace(/\?/g, () => `$${++idx}`);
   return pgPool.query(pgSql, params).then(result => ({
-    lastID: result.rows[0]?.id || null,
+    lastID: result.rows[0]?.id || result.rows[0]?.chave || null,
     changes: result.rowCount
   }));
 }
