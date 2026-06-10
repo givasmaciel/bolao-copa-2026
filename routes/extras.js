@@ -88,10 +88,6 @@ router.post('/', verificarAutenticado, async (req, res) => {
           erros.push(`${cat.nome}: máximo ${cat.max} seleções.`);
         }
       }
-    } else {
-      if (!req.body[cat.id]) {
-        erros.push(`Selecione ${cat.nome}.`);
-      }
     }
   }
   if (erros.length > 0) {
@@ -157,10 +153,6 @@ router.post('/:categoria', verificarAutenticado, async (req, res) => {
     const ids = selecoes ? (Array.isArray(selecoes) ? selecoes : [selecoes]) : [];
     if (ids.length > cat.max) {
       erros.push(`${cat.nome}: máximo ${cat.max} seleções.`);
-    }
-  } else {
-    if (!req.body.selecao) {
-      erros.push(`Selecione ${cat.nome}.`);
     }
   }
   if (erros.length > 0) {
