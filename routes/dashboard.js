@@ -64,6 +64,20 @@ router.get('/', verificarAutenticado, async (req, res) => {
       SELECT COUNT(*) AS total FROM jogos WHERE fase = 'grupo' AND finalizado = 1
     `);
 
+    // Últimos 5 jogos finalizados com o palpite do usuário
+    const recentes = await all(`
+      SELECT j.id, j.data, j.gols_casa, j.gols_visitante,
+        sc.nome_pt AS casa_pt, sc.sigla AS casa_sigla, sc.bandeira_url AS casa_bandeira,
+        sv.nome_pt AS visitante_pt, sv.sigla AS visitante_sigla, sv.bandeira_url AS visitante_bandeira,
+        p.palpite_gols_casa, p.palpite_gols_visitante, p.pontos_obtidos
+      FROM jogos j
+      LEFT JOIN selecoes sc ON j.selecao_casa_id = sc.id
+      LEFT JOIN selecoes sv ON j.selecao_visitante_id = sv.id
+      LEFT JOIN palpites p ON p.jogo_id = j.id AND p.usuario_id = ?
+      WHERE j.fase = 'grupo' AND j.finalizado = 1
+      ORDER BY j.data DESC LIMIT 5
+    `, [userId]);
+
     // Processa próximo jogo para alerta
     let nextGame = null;
     if (proximosJogos.length > 0) {
@@ -103,7 +117,8 @@ router.get('/', verificarAutenticado, async (req, res) => {
       pendentes: pendentesArr[0]?.total || 0,
       top5,
       stats: stats || { total_palpites: 0, total_pontos: 0, palpites_certos: 0, placares_exatos: 0 },
-      totalFinalizados: totalFinalizados?.total || 0
+      totalFinalizados: totalFinalizados?.total || 0,
+      recentes
     });
   } catch (err) {
     console.error('Erro no dashboard:', err);

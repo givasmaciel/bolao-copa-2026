@@ -10,6 +10,34 @@
   <p class="texto-aux mt-1">Após essa data, os palpites extras serão travados.</p>
 </div>
 
+<% 
+  const temExtras = Object.values(palpites).some(function(arr) { return arr && arr.length > 0; });
+%>
+<% if (temExtras) { %>
+<div class="card" style="border-left:4px solid var(--verde); margin-bottom:20px">
+  <h3 style="margin:0 0 12px">✅ Seus palpites extras salvos</h3>
+  <div class="grid grid-2">
+    <% categorias.forEach(function(cat) { %>
+      <% if (palpites[cat.id] && palpites[cat.id].length > 0) { %>
+        <div style="background:var(--cinza-claro);padding:10px 14px;border-radius:8px;border-left:3px solid var(--verde)">
+          <strong style="font-size:0.85rem;display:block;margin-bottom:6px"><%= cat.nome %> (<%= cat.pts %> pts)</strong>
+          <div style="display:flex;flex-wrap:wrap;gap:4px">
+            <% 
+              const selecoesCat = selecoes.filter(function(s) { return palpites[cat.id].includes(s.id); });
+              selecoesCat.forEach(function(s) { 
+            %>
+              <span style="display:inline-block;background:var(--verde);color:#fff;padding:3px 10px;border-radius:12px;font-size:0.8rem;font-weight:500">
+                <%= s.nome_pt %>
+              </span>
+            <% }); %>
+          </div>
+        </div>
+      <% } %>
+    <% }); %>
+  </div>
+</div>
+<% } %>
+
 <% if (prazoPassou) { %>
   <div class="flash aviso">⚠ O prazo para palpites extras já encerrou.</div>
 <% } %>

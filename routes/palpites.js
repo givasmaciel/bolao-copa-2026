@@ -132,6 +132,59 @@ router.post('/:jogoId', verificarAutenticado, async (req, res) => {
   }
 });
 
+// POST /palpites/salvar-rodada - salva todos os palpites de uma rodada
+router.post('/salvar-rodada', verificarAutenticado, async (req, res) => {
+  const usuarioId = req.session.usuario.id;
+  if (req.session.usuario.is_admin) {
+    req.flash('erro', 'Administradores não podem participar do bolão.');
+    return res.redirect('/admin');
+  }
+
+  const { rodada, jogos } = req.body;
+  if (!rodada || !jogos) {
+    req.flash('erro', 'Dados inválidos.');
+    return res.redirect('/palpites');
+  }
+
+  let salvos = 0;
+  for (const [jogoIdStr, placar] of Object.entries(jogos)) {
+    const jogoId = parseInt(jogoIdStr, 10);
+    const casa = parseInt(placar.casa, 10);
+    const visitante = parseInt(placar.visitante, 10);
+    if (isNaN(jogoId) || isNaN(casa) || isNaN(visitante)) continue;
+    if (casa < 0 || casa > 99 || visitante < 0 || visitante > 99) continue;
+
+    const jogo = await get(
+      "SELECT id, data, finalizado, palpite_limite FROM jogos WHERE id = ? AND fase = 'grupo' AND rodada = ?",
+      [jogoId, rodada]
+    );
+    if (!jogo) continue;
+
+    const agora = new Date();
+    const dataJogo = new Date(jogo.data);
+    const limite = jogo.palpite_limite ? new Date(jogo.palpite_limite) : null;
+    const margem = limite || new Date(dataJogo.getTime() - 2 * 60 * 1000);
+    if (agora >= margem || jogo.finalizado === 1) continue;
+
+    const existe = await get('SELECT id FROM palpites WHERE usuario_id = ? AND jogo_id = ?', [usuarioId, jogoId]);
+    if (existe) {
+      await run(
+        'UPDATE palpites SET palpite_gols_casa = ?, palpite_gols_visitante = ?, atualizado_em = CURRENT_TIMESTAMP WHERE id = ?',
+        [casa, visitante, existe.id]
+      );
+    } else {
+      await run(
+        'INSERT INTO palpites (usuario_id, jogo_id, palpite_gols_casa, palpite_gols_visitante) VALUES (?, ?, ?, ?)',
+        [usuarioId, jogoId, casa, visitante]
+      );
+    }
+    salvos++;
+  }
+
+  req.flash('sucesso', salvos + ' palpites salvos na rodada ' + rodada + '!');
+  res.redirect('/palpites');
+});
+
 // GET /palpites/knockout - placeholder
 router.get('/knockout', verificarAutenticado, async (req, res) => {
   if (req.session.usuario.is_admin) {

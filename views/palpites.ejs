@@ -22,10 +22,49 @@
 
 <% const agora = new Date(); %>
 
+<% 
+  const temSalvos = stats.total_palpites > 0;
+%>
+<% if (temSalvos) { %>
+<div class="card" style="border-left:4px solid var(--verde);margin-bottom:20px">
+  <div class="flex-between" style="cursor:pointer" onclick="this.nextElementSibling.classList.toggle('hidden');this.querySelector('.toggle-icon').textContent = this.nextElementSibling.classList.contains('hidden') ? '▶' : '▼'">
+    <h3 style="margin:0">✅ Seus palpites salvos</h3>
+    <span class="toggle-icon" style="font-size:0.8rem;color:var(--cinza-escuro)">▼</span>
+  </div>
+  <div style="margin-top:12px">
+    <% Object.keys(rodadas).sort(function(a,b) { return parseInt(a) - parseInt(b); }).forEach(function(rodada) { %>
+      <% 
+        const jogosRodada = rodadas[rodada].filter(function(j) { return j.palpite_gols_casa !== null && j.palpite_gols_casa !== undefined; });
+        if (jogosRodada.length === 0) return;
+      %>
+      <div style="margin-bottom:12px">
+        <strong style="font-size:0.85rem;color:var(--azul)">Rodada <%= rodada %></strong>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">
+          <% jogosRodada.forEach(function(j) { %>
+            <span style="display:inline-flex;align-items:center;gap:4px;background:var(--cinza-claro);padding:4px 10px;border-radius:6px;font-size:0.8rem;border:1px solid var(--cinza)">
+              <%= j.casa_pt %> <strong><%= j.palpite_gols_casa %>×<%= j.palpite_gols_visitante %></strong> <%= j.visitante_pt %>
+              <% if (j.finalizado === 1) { %>
+                <span style="color:var(--verde);font-weight:700">(<%= j.pontos_obtidos || 0 %>pts)</span>
+              <% } %>
+            </span>
+          <% }); %>
+        </div>
+      </div>
+    <% }); %>
+  </div>
+  <div class="texto-aux mt-1" style="font-size:0.75rem">
+    <%= stats.total_palpites %> de 72 palpites preenchidos
+  </div>
+</div>
+<% } %>
+
+
+
 <% Object.keys(rodadas).sort(function(a,b) { return parseInt(a) - parseInt(b); }).forEach(function(rodada) { %>
   <div class="flex" style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
     <h2 class="jogo-rodada-titulo" style="margin:0">Rodada <%= rodada %></h2>
-    <button class="btn btn-sm btn-secondary" onclick="palpitarRodada(<%= rodada %>)" style="font-size:0.8rem">⚡ Palpitar todos</button>
+    <button class="btn btn-sm btn-secondary" onclick="palpitarRodada(<%= rodada %>)" style="font-size:0.8rem">⚡ Preencher todos</button>
+    <button class="btn btn-sm btn-primary" onclick="salvarRodada(<%= rodada %>)" style="font-size:0.8rem">💾 Salvar todos</button>
   </div>
   <div id="rodada-<%= rodada %>-preencher" style="display:none;margin-bottom:8px;background:var(--bg-card);padding:8px;border-radius:8px">
     <form onsubmit="return preencherRodada(event, <%= rodada %>)" class="flex gap-1" style="align-items:center;flex-wrap:wrap">
@@ -88,9 +127,8 @@
                 type="number"
                 name="casa"
                 class="input-casa-rd<%= rodada %>"
+                value="<%= temPalpite ? jogo.palpite_gols_casa : '0' %>"
                 min="0" max="99"
-                value="<%= temPalpite ? jogo.palpite_gols_casa : '' %>"
-                placeholder="0"
                 required
               >
               <span class="x">×</span>
@@ -98,9 +136,8 @@
                 type="number"
                 name="visitante"
                 class="input-visit-rd<%= rodada %>"
+                value="<%= temPalpite ? jogo.palpite_gols_visitante : '0' %>"
                 min="0" max="99"
-                value="<%= temPalpite ? jogo.palpite_gols_visitante : '' %>"
-                placeholder="0"
                 required
               >
             </div>
@@ -122,6 +159,46 @@
 <% }); %>
 
 <script>
+async function salvarRodada(rd) {
+  if (!confirm('Salvar todos os palpites ABERTOS da rodada ' + rd + '?')) return;
+  const jogos = {};
+  const forms = document.querySelectorAll('#rodada-' + rd + ' ~ .jogo-card form');
+  forms.forEach(function(form) {
+    const action = form.getAttribute('action');
+    const match = action.match(/\/palpites\/(\d+)/);
+    if (!match) return;
+    const jogoId = match[1];
+    const casa = form.querySelector('input[name="casa"]')?.value;
+    const visitante = form.querySelector('input[name="visitante"]')?.value;
+    if (casa !== undefined && visitante !== undefined) {
+      jogos[jogoId] = { casa, visitante };
+    }
+  });
+  if (Object.keys(jogos).length === 0) {
+    alert('Nenhum jogo aberto nesta rodada.');
+    return;
+  }
+  try {
+    const btn = event.target;
+    btn.disabled = true;
+    btn.textContent = '⏳ Salvando...';
+    const res = await fetch('/palpites/salvar-rodada', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rodada: rd, jogos })
+    });
+    if (res.redirected || res.ok) {
+      location.reload();
+    } else {
+      alert('Erro ao salvar.');
+      btn.disabled = false;
+      btn.textContent = '💾 Salvar todos';
+    }
+  } catch (err) {
+    alert('Erro ao salvar.');
+  }
+}
+
 function atualizarCountdowns() {
   const agora = new Date();
   document.querySelectorAll('.jogo-card[data-fecha]').forEach(function(card) {

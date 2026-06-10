@@ -78,6 +78,40 @@ app.use('/dashboard', dashboardRoutes);
 app.use('/resumo', resumoRoutes);
 app.use('/classificacao', classificacaoRoutes);
 
+// API: próximo jogo (para countdown no header)
+app.get('/api/proximo-jogo', async (req, res) => {
+  try {
+    const { get, all } = require('./database/db');
+    const jogo = await get(`
+      SELECT j.id, j.data, j.palpite_limite,
+        sc.nome_pt AS casa_pt, sc.sigla AS casa_sigla, sc.bandeira_url AS casa_bandeira,
+        sv.nome_pt AS visitante_pt, sv.sigla AS visitante_sigla, sv.bandeira_url AS visitante_bandeira
+      FROM jogos j
+      LEFT JOIN selecoes sc ON j.selecao_casa_id = sc.id
+      LEFT JOIN selecoes sv ON j.selecao_visitante_id = sv.id
+      WHERE j.fase = 'grupo' AND j.finalizado = 0
+      ORDER BY j.data ASC LIMIT 1
+    `);
+    if (!jogo) return res.json({ ok: false });
+    const agora = new Date();
+    const dataJogo = new Date(jogo.data);
+    const limite = jogo.palpite_limite ? new Date(jogo.palpite_limite) : null;
+    const margem = limite || new Date(dataJogo.getTime() - 2 * 60 * 1000);
+    res.json({
+      ok: true,
+      casa: jogo.casa_pt,
+      visitante: jogo.visitante_pt,
+      bandeiraCasa: jogo.casa_bandeira,
+      bandeiraVisitante: jogo.visitante_bandeira,
+      fechaEm: margem.toISOString(),
+      data: dataJogo.toISOString()
+    });
+  } catch (err) {
+    console.error('Erro ao buscar próximo jogo:', err);
+    res.json({ ok: false });
+  }
+});
+
 // 404
 app.use((req, res) => {
   res.status(404).render('404', { title: 'Página não encontrada' });

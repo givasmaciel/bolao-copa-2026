@@ -128,4 +128,30 @@
   </div>
 </div>
 
+<% if (recentes && recentes.length > 0) { %>
+<div class="card">
+  <h3 style="margin-top:0">📋 Últimos resultados</h3>
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <% recentes.forEach(function(j) { %>
+      <% const temPalpite = j.palpite_gols_casa !== null && j.palpite_gols_casa !== undefined; %>
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--cinza-claro);border-radius:8px;font-size:0.85rem;flex-wrap:wrap">
+        <span style="font-weight:600;min-width:80px"><%= j.casa_pt %></span>
+        <span style="font-weight:800;color:var(--verde);font-size:1rem"><%= j.gols_casa %>×<%= j.gols_visitante %></span>
+        <span style="font-weight:600;min-width:80px"><%= j.visitante_pt %></span>
+        <% if (temPalpite) { %>
+          <span style="font-size:0.8rem;color:var(--cinza-escuro)">
+            Seu: <strong><%= j.palpite_gols_casa %>×<%= j.palpite_gols_visitante %></strong>
+          </span>
+          <span class="pontos-badge <%= j.pontos_obtidos === 0 ? 'zero' : '' %>" style="font-size:0.7rem">
+            <%= j.pontos_obtidos %> pts
+          </span>
+        <% } else { %>
+          <span class="texto-aux" style="font-size:0.75rem">Sem palpite</span>
+        <% } %>
+      </div>
+    <% }); %>
+  </div>
+</div>
+<% } %>
+
 <%- include('partials/footer') %>

@@ -45,4 +45,34 @@
       </nav>
     </div>
   </header>
+  <% if (usuario) { %>
+  <div id="header-countdown" style="background:var(--amarelo);padding:4px 0;text-align:center;font-size:0.78rem;font-weight:600;color:var(--texto);display:none">
+    <span id="hc-text">Carregando...</span>
+  </div>
+  <script>
+  (function() {
+    var el = document.getElementById('header-countdown');
+    var txt = document.getElementById('hc-text');
+    fetch('/api/proximo-jogo').then(function(r) { return r.json(); }).then(function(d) {
+      if (!d.ok) { el.style.display = 'none'; return; }
+      el.style.display = 'block';
+      function tick() {
+        var agora = new Date();
+        var fecha = new Date(d.fechaEm);
+        var diff = fecha.getTime() - agora.getTime();
+        if (diff <= 0) {
+          txt.innerHTML = '🔒 <strong>' + d.casa + ' × ' + d.visitante + '</strong> — Fechado para palpites!';
+        } else {
+          var h = Math.floor(diff / 3600000);
+          var m = Math.floor((diff % 3600000) / 60000);
+          var s = Math.floor((diff % 60000) / 1000);
+          txt.innerHTML = '⏱ Próximo: <strong>' + d.casa + ' × ' + d.visitante + '</strong> — Fecha em ' + h + 'h ' + m + 'min ' + s + 's';
+        }
+      }
+      tick();
+      setInterval(tick, 1000);
+    }).catch(function() { el.style.display = 'none'; });
+  })();
+  </script>
+  <% } %>
   <main>

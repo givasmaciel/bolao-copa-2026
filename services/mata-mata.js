@@ -143,4 +143,4 @@ async function listarConfrontos() {
   return jogosMM;
 }
 
-module.exports = { gerarMataMata, listarConfrontos };
+module.exports = { gerarMataMata, listarConfrontos, limparMataMata };
