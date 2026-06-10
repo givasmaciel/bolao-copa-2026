@@ -1,0 +1,15 @@
+<%- include('partials/header', { active: 'admin' }) %>
+
+<h1>🔗 Link de login automático</h1>
+<p class="subtitulo">Esse link faz login automaticamente como administrador. Guarde em local seguro.</p>
+
+<div class="card">
+  <p style="word-break:break-all;font-size:1.1rem;background:var(--cinza-claro);padding:16px;border-radius:8px;font-family:monospace">
+    <a href="<%= link %>"><%= link %></a>
+  </p>
+  <p class="texto-aux mt-2">⚠️ Qualquer pessoa com esse link consegue acessar o admin. Use com cuidado. Para revogar, gere um novo link.</p>
+  <a href="/admin/link-login" class="btn btn-primary mt-2">🔄 Gerar novo link (revoga o anterior)</a>
+  <a href="/admin" class="btn btn-secondary mt-2">← Voltar</a>
+</div>
+
+<%- include('partials/footer') %>

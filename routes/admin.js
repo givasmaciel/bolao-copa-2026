@@ -1,4 +1,5 @@
 const express = require('express');
+const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const { run, get, all } = require('../database/db');
 const { verificarAdmin } = require('../middleware/auth');
@@ -515,6 +516,23 @@ router.post('/mata-mata/:id/editar', verificarAdmin, async (req, res) => {
     req.flash('erro', 'Erro ao editar confronto.');
   }
   res.redirect('/admin/mata-mata');
+});
+
+// GET /admin/link-login - gera link de login automático
+router.get('/link-login', verificarAdmin, async (req, res) => {
+  try {
+    const token = crypto.randomBytes(16).toString('hex');
+    const hash = crypto.createHash('sha256').update(token).digest('hex');
+    await run("DELETE FROM config WHERE chave = 'auth_token_hash'");
+    await run("INSERT INTO config (chave, valor) VALUES ('auth_token_hash', ?)", [hash]);
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const link = `${baseUrl}/login/${token}`;
+    res.render('admin-link-login', { title: 'Link de login', link });
+  } catch (err) {
+    console.error('Erro ao gerar link:', err);
+    req.flash('erro', 'Erro ao gerar link.');
+    res.redirect('/admin');
+  }
 });
 
 module.exports = { router, calcularPontos };

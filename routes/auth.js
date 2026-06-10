@@ -1,4 +1,5 @@
 const express = require('express');
+const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const { run, get } = require('../database/db');
 const { jaLogado } = require('../middleware/auth');
@@ -152,6 +153,42 @@ router.post('/logout', (req, res) => {
   req.session.destroy(() => {
     res.redirect('/login');
   });
+});
+
+// GET /login/:token - login automático via token
+router.get('/login/:token', async (req, res) => {
+  try {
+    const token = req.params.token;
+    // Gera o hash do token para comparar com o armazenado
+    // (O token é armazenado como sha256 na config)
+    const hash = crypto.createHash('sha256').update(token).digest('hex');
+    const row = await get("SELECT valor FROM config WHERE chave = 'auth_token_hash'");
+    if (!row || row.valor !== hash) {
+      req.flash('erro', 'Link inválido ou expirado.');
+      return res.redirect('/login');
+    }
+    // Busca o admin
+    const admin = await get("SELECT id, nome, email, is_admin FROM usuarios WHERE is_admin = 1 LIMIT 1");
+    if (!admin) {
+      req.flash('erro', 'Nenhum administrador encontrado.');
+      return res.redirect('/login');
+    }
+    req.session.usuario = {
+      id: admin.id,
+      nome: admin.nome,
+      email: admin.email,
+      is_admin: admin.is_admin
+    };
+    req.session.save((err) => {
+      if (err) console.error('[TOKEN] erro ao salvar sessão:', err);
+      req.flash('sucesso', `Login automático: ${admin.nome}`);
+      res.redirect('/dashboard');
+    });
+  } catch (err) {
+    console.error('Erro no login por token:', err);
+    req.flash('erro', 'Erro no login automático.');
+    res.redirect('/login');
+  }
 });
 
 module.exports = router;
