@@ -10,7 +10,7 @@ router.get('/', verificarAutenticado, async (req, res) => {
 
     // Próximos 5 jogos ainda não iniciados
     const proximosJogos = await all(`
-      SELECT j.id, j.data, j.estadio, j.cidade,
+      SELECT j.id, j.data, j.palpite_limite, j.estadio, j.cidade,
         sc.nome_pt AS casa_pt, sc.sigla AS casa_sigla, sc.bandeira_url AS casa_bandeira,
         sv.nome_pt AS visitante_pt, sv.sigla AS visitante_sigla, sv.bandeira_url AS visitante_bandeira,
         p.palpite_gols_casa, p.palpite_gols_visitante
@@ -70,7 +70,8 @@ router.get('/', verificarAutenticado, async (req, res) => {
       const j = proximosJogos[0];
       const agora = new Date();
       const dataJogo = new Date(j.data);
-      const margem = new Date(dataJogo.getTime() - 2 * 60 * 1000);
+      const palpiteLimite = j.palpite_limite ? new Date(j.palpite_limite) : null;
+      const margem = palpiteLimite || new Date(dataJogo.getTime() - 2 * 60 * 1000);
       const diffMs = dataJogo.getTime() - agora.getTime();
       const diffMin = Math.round(diffMs / 60000);
       const jahFechou = agora >= margem;

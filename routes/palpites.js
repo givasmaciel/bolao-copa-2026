@@ -14,7 +14,7 @@ router.get('/', verificarAutenticado, async (req, res) => {
     const jogos = await all(`
       SELECT
         j.id, j.fase, j.rodada, j.data, j.estadio, j.cidade, j.pais,
-        j.finalizado, j.gols_casa, j.gols_visitante,
+        j.finalizado, j.gols_casa, j.gols_visitante, j.palpite_limite,
         g.letra AS grupo_letra,
         sc.nome AS casa_nome, sc.nome_pt AS casa_pt, sc.sigla AS casa_sigla, sc.bandeira_url AS casa_bandeira,
         sv.nome AS visitante_nome, sv.nome_pt AS visitante_pt, sv.sigla AS visitante_sigla, sv.bandeira_url AS visitante_bandeira,
@@ -82,7 +82,7 @@ router.post('/:jogoId', verificarAutenticado, async (req, res) => {
   try {
     // Verifica se o jogo existe, está na fase de grupos e ainda não começou
     const jogo = await get(
-      "SELECT id, data, finalizado FROM jogos WHERE id = ? AND fase = 'grupo'",
+      "SELECT id, data, finalizado, palpite_limite FROM jogos WHERE id = ? AND fase = 'grupo'",
       [jogoId]
     );
     if (!jogo) {
@@ -91,9 +91,11 @@ router.post('/:jogoId', verificarAutenticado, async (req, res) => {
     }
 
     // Verifica se o jogo já começou (fecha 2 min antes) ou já foi finalizado
+    // Se palpite_limite foi definido pelo admin, usa esse prazo
     const agora = new Date();
     const dataJogo = new Date(jogo.data);
-    const margem = new Date(dataJogo.getTime() - 2 * 60 * 1000);
+    const limite = jogo.palpite_limite ? new Date(jogo.palpite_limite) : null;
+    const margem = limite || new Date(dataJogo.getTime() - 2 * 60 * 1000);
     if (agora >= margem || jogo.finalizado === 1) {
       req.flash('erro', 'Este jogo já fechou para palpites.');
       return res.redirect('/palpites');

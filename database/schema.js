@@ -273,6 +273,45 @@ async function criarSchema() {
     await run("UPDATE usuarios SET codigo_convite = ? WHERE id = ?", [codigo, u.id]);
   }
 
+  // Migração 2026-06-10: coluna palpite_limite (admin pode alterar prazo de cada jogo)
+  try {
+    if (usandoPG) {
+      await run("ALTER TABLE jogos ADD COLUMN IF NOT EXISTS palpite_limite TIMESTAMPTZ");
+    } else {
+      await run("ALTER TABLE jogos ADD COLUMN palpite_limite DATETIME");
+    }
+  } catch (e) { /* Coluna já existe */ }
+
+  // Migração 2026-06-10: coluna descricao (confronto descritivo para mata-mata)
+  try {
+    if (usandoPG) {
+      await run("ALTER TABLE jogos ADD COLUMN IF NOT EXISTS descricao TEXT");
+    } else {
+      await run("ALTER TABLE jogos ADD COLUMN descricao TEXT");
+    }
+    // Preenche descricao para jogos de mata-mata
+    const descricoes = [
+      [73,'2ºA vs 2ºB'],[74,'1ºE vs 3ºA/B/C/D/F'],[75,'1ºF vs 2ºC'],[76,'1ºC vs 2ºF'],
+      [77,'1ºI vs 3ºC/D/F/G/H'],[78,'2ºE vs 2ºI'],[79,'1ºA vs 3ºC/E/F/H/I'],[80,'1ºL vs 3ºE/H/I/J/K'],
+      [81,'1ºD vs 3ºB/E/F/I/J'],[82,'1ºG vs 3ºA/E/H/I/J'],[83,'2ºK vs 2ºL'],[84,'1ºH vs 2ºJ'],
+      [85,'1ºB vs 3ºE/F/G/I/J'],[86,'1ºJ vs 2ºH'],[87,'1ºK vs 3ºD/E/I/J/L'],[88,'2ºD vs 2ºG'],
+      [89,'Vencedor 74 vs Vencedor 77'],[90,'Vencedor 73 vs Vencedor 75'],
+      [91,'Vencedor 76 vs Vencedor 78'],[92,'Vencedor 79 vs Vencedor 80'],
+      [93,'Vencedor 83 vs Vencedor 84'],[94,'Vencedor 81 vs Vencedor 82'],
+      [95,'Vencedor 86 vs Vencedor 88'],[96,'Vencedor 85 vs Vencedor 87'],
+      [97,'Vencedor 89 vs Vencedor 90'],[98,'Vencedor 93 vs Vencedor 94'],
+      [99,'Vencedor 91 vs Vencedor 92'],[100,'Vencedor 95 vs Vencedor 96'],
+      [101,'Vencedor 97 vs Vencedor 98'],[102,'Vencedor 99 vs Vencedor 100'],
+      [103,'Perdedor 101 vs Perdedor 102'],[104,'Vencedor 101 vs Vencedor 102']
+    ];
+    for (const [id, d] of descricoes) {
+      const existe = await get("SELECT id FROM jogos WHERE id = ? AND descricao IS NOT NULL", [id]);
+      if (!existe) {
+        await run("UPDATE jogos SET descricao = ? WHERE id = ?", [d, id]);
+      }
+    }
+  } catch (e) { /* Coluna já existe ou erro */ }
+
   // Migração 2026-06-10: corrige todos os horários BRT e estádios dos 72 jogos de grupo
   // NOTA: usar Date() em vez de string para compatibilidade com PostgreSQL (pg serializa Date como TIMESTAMPTZ)
   const dt = (y, M, d, h, m) => new Date(Date.UTC(y, M-1, d, h+3, m));

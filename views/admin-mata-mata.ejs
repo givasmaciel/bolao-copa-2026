@@ -1,0 +1,66 @@
+<%- include('partials/header', { active: 'admin' }) %>
+
+<%- include('partials/flash') %>
+
+<h1>🏆 Mata-mata</h1>
+<p class="subtitulo">Gerencie os confrontos da fase eliminatória. Use <strong>Gerar automaticamente</strong> para preencher com base nos resultados dos grupos/fases anteriores.</p>
+
+<div class="mb-2 flex gap-1" style="flex-wrap:wrap">
+  <form method="POST" action="/admin/mata-mata/gerar">
+    <button type="submit" class="btn btn-primary">⚡ Gerar automaticamente</button>
+  </form>
+  <a href="/admin/jogos" class="btn btn-secondary">📝 Editar resultados/placares</a>
+</div>
+
+<% const fases = [
+  { key: 'r32', label: '32-avos de final' },
+  { key: 'r16', label: 'Oitavas de final' },
+  { key: 'qf', label: 'Quartas de final' },
+  { key: 'sf', label: 'Semifinais' },
+  { key: 'terceiro', label: 'Disputa de 3º lugar' },
+  { key: 'final', label: 'Final' }
+]; %>
+
+<% fases.forEach(function(fase) { %>
+  <% const jogosFase = confrontos.filter(function(j) { return j.fase === fase.key; }); %>
+  <% if (jogosFase.length === 0) return; %>
+  <h2 class="jogo-rodada-titulo"><%= fase.label %></h2>
+  <% jogosFase.forEach(function(jogo) { %>
+    <form method="POST" action="/admin/mata-mata/<%= jogo.id %>/editar" class="jogo-card <%= jogo.finalizado === 1 ? 'finalizado' : '' %>">
+      <div class="jogo-time" style="flex:1">
+        <span><%= jogo.casa_pt || 'A definir' %></span>
+      </div>
+      <div class="jogo-info" style="flex:1.5">
+        <div class="jogo-placar" style="gap:4px;flex-wrap:wrap;justify-content:center">
+          <select name="selecao_casa_id" class="form-control" style="width:auto;font-size:0.8rem;max-width:130px" <%= jogo.finalizado ? 'disabled' : '' %>>
+            <option value="">—</option>
+            <% selecoes.forEach(function(s) { %>
+              <option value="<%= s.id %>" <%= jogo.casa_id === s.id ? 'selected' : '' %>><%= s.sigla %> - <%= s.nome_pt %></option>
+            <% }); %>
+          </select>
+          <span class="x">×</span>
+          <select name="selecao_visitante_id" class="form-control" style="width:auto;font-size:0.8rem;max-width:130px" <%= jogo.finalizado ? 'disabled' : '' %>>
+            <option value="">—</option>
+            <% selecoes.forEach(function(s) { %>
+              <option value="<%= s.id %>" <%= jogo.visitante_id === s.id ? 'selected' : '' %>><%= s.sigla %> - <%= s.nome_pt %></option>
+            <% }); %>
+          </select>
+        </div>
+        <div style="font-size:0.72rem;color:var(--cinza-escuro);margin-top:4px">
+          <%= jogo.descricao || '' %>
+          <% if (jogo.data) { %> • <%= new Date(jogo.data).toLocaleDateString('pt-BR', { weekday:'short', day:'numeric', month:'short', timeZone:'America/Sao_Paulo' }) %> <%= new Date(jogo.data).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit', timeZone:'America/Sao_Paulo' }) %><% } %>
+        </div>
+        <% if (!jogo.finalizado) { %>
+          <button type="submit" class="btn btn-sm btn-primary mt-1">💾 Salvar times</button>
+        <% } else { %>
+          <div style="font-size:0.8rem;margin-top:4px;color:var(--verde)">✅ Finalizado: <%= jogo.gols_casa !== null ? jogo.gols_casa + '×' + jogo.gols_visitante : '—' %></div>
+        <% } %>
+      </div>
+      <div class="jogo-time visitante" style="flex:1">
+        <span><%= jogo.visitante_pt || 'A definir' %></span>
+      </div>
+    </form>
+  <% }); %>
+<% }); %>
+
+<%- include('partials/footer') %>

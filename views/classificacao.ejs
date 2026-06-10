@@ -1,0 +1,50 @@
+<%- include('partials/header', { active: 'classificacao' }) %>
+
+<h1>📊 Classificação dos grupos</h1>
+<p class="subtitulo">A classificação é calculada automaticamente conforme os resultados são inseridos.</p>
+
+<div class="grid grid-3">
+  <% grupos.forEach(function(grupo) { %>
+    <div class="card" style="padding:12px">
+      <h3 style="margin-top:0;text-align:center">Grupo <%= grupo.letra %></h3>
+      <% const times = classificacao[grupo.letra] || []; %>
+      <table class="ranking-tabela" style="font-size:0.82rem">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Time</th>
+            <th>P</th>
+            <th>J</th>
+            <th>V</th>
+            <th>E</th>
+            <th>D</th>
+            <th>GP</th>
+            <th>GC</th>
+            <th>SG</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% times.forEach(function(t) { %>
+            <tr>
+              <td><strong><%= t.posicao %>º</strong></td>
+              <td>
+                <% if (t.bandeira_url) { %><img src="<%= t.bandeira_url %>" alt="" style="width:16px;height:12px;vertical-align:middle;margin-right:4px"><% } %>
+                <%= t.sigla %>
+              </td>
+              <td><strong><%= t.pontos %></strong></td>
+              <td><%= t.jogos %></td>
+              <td><%= t.vitorias %></td>
+              <td><%= t.empates %></td>
+              <td><%= t.derrotas %></td>
+              <td><%= t.gols_pro %></td>
+              <td><%= t.gols_contra %></td>
+              <td><%= t.saldo_gols > 0 ? '+' : '' %><%= t.saldo_gols %></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  <% }); %>
+</div>
+
+<%- include('partials/footer') %>

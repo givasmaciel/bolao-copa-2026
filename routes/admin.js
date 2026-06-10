@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const { run, get, all } = require('../database/db');
 const { verificarAdmin } = require('../middleware/auth');
+const { gerarMataMata, listarConfrontos } = require('../services/mata-mata');
 
 const router = express.Router();
 
@@ -133,7 +134,7 @@ router.get('/', verificarAdmin, async (req, res) => {
 router.get('/jogos', verificarAdmin, async (req, res) => {
   try {
     const jogos = await all(`
-      SELECT j.id, j.fase, j.rodada, j.data, j.finalizado, j.gols_casa, j.gols_visitante,
+      SELECT j.id, j.fase, j.rodada, j.data, j.finalizado, j.gols_casa, j.gols_visitante, j.palpite_limite,
              g.letra AS grupo_letra,
              sc.nome_pt AS casa_pt, sc.sigla AS casa_sigla,
              sv.nome_pt AS visitante_pt, sv.sigla AS visitante_sigla
@@ -394,6 +395,101 @@ router.post('/usuarios/:id/excluir', verificarAdmin, async (req, res) => {
     req.flash('erro', 'Erro ao excluir.');
   }
   res.redirect('/admin/usuarios');
+});
+
+// POST /admin/jogos/:id/limite - define prazo personalizado para palpites
+router.post('/jogos/:id/limite', verificarAdmin, async (req, res) => {
+  const jogoId = parseInt(req.params.id, 10);
+  if (isNaN(jogoId)) return res.redirect('/admin/jogos');
+  const { palpite_limite } = req.body;
+  try {
+    if (palpite_limite) {
+      // Converte string local BRT para Date UTC
+      const partes = palpite_limite.split('T');
+      const dataPartes = partes[0].split('-');
+      const horaPartes = partes[1].split(':');
+      // datetime-local envia no fuso local do browser (BRT)
+      // Criamos Date no fuso BRT e salvamos como Date (pg serializa como TIMESTAMPTZ)
+      const dataBRT = new Date(
+        parseInt(dataPartes[0]), parseInt(dataPartes[1]) - 1, parseInt(dataPartes[2]),
+        parseInt(horaPartes[0]), parseInt(horaPartes[1])
+      );
+      // Ajusta para UTC: BRT é UTC-3
+      const dataUTC = new Date(dataBRT.getTime() + 3 * 60 * 60 * 1000);
+      await run('UPDATE jogos SET palpite_limite = ? WHERE id = ?', [dataUTC, jogoId]);
+      req.flash('sucesso', 'Prazo personalizado definido!');
+    } else {
+      await run('UPDATE jogos SET palpite_limite = NULL WHERE id = ?', [jogoId]);
+      req.flash('sucesso', 'Prazo personalizado removido.');
+    }
+  } catch (err) {
+    console.error('Erro ao definir prazo:', err);
+    req.flash('erro', 'Erro ao definir prazo.');
+  }
+  res.redirect('/admin/jogos');
+});
+
+// GET /admin/jogos/:id/limpar-limite - limpa prazo personalizado
+router.get('/jogos/:id/limpar-limite', verificarAdmin, async (req, res) => {
+  const jogoId = parseInt(req.params.id, 10);
+  if (isNaN(jogoId)) return res.redirect('/admin/jogos');
+  try {
+    await run('UPDATE jogos SET palpite_limite = NULL WHERE id = ?', [jogoId]);
+    req.flash('sucesso', 'Prazo personalizado removido.');
+  } catch (err) {
+    console.error('Erro ao limpar prazo:', err);
+    req.flash('erro', 'Erro ao limpar prazo.');
+  }
+  res.redirect('/admin/jogos');
+});
+
+// GET /admin/mata-mata - visualizar e editar confrontos do mata-mata
+router.get('/mata-mata', verificarAdmin, async (req, res) => {
+  try {
+    const confrontos = await listarConfrontos();
+    const selecoes = await all('SELECT id, nome_pt, sigla FROM selecoes ORDER BY nome_pt');
+    res.render('admin-mata-mata', { title: 'Mata-mata', confrontos, selecoes });
+  } catch (err) {
+    console.error('Erro ao carregar mata-mata:', err);
+    req.flash('erro', 'Erro ao carregar confrontos.');
+    res.redirect('/admin');
+  }
+});
+
+// POST /admin/mata-mata/gerar - gera confrontos automaticamente
+router.post('/mata-mata/gerar', verificarAdmin, async (req, res) => {
+  try {
+    const resultados = await gerarMataMata();
+    const atualizados = resultados.filter(r => r.atualizado).length;
+    req.flash('sucesso', `Confrontos gerados! ${atualizados} jogos atualizados.`);
+  } catch (err) {
+    console.error('Erro ao gerar confrontos:', err);
+    req.flash('erro', 'Erro ao gerar confrontos.');
+  }
+  res.redirect('/admin/mata-mata');
+});
+
+// POST /admin/mata-mata/:id/editar - editar time de um confronto
+router.post('/mata-mata/:id/editar', verificarAdmin, async (req, res) => {
+  const jogoId = parseInt(req.params.id, 10);
+  if (isNaN(jogoId)) return res.redirect('/admin/mata-mata');
+  const { selecao_casa_id, selecao_visitante_id } = req.body;
+  try {
+    const jogo = await get('SELECT finalizado FROM jogos WHERE id = ?', [jogoId]);
+    if (!jogo) { req.flash('erro', 'Jogo não encontrado.'); return res.redirect('/admin/mata-mata'); }
+    if (jogo.finalizado) { req.flash('erro', 'Jogo já finalizado.'); return res.redirect('/admin/mata-mata'); }
+
+    const casa = selecao_casa_id && selecao_casa_id !== '' ? parseInt(selecao_casa_id) : null;
+    const visitante = selecao_visitante_id && selecao_visitante_id !== '' ? parseInt(selecao_visitante_id) : null;
+
+    await run('UPDATE jogos SET selecao_casa_id = ?, selecao_visitante_id = ? WHERE id = ?',
+      [casa, visitante, jogoId]);
+    req.flash('sucesso', 'Confronto atualizado manualmente.');
+  } catch (err) {
+    console.error('Erro ao editar confronto:', err);
+    req.flash('erro', 'Erro ao editar confronto.');
+  }
+  res.redirect('/admin/mata-mata');
 });
 
 module.exports = { router, calcularPontos };

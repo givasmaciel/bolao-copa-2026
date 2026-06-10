@@ -283,8 +283,8 @@ async function seed() {
     const estadio = ESTADIOS[jogo.estadio];
     await run(
       `INSERT INTO jogos
-        (id, fase, rodada, grupo_id, selecao_casa_id, selecao_visitante_id, data, estadio, cidade, pais)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        (id, fase, rodada, grupo_id, selecao_casa_id, selecao_visitante_id, data, estadio, cidade, pais, descricao)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         jogo.id,
         jogo.fase,
@@ -295,7 +295,8 @@ async function seed() {
         jogo.data,
         estadio.nome,
         estadio.cidade,
-        estadio.pais
+        estadio.pais,
+        jogo.descricao || null
       ]
     );
   }

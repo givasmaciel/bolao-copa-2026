@@ -20,6 +20,7 @@
       <nav>
         <ul>
           <li><a href="/jogos" class="<%= typeof active !== 'undefined' && active === 'jogos' ? 'active' : '' %>">Jogos</a></li>
+          <li><a href="/classificacao" class="<%= typeof active !== 'undefined' && active === 'classificacao' ? 'active' : '' %>">Grupos</a></li>
           <% if (usuario) { %>
             <li><a href="/dashboard" class="<%= typeof active !== 'undefined' && active === 'dashboard' ? 'active' : '' %>">Painel</a></li>
             <li><a href="/palpites" class="<%= typeof active !== 'undefined' && active === 'palpites' ? 'active' : '' %>">Meus palpites</a></li>
