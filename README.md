@@ -1,111 +1,150 @@
 # ⚽ Bolão da Copa do Mundo FIFA 2026
 
-Aplicação web em **português do Brasil** para você e seus amigos fazerem palpites dos jogos da Copa do Mundo de 2026.
-
-Inspirado no projeto open-source [rezarahiminia/worldcup2026](https://github.com/rezarahiminia/worldcup2026) (que é uma API de dados), este bolão traz a diversão: cadastro de participantes, palpites com placar exato, pontuação automática e ranking em tempo real.
+Aplicação web em **português do Brasil** para fazer bolão de palpites da Copa de 2026. Participantes cadastram seus palpites, o admin informa os resultados, e a pontuação é calculada automaticamente.
 
 ## 🎯 Funcionalidades
 
-- ✅ **Cadastro e login** de participantes (com senha criptografada)
-- ✅ **48 seleções** divididas em **12 grupos (A-L)**
-- ✅ **104 jogos** (72 da fase de grupos + 32 do mata-mata)
-- ✅ **Palpites com placar exato** — você pode editar até a hora do jogo começar
-- ✅ **Pontuação automática** (10 pts placar exato, 5 pts resultado+gols, 3 pts só resultado)
-- ✅ **Ranking** geral e por participante
-- ✅ **Painel admin** para informar os resultados dos jogos
-- ✅ Interface bonita, responsiva, em **português do Brasil**
-- ✅ Bandeirinhas reais das 48 seleções
+- ✅ **Cadastro e login** com senha criptografada (bcryptjs)
+- ✅ **48 seleções** em **12 grupos (A–L)**, **104 jogos**
+- ✅ **Palpites com placar exato** — edite até **2 minutos antes** do jogo
+- ✅ **Palpites Extras** — campeão, vice, 3º lugar, finalistas, semis, quartas, oitavas e 1/16 avos
+- ✅ **Pontuação automática** ao admin marcar o jogo como finalizado
+- ✅ **Ranking geral** com pontos de jogos + extras
+- ✅ **Admin como juiz** — não participa do bolão, só gerencia
+- ✅ **Gerenciar participantes** — promover/rebaixar admin, resetar senha, excluir conta
+- ✅ **Resetar palpites** (individual ou em massa)
+- ✅ **Recuperação de senha** via e-mail (SMTP opcional) ou link exibido na tela
+- ✅ **Dual database**: SQLite (local) / PostgreSQL (produção no Render)
+- ✅ **Auto-deploy** via GitHub + Render Blueprint
+- ✅ Interface responsiva em **português do Brasil**
 
 ## 🛠 Tecnologias
 
-- **Node.js** + **Express**
-- **SQLite** (banco local, arquivo único)
+- **Node.js 18+** + **Express**
 - **EJS** (templates server-side)
-- **bcryptjs** (hash de senhas)
-- **express-session** (autenticação por sessão)
+- **SQLite** (local) / **PostgreSQL** (Render)
+- **bcryptjs**, **express-session**, **connect-flash**
 
-Sem build step, sem frameworks de UI complicados. **Roda em qualquer máquina com Node 14+**.
-
-## 🚀 Como rodar
+## 🚀 Como rodar local
 
 ```bash
-# 1. Instalar dependências
 npm install
-
-# 2. Criar o banco de dados com as 48 seleções, 12 grupos e 104 jogos
-npm run seed
-
-# 3. Criar sua conta de administrador
-npm run criar-admin
-# (vai pedir nome, e-mail e senha)
-
-# 4. Iniciar o servidor
-npm start
-
-# 5. Abrir no navegador
-# http://localhost:3000
+npm run seed          # populabanco com seleções, grupos, jogos
+npm run criar-admin   # cria conta de administrador
+npm start             # http://localhost:3000
 ```
 
-## 🎮 Como usar
+## 🚀 Deploy no Render
 
-1. Cada participante **cria uma conta** em `/cadastro`
-2. Entra em **"Meus palpites"** e dá o placar dos 72 jogos da fase de grupos
-3. O **admin** informa os resultados reais em `/admin/jogos` (a senha fica com a pessoa mais confiável do grupo 😉)
-4. Conforme os jogos acontecem, os pontos são **recalculados automaticamente**
-5. Acompanhe a disputa no **ranking** em `/ranking`
+1. Crie um repositório no GitHub e faça push do código
+2. No Render, use **New Blueprint** e aponte para o repositório
+3. O `render.yaml` cria automaticamente:
+   - Banco PostgreSQL (`bolao-db`)
+   - Web service (`bolao-copa-2026`)
+4. Configure as variáveis no Render:
+   - `ADMIN_EMAIL` e `ADMIN_SENHA` (admin é criado no deploy)
+   - `SESSION_SECRET` (gerado automaticamente)
+   - `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS` (opcional, para e-mail de recuperação)
+5. Auto-deploy ativado: todo `git push` atualiza o site
 
 ## 🏆 Sistema de pontuação
 
 | Acerto | Pontos |
 |---|---|
-| Placar exato (ex: 2×1 e o jogo foi 2×1) | **10** |
-| Vencedor/empate certo + gols de 1 time (ex: 2×1 e o jogo foi 2×0) | **5** |
-| Só o resultado (V/E/D) (ex: 1×0 e o jogo foi 3×2) | **3** |
+| Placar exato | **10** |
+| Resultado certo + gols de 1 time | **7** |
+| Empate (qualquer placar) | **7** |
+| Só resultado (vitória/derrota) | **3** |
+| Errou resultado mas acertou gol de 1 time | **2** |
 | Errou tudo | **0** |
+
+### Palpites Extras
+
+| Categoria | Pontos por seleção | Máx. seleções |
+|---|---|---|
+| Campeão | 50 | 1 |
+| Vice-campeão | 50 | 1 |
+| Terceiro lugar | 50 | 1 |
+| Finalista | 30 | 2 |
+| Semifinal | 20 | 4 |
+| Quartas | 15 | 8 |
+| Oitavas | 10 | 16 |
+| 1/16 avos | 10 | 32 |
+
+Prazo para palpites extras: **11/06/2026 às 11h BRT**.
+
+## 🗄 Banco de Dados
+
+Dual database: SQLite localmente, PostgreSQL no Render.
+
+**Tabelas:** `usuarios`, `grupos`, `selecoes`, `jogos`, `palpites`, `palpites_extras`, `resultados_extras`, `password_reset_tokens`.
+
+A troca é automática via variável `DATABASE_URL`.
+
+## ⚙️ Variáveis de ambiente
+
+| Variável | Descrição |
+|---|---|
+| `DATABASE_URL` | Connection string PostgreSQL (Render). Ausente = SQLite |
+| `SESSION_SECRET` | Chave secreta da sessão |
+| `ADMIN_NOME` | Nome do admin (padrão: Administrador) |
+| `ADMIN_EMAIL` | E-mail do admin (obrigatório no Render) |
+| `ADMIN_SENHA` | Senha do admin (obrigatório no Render) |
+| `BASE_URL` | URL base para links de recuperação |
+| `SMTP_HOST` | Servidor SMTP (opcional) |
+| `SMTP_USER` | Usuário SMTP |
+| `SMTP_PASS` | Senha SMTP |
+| `SMTP_FROM` | Remetente dos e-mails |
 
 ## 📂 Estrutura
 
 ```
 bolao/
 ├── database/
-│   ├── db.js           # conexão SQLite
+│   ├── db.js           # conexão SQLite ou PostgreSQL
 │   ├── schema.js       # criação das tabelas
-│   ├── seed.js         # popula times, grupos e jogos
-│   └── criar-admin.js  # script para criar admin
+│   ├── seed.js         # popula seleções, grupos, 104 jogos
+│   ├── setup.js        # schema + seed + criar admin (usado no Render)
+│   └── criar-admin.js  # script manual para criar admin
 ├── routes/
 │   ├── auth.js         # cadastro, login, logout
-│   ├── palpites.js     # CRUD de palpites
-│   ├── jogos.js        # listagem de jogos
-│   ├── ranking.js      # ranking geral
-│   └── admin.js        # painel administrativo
+│   ├── palpites.js     # palpites da fase de grupos
+│   ├── extras.js       # palpites extras + admin extras
+│   ├── jogos.js        # listagem pública de jogos
+│   ├── ranking.js      # ranking geral + detalhe por usuário
+│   ├── senha.js        # recuperação de senha
+│   └── admin.js        # painel admin (resultados, usuários, recalcular)
 ├── middleware/
 │   └── auth.js         # verificação de sessão
-├── views/              # templates EJS
+├── views/
 │   ├── partials/       # header, footer, flash
-│   ├── home.ejs
-│   ├── login.ejs
-│   ├── cadastro.ejs
-│   ├── palpites.ejs
-│   ├── jogos.ejs
-│   ├── ranking.ejs
-│   ├── palpites-usuario.ejs
-│   ├── admin.ejs
-│   ├── admin-jogos.ejs
-│   ├── 404.ejs
-│   └── 500.ejs
-├── public/
-│   └── css/style.css   # tema verde/amarelo
-├── data/
-│   └── bolao.db        # banco SQLite (criado pelo seed)
+│   ├── home.ejs        # landing page com regras
+│   ├── login.ejs, cadastro.ejs
+│   ├── palpites.ejs    # palpites dos jogos
+│   ├── palpites-extras.ejs, admin-extras.ejs
+│   ├── jogos.ejs       # tabela de jogos públicos
+│   ├── ranking.ejs, palpites-usuario.ejs
+│   ├── admin.ejs, admin-jogos.ejs, admin-usuarios.ejs
+│   ├── esqueci-senha.ejs, redefinir-senha.ejs
+│   ├── 404.ejs, 500.ejs
+├── public/css/style.css
 ├── server.js           # entry point
-├── package.json
-└── .env
+├── render.yaml         # blueprint Render (banco + web)
+├── .env.example        # variáveis de ambiente
+├── .node-version       # Node 18
+└── package.json
 ```
 
-## 📋 Notas
+## 📋 Regras de negócio
 
-- Os jogos do **mata-mata** (oitavas em diante) só podem ser palpitados após o fim da fase de grupos, quando as seleções classificadas forem definidas. Como a Copa 2026 ainda não começou, os confrontos estão marcados como "A definir" (igual no projeto original).
-- O **horário** dos jogos é fictício (baseado no projeto original em horário local) — antes da Copa, a FIFA divulgará os horários oficiais.
-- Os palpites são **travados** automaticamente quando o horário do jogo chega. Para reabrir, basta o admin desmarcar "Finalizado" e salvar.
+- **Admin não participa** do bolão (não faz palpites, não aparece no ranking)
+- Palpites fecham **2 minutos antes** de cada jogo (frontend e backend)
+- Pontuação é **automática** ao admin salvar o placar e marcar "Finalizado"
+- Admin pode **recalcular** todos os pontos manualmente se necessário
+- Admin pode **resetar senha** de qualquer participante
+- Palpites extras têm **prazo fixo** (11/06/2026 11h BRT)
+- Desempate no ranking: quem tiver mais acertos (palpites com pontos > 0)
+
+---
 
 Bom bolão! 🇧🇷⚽

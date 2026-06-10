@@ -24,7 +24,7 @@ router.get('/', verificarAutenticado, async (req, res) => {
       LEFT JOIN selecoes sc ON j.selecao_casa_id = sc.id
       LEFT JOIN selecoes sv ON j.selecao_visitante_id = sv.id
       LEFT JOIN palpites p ON p.jogo_id = j.id AND p.usuario_id = ?
-      WHERE j.tipo = 'oficial' AND j.fase = 'grupo'
+      WHERE j.fase = 'grupo'
       ORDER BY j.rodada, j.id
     `, [req.session.usuario.id]);
 
@@ -100,7 +100,7 @@ router.post('/', verificarAutenticado, async (req, res) => {
 
       // Verifica se o jogo existe, está na fase de grupos e ainda não começou
       const jogo = await get(
-        "SELECT id, data, finalizado FROM jogos WHERE id = ? AND tipo = 'oficial' AND fase = 'grupo'",
+        "SELECT id, data, finalizado FROM jogos WHERE id = ? AND fase = 'grupo'",
         [jogoId]
       );
       if (!jogo) {
