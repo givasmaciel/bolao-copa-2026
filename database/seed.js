@@ -268,8 +268,17 @@ async function seed() {
   }
   console.log(`✅ ${SELECOES.length} seleções inseridas`);
 
-  // Insere jogos
-  for (const jogo of JOGOS) {
+  // Insere jogos (converte data string → Date para compatibilidade com pg)
+  const JOGOS_COM_DATE = JOGOS.map(j => ({
+    ...j,
+    data: (() => {
+      const m = typeof j.data === 'string' ? j.data.match(/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})/) : null;
+      if (!m) return j.data;
+      const [, y, M, d, h, min] = m.map(Number);
+      return new Date(Date.UTC(y, M - 1, d, h + 3, min));
+    })()
+  }));
+  for (const jogo of JOGOS_COM_DATE) {
     const grupoId = jogo.grupo ? grupoIds[jogo.grupo] : null;
     const estadio = ESTADIOS[jogo.estadio];
     await run(
