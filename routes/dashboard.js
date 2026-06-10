@@ -9,7 +9,6 @@ router.get('/', verificarAutenticado, async (req, res) => {
     const userId = req.session.usuario.id;
 
     // Próximos 5 jogos ainda não iniciados
-    const agora = new Date().toISOString();
     const proximosJogos = await all(`
       SELECT j.id, j.data, j.estadio, j.cidade,
         sc.nome_pt AS casa_pt, sc.sigla AS casa_sigla, sc.bandeira_url AS casa_bandeira,
@@ -25,7 +24,7 @@ router.get('/', verificarAutenticado, async (req, res) => {
     `, [userId]);
 
     // Jogos sem palpite do usuário (pendentes)
-    const pendentes = await all(`
+    const pendentesArr = await all(`
       SELECT COUNT(*) AS total
       FROM jogos j
       LEFT JOIN palpites p ON p.jogo_id = j.id AND p.usuario_id = ?
@@ -68,16 +67,15 @@ router.get('/', verificarAutenticado, async (req, res) => {
     res.render('dashboard', {
       title: 'Painel',
       proximosJogos,
-      pendentes: pendentes?.total || 0,
+      pendentes: pendentesArr[0]?.total || 0,
       top5,
       stats: stats || { total_palpites: 0, total_pontos: 0, palpites_certos: 0, placares_exatos: 0 },
-      totalFinalizados: totalFinalizados?.total || 0,
-      agora
+      totalFinalizados: totalFinalizados?.total || 0
     });
   } catch (err) {
     console.error('Erro no dashboard:', err);
     req.flash('erro', 'Erro ao carregar painel.');
-    res.redirect('/');
+    res.redirect('/palpites');
   }
 });
 
