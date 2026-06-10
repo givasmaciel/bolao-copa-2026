@@ -24,7 +24,7 @@
         <% } else { %>
           <div class="jogo-placar-display" style="color:#aaa">×</div>
         <% } %>
-        <div class="jogo-data">📅 <%= new Date(jogo.data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) %></div>
+        <div class="jogo-data">📅 <%= new Date(jogo.data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'America/Sao_Paulo' }) %></div>
         <div class="jogo-estadio">📍 <%= jogo.estadio %>, <%= jogo.cidade %></div>
         <% if (jogo.grupo_letra) { %>
           <div style="margin-top:4px"><span class="badge" style="background:var(--verde); color:white">Grupo <%= jogo.grupo_letra %></span></div>

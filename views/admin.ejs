@@ -71,7 +71,7 @@
           <tr>
             <td>#<%= j.id %></td>
             <td><%= j.casa_pt || 'A definir' %> × <%= j.visitante_pt || 'A definir' %></td>
-            <td class="text-center"><%= new Date(j.data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) %></td>
+            <td class="text-center"><%= new Date(j.data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'America/Sao_Paulo' }) %></td>
             <td class="text-center">
               <% if (j.finalizado === 1) { %>
                 <strong><%= j.gols_casa %> × <%= j.gols_visitante %></strong>

@@ -1,66 +1,36 @@
-# ⚽ Bolão da Copa do Mundo FIFA 2026
+# ⚽ Bolão da Copa do Mundo 2026
 
-Aplicação web em **português do Brasil** para fazer bolão de palpites da Copa de 2026. Participantes cadastram seus palpites, o admin informa os resultados, e a pontuação é calculada automaticamente.
+Aplicação full-stack em português do Brasil para bolão de palpites da Copa 2026.  
+Deploy automático no Render (free tier) via Blueprint com PostgreSQL. Localmente usa SQLite.
 
-## 🎯 Funcionalidades
+## Funcionalidades
 
-- ✅ **Cadastro e login** com senha criptografada (bcryptjs)
-- ✅ **48 seleções** em **12 grupos (A–L)**, **104 jogos**
-- ✅ **Palpites com placar exato** — edite até **2 minutos antes** do jogo
-- ✅ **Palpites Extras** — campeão, vice, 3º lugar, finalistas, semis, quartas, oitavas e 1/16 avos
-- ✅ **Pontuação automática** ao admin marcar o jogo como finalizado
-- ✅ **Ranking geral** com pontos de jogos + extras
-- ✅ **Admin como juiz** — não participa do bolão, só gerencia
-- ✅ **Gerenciar participantes** — promover/rebaixar admin, resetar senha, excluir conta
-- ✅ **Resetar palpites** (individual ou em massa)
-- ✅ **Recuperação de senha** via e-mail (SMTP opcional) ou link exibido na tela
-- ✅ **Dual database**: SQLite (local) / PostgreSQL (produção no Render)
-- ✅ **Auto-deploy** via GitHub + Render Blueprint
-- ✅ Interface responsiva em **português do Brasil**
+- **Login por email, username ou nome** — qualquer um dos três é aceito
+- **Cadastro com código de convite** — novo participante precisa de um `codigo_convite` válido de um participante existente
+- **Palpites por jogo (save individual)** — cada jogo tem seu próprio botão de salvar; trava 2 minutos antes do horário BRT de cada partida
+- **Palpites Extras** — campeão, vice, 3º, finalistas, semis, quartas, oitavas, 1/16 avos; salvamento por categoria com contador de seleções ao vivo
+- **Dashboard** (`/dashboard`) — cards de estatísticas, próximos 5 jogos, palpites pendentes, top 5 do ranking, banner de alerta com contagem regressiva em BRT
+- **Resumo** (`/resumo`) — estatísticas detalhadas por tipo de ponto, pontos por rodada, racha (comparação head-to-head) com qualquer participante, histórico de jogos finalizados
+- **Config** (`/config`) — participante altera próprio nome (sincronizado com username) e visualiza seu código de convite
+- **Admin como juiz** — não participa, não aparece no ranking, redirecionado de `/palpites`
+- **Rotas administrativas** — resultados dos jogos, recalcular pontos, gerenciar usuários (promover/rebaixar/excluir/resetar senha, resetar palpites individual/massa, alterar username, criar participante), admin extras, admin config
+- **Recuperação de senha** — token por email (SMTP opcional; fallback exibe link na tela)
+- **Ranking** — inclui pontos extras via subquery; desempate por mais palpites com pontos > 0; exclui admins
 
-## 🛠 Tecnologias
-
-- **Node.js 18+** + **Express**
-- **EJS** (templates server-side)
-- **SQLite** (local) / **PostgreSQL** (Render)
-- **bcryptjs**, **express-session**, **connect-flash**
-
-## 🚀 Como rodar local
-
-```bash
-npm install
-npm run seed          # populabanco com seleções, grupos, jogos
-npm run criar-admin   # cria conta de administrador
-npm start             # http://localhost:3000
-```
-
-## 🚀 Deploy no Render
-
-1. Crie um repositório no GitHub e faça push do código
-2. No Render, use **New Blueprint** e aponte para o repositório
-3. O `render.yaml` cria automaticamente:
-   - Banco PostgreSQL (`bolao-db`)
-   - Web service (`bolao-copa-2026`)
-4. Configure as variáveis no Render:
-   - `ADMIN_EMAIL` e `ADMIN_SENHA` (admin é criado no deploy)
-   - `SESSION_SECRET` (gerado automaticamente)
-   - `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS` (opcional, para e-mail de recuperação)
-5. Auto-deploy ativado: todo `git push` atualiza o site
-
-## 🏆 Sistema de pontuação
+## Pontuação — Jogos
 
 | Acerto | Pontos |
 |---|---|
 | Placar exato | **10** |
-| Resultado certo + gols de 1 time | **7** |
+| Resultado certo + 1 gol de um time | **7** |
 | Empate (qualquer placar) | **7** |
 | Só resultado (vitória/derrota) | **3** |
-| Errou resultado mas acertou gol de 1 time | **2** |
+| Errou resultado + acertou 1 gol | **2** |
 | Errou tudo | **0** |
 
-### Palpites Extras
+## Pontuação — Extras
 
-| Categoria | Pontos por seleção | Máx. seleções |
+| Categoria | Pontos | Máx. seleções |
 |---|---|---|
 | Campeão | 50 | 1 |
 | Vice-campeão | 50 | 1 |
@@ -71,80 +41,93 @@ npm start             # http://localhost:3000
 | Oitavas | 10 | 16 |
 | 1/16 avos | 10 | 32 |
 
-Prazo para palpites extras: **11/06/2026 às 11h BRT**.
+Prazo dos palpites extras configurável via tabela `config`.
 
-## 🗄 Banco de Dados
+## Tecnologias
 
-Dual database: SQLite localmente, PostgreSQL no Render.
+- Node.js 18+, Express 4.21, EJS 3.1
+- SQLite 5 (dev) / PostgreSQL 16 (produção)
+- bcryptjs, express-session, connect-flash, nodemailer
+- CSS puro responsivo (verde/amarelo/azul)
+- Bandeiras via flagcdn.com
 
-**Tabelas:** `usuarios`, `grupos`, `selecoes`, `jogos`, `palpites`, `palpites_extras`, `resultados_extras`, `password_reset_tokens`.
+## Rodar local
 
-A troca é automática via variável `DATABASE_URL`.
-
-## ⚙️ Variáveis de ambiente
-
-| Variável | Descrição |
-|---|---|
-| `DATABASE_URL` | Connection string PostgreSQL (Render). Ausente = SQLite |
-| `SESSION_SECRET` | Chave secreta da sessão |
-| `ADMIN_NOME` | Nome do admin (padrão: Administrador) |
-| `ADMIN_EMAIL` | E-mail do admin (obrigatório no Render) |
-| `ADMIN_SENHA` | Senha do admin (obrigatório no Render) |
-| `BASE_URL` | URL base para links de recuperação |
-| `SMTP_HOST` | Servidor SMTP (opcional) |
-| `SMTP_USER` | Usuário SMTP |
-| `SMTP_PASS` | Senha SMTP |
-| `SMTP_FROM` | Remetente dos e-mails |
-
-## 📂 Estrutura
-
-```
-bolao/
-├── database/
-│   ├── db.js           # conexão SQLite ou PostgreSQL
-│   ├── schema.js       # criação das tabelas
-│   ├── seed.js         # popula seleções, grupos, 104 jogos
-│   ├── setup.js        # schema + seed + criar admin (usado no Render)
-│   └── criar-admin.js  # script manual para criar admin
-├── routes/
-│   ├── auth.js         # cadastro, login, logout
-│   ├── palpites.js     # palpites da fase de grupos
-│   ├── extras.js       # palpites extras + admin extras
-│   ├── jogos.js        # listagem pública de jogos
-│   ├── ranking.js      # ranking geral + detalhe por usuário
-│   ├── senha.js        # recuperação de senha
-│   └── admin.js        # painel admin (resultados, usuários, recalcular)
-├── middleware/
-│   └── auth.js         # verificação de sessão
-├── views/
-│   ├── partials/       # header, footer, flash
-│   ├── home.ejs        # landing page com regras
-│   ├── login.ejs, cadastro.ejs
-│   ├── palpites.ejs    # palpites dos jogos
-│   ├── palpites-extras.ejs, admin-extras.ejs
-│   ├── jogos.ejs       # tabela de jogos públicos
-│   ├── ranking.ejs, palpites-usuario.ejs
-│   ├── admin.ejs, admin-jogos.ejs, admin-usuarios.ejs
-│   ├── esqueci-senha.ejs, redefinir-senha.ejs
-│   ├── 404.ejs, 500.ejs
-├── public/css/style.css
-├── server.js           # entry point
-├── render.yaml         # blueprint Render (banco + web)
-├── .env.example        # variáveis de ambiente
-├── .node-version       # Node 18
-└── package.json
+```bash
+npm install
+npm run seed          # 12 grupos, 48 seleções, 104 jogos (horários BRT -03:00)
+npm run criar-admin   # cria administrador manualmente
+npm start             # http://localhost:3000
 ```
 
-## 📋 Regras de negócio
+## Deploy no Render
 
-- **Admin não participa** do bolão (não faz palpites, não aparece no ranking)
-- Palpites fecham **2 minutos antes** de cada jogo (frontend e backend)
-- Pontuação é **automática** ao admin salvar o placar e marcar "Finalizado"
-- Admin pode **recalcular** todos os pontos manualmente se necessário
-- Admin pode **resetar senha** de qualquer participante
-- Palpites extras têm **prazo fixo** (11/06/2026 11h BRT)
-- Desempate no ranking: quem tiver mais acertos (palpites com pontos > 0)
+1. Push do código para o GitHub
+2. Render → New Blueprint → apontar para o repositório
+3. `render.yaml` cria PostgreSQL + web service automaticamente
+4. Configurar variáveis: `ADMIN_EMAIL`, `ADMIN_SENHA`, `SESSION_SECRET`
+5. Auto-deploy ativado em todo `git push`
 
----
+## Variáveis de ambiente
 
-Bom bolão! 🇧🇷⚽
+`DATABASE_URL`, `SESSION_SECRET`, `ADMIN_NOME`, `ADMIN_EMAIL`, `ADMIN_SENHA`, `BASE_URL`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`
+
+## Estrutura do projeto
+
+```
+database/
+  db.js          — adaptador dual SQLite/PostgreSQL (conversão ? para $N)
+  schema.js      — CREATE TABLE com sintaxe condicional + migrações
+  seed.js        — grupos, seleções e 104 jogos em BRT
+  setup.js       — schema + seed + admin via env vars (executado no deploy)
+  criar-admin.js — script manual de criação de admin
+
+routes/
+  auth.js        — cadastro (com invite code), login (email/username/nome), logout
+  palpites.js    — palpites por jogo, trava 2 min antes, exclusão de admin
+  extras.js      — palpites extras por categoria, save individual + contador
+  dashboard.js   — cards, próximos jogos, top 5, banner com contagem regressiva
+  resumo.js      — stats detalhadas, pontos por rodada, racha, histórico
+  config.js      — alterar nome (sincroniza com username), exibir convite
+  jogos.js       — listagem pública dos 104 jogos
+  ranking.js     — ranking com pontos extras, desempate, exclui admins
+  senha.js       — reset de senha com token + email
+  admin.js       — resultados, recalcular, usuários, criar participante, extras, config
+
+middleware/
+  auth.js        — verificarAutenticado, verificarAdmin, jaLogado
+
+views/
+  partials/      — header.ejs (nav), footer.ejs, flash.ejs
+  home.ejs       — landing page com regras
+  login.ejs      — formulário de login (email/username/nome)
+  cadastro.ejs   — cadastro com campo de código de convite
+  dashboard.ejs  — painel do participante
+  palpites.ejs   — formulários por jogo com botão salvar individual
+  palpites-extras.ejs — formulários por categoria com contador JS
+  palpites-usuario.ejs — detalhe dos palpites de um participante
+  jogos.ejs      — tabela de jogos públicas
+  ranking.ejs    — ranking com posições
+  resumo.ejs     — estatísticas, rodadas, racha, histórico
+  config.ejs     — alterar nome + exibir convite
+  admin.ejs, admin-jogos.ejs, admin-usuarios.ejs, admin-extras.ejs
+  esqueci-senha.ejs, redefinir-senha.ejs
+  404.ejs, 500.ejs
+
+raiz/
+  server.js      — entry point (trust proxy, session, rotas)
+  render.yaml    — Blueprint do Render
+  .env.example, .node-version, package.json
+```
+
+## Regras de negócio
+
+- Admin (is_admin=1) redirecionado de `/palpites` e `/palpites-extras` com flash
+- Palpites travam 2 min antes do horário BRT de cada jogo (frontend + backend)
+- Pontuação automática ao admin marcar jogo como finalizado; botão de recalcular disponível
+- Admin pode recalcular pontos, resetar palpites (individual/massa), resetar senha, promover/rebaixar, excluir usuários
+- Cadastro exige `codigo_convite` válido de um participante existente
+- Desempate no ranking: quem tem mais palpites com pontos > 0
+- Trust proxy: `app.set('trust proxy', 1)` para sessão funcionar atrás do proxy HTTPS do Render
+- Sessão: cookie-based, secure em produção, sameSite lax, 30 dias
+- Todos os horários armazenados em BRT (-03:00)

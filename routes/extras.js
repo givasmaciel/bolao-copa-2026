@@ -17,7 +17,7 @@ const CATEGORIAS = [
 ];
 
 const MULTI_CATS = new Set(['r32', 'oitavas', 'quartas', 'semi', 'finalista']);
-const DATA_LIMITE_PADRAO = '2026-06-11T11:00';
+  const DATA_LIMITE_PADRAO = '2026-06-11T11:00-03:00';
 
 async function getDataLimite() {
   const row = await get("SELECT valor FROM config WHERE chave = 'extras_data_limite'");

@@ -77,7 +77,7 @@
             <img src="<%= j.casa_bandeira %>" alt=""><span><%= j.casa_pt %></span>
           </div>
           <div class="jogo-info" style="min-width:auto">
-            <div style="font-size:0.72rem;color:var(--cinza-escuro)"><%= dataJogo.toLocaleDateString('pt-BR', { weekday:'short', day:'numeric', month:'short' }) %> <%= dataJogo.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' }) %></div>
+            <div style="font-size:0.72rem;color:var(--cinza-escuro)"><%= dataJogo.toLocaleDateString('pt-BR', { weekday:'short', day:'numeric', month:'short', timeZone:'America/Sao_Paulo' }) %> <%= dataJogo.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit', timeZone:'America/Sao_Paulo' }) %></div>
             <div style="font-size:0.68rem;color:var(--cinza-escuro)"><%= j.cidade %></div>
             <% if (j.palpite_gols_casa !== null) { %>
               <div class="texto-aux" style="font-size:0.75rem">Seu palpite: <%= j.palpite_gols_casa %>×<%= j.palpite_gols_visitante %></div>

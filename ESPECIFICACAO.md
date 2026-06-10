@@ -4,316 +4,383 @@
 
 ## 1. Visão Geral
 
-O **Bolão da Copa 2026** é uma aplicação web full-stack em português do Brasil que permite a um grupo de amigos cadastrar palpites (apostas) sobre os resultados dos jogos da Copa do Mundo FIFA 2026. O sistema calcula pontuação automaticamente com base no placar real informado pelo administrador, exibe um ranking em tempo real e oferece um módulo de palpites extras sobre os resultados gerais do torneio (campeão, vice, fases etc.).
-
-Inspirado no projeto open-source [worldcup2026](https://github.com/rezarahiminia/worldcup2026) (que provê os dados da copa), esta aplicação adiciona toda a lógica de participação multi-usuário, pontuação, autenticação e administração.
+Aplicação web full-stack em português do Brasil para cadastro de palpites sobre resultados da Copa do Mundo FIFA 2026. Suporta múltiplos participantes, cálculo automático de pontuação, ranking em tempo real, palpites extras sobre resultados gerais do torneio, recuperação de senha e painel administrativo completo. Desenvolvida sobre Node.js 18+ com Express 4.21 e EJS 3.1 para renderização server-side.
 
 ---
 
 ## 2. Stack Tecnológica
 
-| Camada        | Tecnologia                                           |
-|---------------|------------------------------------------------------|
-| **Runtime**   | Node.js 18+                                          |
-| **Framework** | Express 4.21                                         |
-| **Templates** | EJS 3.1 (server-side rendering)                      |
-| **Banco**     | SQLite 5 (dev) ou PostgreSQL 16 (produção no Render) |
-| **Sessão**    | express-session com cookie de 30 dias                |
-| **Senhas**    | bcryptjs (hash com 10 rounds)                        |
-| **Flash**     | connect-flash                                        |
-| **E-mail**    | nodemailer (recuperação de senha, opcional)          |
-| **Deploy**    | Render.com via render.yaml                           |
-| **CSS**       | CSS puro responsivo (sem frameworks)                 |
-| **Ícones**    | flagcdn.com para bandeiras das seleções              |
+| Camada | Tecnologia |
+|---|---|
+| **Runtime** | Node.js 18+ |
+| **Framework Web** | Express 4.21 |
+| **Templates** | EJS 3.1 (server-side rendering) |
+| **Banco (dev)** | SQLite 5 via `better-sqlite3` |
+| **Banco (prod)** | PostgreSQL 16 no Render |
+| **Sessão** | `express-session` (cookie 30 dias, `secure: true` em produção, `sameSite: 'lax'`) |
+| **Hash de senhas** | `bcryptjs` (10 rounds) |
+| **Flash messages** | `connect-flash` |
+| **E-mail** | `nodemailer` (recuperação de senha, opcional) |
+| **Deploy** | Render.com via `render.yaml` (plano free) |
+| **CSS** | Puro, responsivo (cores verde/amarelo/azul) |
+| **Bandeiras** | `flagcdn.com` (URLs externas) |
+| **Trust proxy** | `app.set('trust proxy', 1)` — necessário para session cookie atrás do proxy HTTPS do Render |
 
 ---
 
-## 3. Funcionalidades por Rota
+## 3. Banco de Dados — Dual SQLite / PostgreSQL
 
-### 3.1 Autenticação (`routes/auth.js`)
+O banco opera de forma transparente com **SQLite** (desenvolvimento local) ou **PostgreSQL** (produção no Render). A detecção é feita pela presença da variável `DATABASE_URL`:
 
-| Método | Rota              | Descrição                                         |
-|--------|-------------------|---------------------------------------------------|
-| GET    | `/cadastro`       | Exibe formulário de cadastro                       |
-| POST   | `/cadastro`       | Cria usuário com nome, email e senha (bcrypt)      |
-| GET    | `/login`          | Exibe formulário de login                          |
-| POST   | `/login`          | Autentica por email + senha, inicia sessão         |
-| POST   | `/logout`         | Destrói a sessão e redireciona para `/login`       |
+- `database/db.js` expõe três funções — `run`, `get`, `all` — que abstraem as diferenças entre os SGBDs.
+- Placeholders `?` são convertidos automaticamente para `$1, $2, ...` no PostgreSQL.
+- `database/schema.js` cria as tabelas com sintaxe condicional:
+  - `SERIAL` (PG) vs `AUTOINCREMENT` (SQLite) para PKs.
+  - `TIMESTAMPTZ` (PG) vs `DATETIME` (SQLite) para colunas de data/hora.
+  - `IF NOT EXISTS` para adição condicional de colunas.
+- SQLite: `PRAGMA journal_mode = WAL` e `PRAGMA foreign_keys = ON`.
+- Setup em produção: `node database/setup.js && node server.js`. O `setup.js` cria as tabelas, executa seed se vazio e cria/atualiza admin via variáveis de ambiente.
+
+---
+
+## 4. Tabelas
+
+### `usuarios`
+
+| Coluna | Tipo | Descrição |
+|---|---|---|
+| `id` | SERIAL / INTEGER PK | ID único |
+| `nome` | TEXT NOT NULL | Nome de exibição do participante |
+| `email` | TEXT NOT NULL UNIQUE | E-mail (normalizado para minúsculas) |
+| `username` | TEXT UNIQUE | Apelido para login (nullable, auto-preenchido via prefixo do email) |
+| `codigo_convite` | TEXT UNIQUE | Código de convite do usuário (nullable, gerado automaticamente no cadastro) |
+| `senha_hash` | TEXT NOT NULL | Hash bcrypt da senha |
+| `is_admin` | INTEGER DEFAULT 0 | 1 = administrador |
+| `criado_em` | TIMESTAMP / DATETIME DEFAULT | Data de criação |
+
+### `grupos`
+
+| Coluna | Tipo | Descrição |
+|---|---|---|
+| `id` | SERIAL / INTEGER PK | ID único |
+| `letra` | TEXT NOT NULL UNIQUE | Letra do grupo (A–L) |
+| `nome` | TEXT NOT NULL | Ex.: "Grupo A" |
+
+### `selecoes`
+
+| Coluna | Tipo | Descrição |
+|---|---|---|
+| `id` | INTEGER PK | ID fixo 1–48 (proveniente do seed) |
+| `nome` | TEXT NOT NULL | Nome em inglês |
+| `nome_pt` | TEXT NOT NULL | Nome em português |
+| `sigla` | TEXT NOT NULL | Sigla de 3 letras (ex.: BRA) |
+| `bandeira_url` | TEXT | URL da bandeira (flagcdn.com) |
+| `grupo_id` | INTEGER FK → grupos | Grupo ao qual pertence |
+
+### `jogos`
+
+| Coluna | Tipo | Descrição |
+|---|---|---|
+| `id` | INTEGER PK | ID fixo 1–104 (proveniente do seed) |
+| `fase` | TEXT NOT NULL | `grupo`, `r32`, `r16`, `qf`, `sf`, `terceiro`, `final` |
+| `rodada` | INTEGER NOT NULL | 1–9 |
+| `grupo_id` | INTEGER FK → grupos | Grupo (apenas fase de grupos; null no mata-mata) |
+| `selecao_casa_id` | INTEGER FK → selecoes | Time da casa (null no mata-mata) |
+| `selecao_visitante_id` | INTEGER FK → selecoes | Time visitante (null no mata-mata) |
+| `data` | TIMESTAMPTZ / DATETIME | Data/hora armazenada com offset -03:00 (BRT); PG converte para UTC internamente |
+| `estadio` | TEXT | Nome do estádio |
+| `cidade` | TEXT | Cidade-sede |
+| `pais` | TEXT | País-sede |
+| `gols_casa` | INTEGER | Gols reais (preenchido pelo admin; nullable) |
+| `gols_visitante` | INTEGER | Gols reais (preenchido pelo admin; nullable) |
+| `finalizado` | INTEGER DEFAULT 0 | 1 = jogo encerrado |
+
+### `palpites`
+
+| Coluna | Tipo | Descrição |
+|---|---|---|
+| `id` | SERIAL / INTEGER PK | ID único |
+| `usuario_id` | INTEGER FK → usuarios | Quem palpitou |
+| `jogo_id` | INTEGER FK → jogos | Qual jogo |
+| `palpite_gols_casa` | INTEGER NOT NULL | Palpite do usuário (gols da casa) |
+| `palpite_gols_visitante` | INTEGER NOT NULL | Palpite do usuário (gols visitante) |
+| `pontos_obtidos` | INTEGER DEFAULT 0 | Pontuação calculada |
+| `criado_em` | TIMESTAMP / DATETIME DEFAULT | Data de criação |
+| `atualizado_em` | TIMESTAMP / DATETIME DEFAULT | Data da última edição |
+| UNIQUE | `(usuario_id, jogo_id)` | Um palpite por jogo por usuário |
+
+### `palpites_extras`
+
+| Coluna | Tipo | Descrição |
+|---|---|---|
+| `id` | SERIAL / INTEGER PK | ID único |
+| `usuario_id` | INTEGER FK → usuarios | Quem palpitou |
+| `categoria` | TEXT NOT NULL | `campeao`, `vice`, `terceiro`, `r32`, `oitavas`, `quartas`, `semi`, `finalista` |
+| `selecao_id` | INTEGER FK → selecoes | Seleção escolhida |
+| `criado_em` | TIMESTAMP / DATETIME DEFAULT | Data de criação |
+| UNIQUE | `(usuario_id, categoria, selecao_id)` | |
+
+### `resultados_extras`
+
+| Coluna | Tipo | Descrição |
+|---|---|---|
+| `id` | SERIAL / INTEGER PK | ID único |
+| `categoria` | TEXT NOT NULL | Mesmas categorias dos palpites extras |
+| `selecao_id` | INTEGER FK → selecoes | Seleção vencedora da categoria |
+| `pontos` | INTEGER NOT NULL DEFAULT 0 | Pontos que a categoria vale |
+| UNIQUE | `(categoria, selecao_id)` | |
+
+### `password_reset_tokens`
+
+| Coluna | Tipo | Descrição |
+|---|---|---|
+| `id` | SERIAL / INTEGER PK | ID único |
+| `usuario_id` | INTEGER FK → usuarios | Usuário que solicitou |
+| `token` | TEXT NOT NULL UNIQUE | Token aleatório (32 bytes hex) |
+| `expira_em` | TIMESTAMP NOT NULL | Prazo de expiração (1 hora) |
+| `usado` | INTEGER DEFAULT 0 | 1 = já utilizado |
+| `criado_em` | TIMESTAMP / DATETIME DEFAULT | Data de criação |
+
+### `config`
+
+| Coluna | Tipo | Descrição |
+|---|---|---|
+| `chave` | TEXT PRIMARY KEY | Nome da chave |
+| `valor` | TEXT NOT NULL | Valor da configuração |
+
+Armazena configurações do sistema, como o prazo limite dos palpites extras (ex.: `extras_deadline`).
+
+---
+
+## 5. Rotas — Referência Completa
+
+### 5.1 Autenticação (`routes/auth.js`)
+
+| Método | Rota | Descrição |
+|---|---|---|
+| GET | `/cadastro` | Exibe formulário de cadastro |
+| POST | `/cadastro` | Cria usuário (nome, email, senha, codigo_convite); auto-login após criação |
+| GET | `/login` | Exibe formulário de login |
+| POST | `/login` | Autentica por email / username / nome + senha; inicia sessão |
+| POST | `/logout` | Destrói a sessão |
 
 **Regras:**
-- Usuários já logados são redirecionados para `/palpites` ao acessar `/login` ou `/cadastro` (middleware `jaLogado`).
-- E-mail é convertido para minúsculas antes de salvar/buscar.
+- Usuários já logados são redirecionados para `/dashboard`.
+- E-mail normalizado para minúsculas antes de salvar/buscar.
 - Senha mínima de 4 caracteres.
-- Após cadastro, o usuário é automaticamente logado.
+- `codigo_convite` (código de convite) obrigatório no cadastro; cada usuário recebe o seu automaticamente no momento da criação.
+- Após cadastro bem-sucedido, o usuário é logado automaticamente.
 
-### 3.2 Palpites dos Jogos (`routes/palpites.js`)
+### 5.2 Dashboard (`routes/dashboard.js`)
 
-| Método | Rota                   | Descrição                                           |
-|--------|------------------------|-----------------------------------------------------|
-| GET    | `/palpites`            | Lista os 72 jogos da fase de grupos com inputs       |
-| POST   | `/palpites`            | Salva lote de palpites (upsert) via JSON             |
-| GET    | `/palpites/knockout`   | Placeholder — informa que mata-mata será liberado   |
+| Método | Rota | Descrição |
+|---|---|---|
+| GET | `/dashboard` | Página principal pós-login com resumo estatístico |
 
-**Regras de bloqueio (2 minutos de margem):**
-- O sistema compara `new Date()` contra `data_do_jogo - 2 minutos`.
-- Se o horário atual >= (data do jogo - 2 min), o palpite é bloqueado.
-- Jogos finalizados também são bloqueados.
-- Apenas jogos da fase de grupos (`fase = 'grupo'`) são exibidos/editados.
+**Conteúdo:**
+- Cards com: total de pontos, jogos finalizados, palpites pendentes, posição no ranking.
+- Próximos 5 jogos com contagem regressiva (BRT).
+- Top 5 do ranking.
+- Banner de alerta com contagem regressiva para o próximo jogo.
+- Nome, posição e pontos do usuário logado.
 
-**Funcionamento do formulário:**
-- Os inputs de placar são numerados (`casa_<id>`, `visitante_<id>`).
-- Antes do submit, um script JS coleta todos os valores, monta um array JSON e insere num campo oculto `palpites_json`.
-- O servidor faz upsert (INSERT ou UPDATE) para cada palpite válido.
-- Administradores são impedidos de palpitar (redirecionados para `/admin`).
+### 5.3 Palpites dos Jogos (`routes/palpites.js`)
 
-### 3.3 Palpites Extras (`routes/extras.js`)
-
-| Método | Rota                | Descrição                                    |
-|--------|---------------------|----------------------------------------------|
-| GET    | `/palpites-extras`  | Exibe formulário com 8 categorias de aposta  |
-| POST   | `/palpites-extras`  | Salva palpites extras do usuário             |
-| GET    | `/admin/extras`     | Admin: define resultados extras              |
-| POST   | `/admin/extras`     | Admin: salva resultados extras               |
-
-**Categorias de aposta:**
-
-| Categoria     | Descrição           | Seleções | Pontos por acerto |
-|---------------|---------------------|----------|-------------------|
-| `campeao`     | Campeão             | 1        | 50                |
-| `vice`        | Vice-campeão        | 1        | 50                |
-| `terceiro`    | Terceiro lugar      | 1        | 50                |
-| `r32`         | 1/16 avos de Final  | 32       | 10                |
-| `oitavas`     | Oitavas de Final    | 16       | 10                |
-| `quartas`     | Quartas de Final    | 8        | 15                |
-| `semi`        | Semifinal           | 4        | 20                |
-| `finalista`   | Finalista           | 2        | 30                |
+| Método | Rota | Descrição |
+|---|---|---|
+| GET | `/palpites` | Lista os 72 jogos da fase de grupos com formulário individual por jogo |
+| POST | `/palpites/salvar/:jogoId` | Salva ou atualiza o palpite de UM jogo específico |
 
 **Regras:**
-- Prazo limite para palpites extras: 11 de junho de 2026 às 11h (horário de Brasília).
+- Apenas jogos com `fase = 'grupo'` são exibidos.
+- Cada jogo possui seu próprio formulário e botão "Salvar" individual (NÃO é salvamento em lote).
+- Cada jogo é bloqueado 2 minutos antes do seu horário (horário de Brasília).
+- Jogos finalizados (`finalizado = 1`) são bloqueados independentemente do horário.
+- Administradores são redirecionados para `/admin` com mensagem flash.
+- Placar validado entre 0–99; valores vazios ou não numéricos são ignorados.
+- Se o jogo possui campo `time_casa` (nome alternativo) ou está bloqueado, exibe mensagem apropriada.
+- Lógica de upsert: INSERT se não existe palpite; UPDATE se já existe.
+
+### 5.4 Palpites Extras (`routes/extras.js`)
+
+| Método | Rota | Descrição |
+|---|---|---|
+| GET | `/palpites-extras` | Exibe formulário com 8 categorias de aposta |
+| POST | `/palpites-extras` | Salva palpites extras do usuário (salvamento por categoria) |
+| GET | `/admin/extras` | Admin: define resultados das categorias |
+| POST | `/admin/extras` | Admin: salva resultados das categorias |
+
+**Categorias:**
+
+| Categoria | Seleções por usuário | Pontos por acerto |
+|---|---|---|
+| `campeao` | 1 | 50 |
+| `vice` | 1 | 50 |
+| `terceiro` | 1 | 50 |
+| `finalista` | 2 | 30 |
+| `semi` | 4 | 20 |
+| `quartas` | 8 | 15 |
+| `oitavas` | 16 | 10 |
+| `r32` | 32 | 10 |
+
+**Regras:**
+- Prazo configurável via tabela `config` (chave `extras_deadline`).
 - Categorias com múltiplas seleções usam checkboxes; as demais usam select.
-- O usuário salva todos os palpites de uma vez (DELETE + INSERT).
-- O admin define quais seleções acertaram cada categoria na página `/admin/extras`.
-- Os pontos extras são calculados por JOIN entre `palpites_extras` e `resultados_extras` e somados ao total do ranking.
+- Cada categoria possui seu próprio botão de salvar (salvamento individual por categoria).
+- Administradores são bloqueados (redirecionados para `/admin`).
+- Contador visual de seleções no front-end.
 
-### 3.4 Jogos — Listagem Pública (`routes/jogos.js`)
+### 5.5 Resumo / Estatísticas (`routes/resumo.js`)
 
-| Método | Rota      | Descrição                                    |
-|--------|-----------|----------------------------------------------|
-| GET    | `/jogos`  | Lista todos os 104 jogos agrupados por fase  |
+| Método | Rota | Descrição |
+|---|---|---|
+| GET | `/resumo` | Estatísticas detalhadas do usuário |
 
+**Conteúdo:**
+- Distribuição dos pontos: placar exato, resultado + gol, só resultado, etc.
+- Pontos por rodada (exibidos em barras ou cards).
+- Seletor de "racha" (head-to-head) com qualquer participante — mostra quem venceria se apenas os jogos daquele participante fossem considerados.
+- Histórico de jogos finalizados: resultado real × palpite × pontos obtidos.
+- Filtro por período (data início / data fim).
+
+### 5.6 Configurações do Perfil (`routes/config.js`)
+
+| Método | Rota | Descrição |
+|---|---|---|
+| GET | `/config` | Página de configurações do usuário |
+
+**Funcionalidades:**
+- Alterar nome de exibição (`nome`) — também sincronizado com o campo `username` para login.
+- Visualizar o próprio código de convite (`codigo_convite`) para compartilhar com novos participantes.
+- Exibição de mensagens flash de sucesso/erro.
+
+### 5.7 Jogos — Listagem Pública (`routes/jogos.js`)
+
+| Método | Rota | Descrição |
+|---|---|---|
+| GET | `/jogos` | Lista pública de todos os 104 jogos agrupados por fase |
+
+**Características:**
 - Página pública (não requer login).
 - Exibe placar real se finalizado, ou "×" se pendente.
-- Fases: grupo, r32 (32-avos), r16 (oitavas), qf (quartas), sf (semifinais), terceiro, final.
+- Fases: grupo, r32, r16, qf, sf, terceiro, final.
 - Mostra bandeira, estádio, cidade, data/hora e grupo (quando aplicável).
 
-### 3.5 Ranking (`routes/ranking.js`)
+### 5.8 Ranking (`routes/ranking.js`)
 
-| Método | Rota                       | Descrição                                      |
-|--------|----------------------------|------------------------------------------------|
-| GET    | `/ranking`                 | Ranking geral com pontos totais                |
-| GET    | `/ranking/usuario/:id`     | Detalhamento dos palpites de um participante   |
+| Método | Rota | Descrição |
+|---|---|---|
+| GET | `/ranking` | Ranking geral com pontuação total |
 
-**Cálculo do ranking:**
-- `total_pontos = SUM(pontos_obtidos dos palpites) + SUM(pontos dos palpites_extras)`.
-- Desempate: maior número de palpites com pontos > 0, depois ordem alfabética.
-- Usuários com `is_admin = 0` apenas.
-- Posição é calculada no servidor: muda apenas quando o total de pontos difere do anterior.
+**Cálculo:**
+- `total_pontos = SUM(palpites.pontos_obtidos) + SUM(pontos dos palpites_extras via subquery)`.
+- Exclui administradores (`is_admin = 0`).
+- Critério de desempate: maior número de palpites com `pontos_obtidos > 0`; persistindo empate, ordem alfabética por nome.
+- Posição calculada no servidor: muda apenas quando o total de pontos difere do participante anterior.
 
-### 3.6 Administração (`routes/admin.js`)
+### 5.9 Recuperação de Senha (`routes/senha.js`)
 
-| Método | Rota                                        | Descrição                                    |
-|--------|---------------------------------------------|----------------------------------------------|
-| GET    | `/admin`                                    | Painel com estatísticas e ações              |
-| GET    | `/admin/jogos`                              | Lista todos os jogos para editar resultados  |
-| POST   | `/admin/jogos/:id`                          | Atualiza placar e finaliza jogo              |
-| POST   | `/admin/recalcular`                         | Recalcula pontos de todos os palpites        |
-| GET    | `/admin/usuarios`                           | Gerencia participantes                       |
-| POST   | `/admin/usuarios/:id/tornar-admin`          | Promove participante a admin                 |
-| POST   | `/admin/usuarios/:id/rebaixar`              | Rebaixa admin a participante                 |
-| POST   | `/admin/usuarios/:id/resetar-palpites`      | Apaga palpites e palpites extras do usuário  |
-| POST   | `/admin/usuarios/:id/resetar-senha`         | Redefine senha de um usuário                 |
-| POST   | `/admin/usuarios/:id/excluir`               | Exclui usuário e todos os seus palpites      |
-| POST   | `/admin/resetar-todos-palpites`             | Apaga TODOS os palpites do sistema           |
-
-- Todas as rotas protegidas pelo middleware `verificarAdmin`.
-- Ao finalizar um jogo com placar, os pontos de todos os palpites daquele jogo são recalculados automaticamente.
-- Se um jogo for "desfinalizado", os pontos são zerados.
-
-### 3.7 Recuperação de Senha (`routes/senha.js`)
-
-| Método | Rota                       | Descrição                                    |
-|--------|----------------------------|----------------------------------------------|
-| GET    | `/esqueci-senha`           | Formulário para solicitar redefinição        |
-| POST   | `/esqueci-senha`           | Gera token de 32 bytes hex, envia e-mail     |
-| GET    | `/redefinir-senha/:token`  | Valida token e exibe formulário              |
-| POST   | `/redefinir-senha/:token`  | Redefine a senha e marca token como usado    |
+| Método | Rota | Descrição |
+|---|---|---|
+| GET | `/esqueci-senha` | Formulário para solicitar redefinição |
+| POST | `/esqueci-senha` | Gera token (32 bytes hex), envia e-mail ou exibe link na tela |
+| GET | `/redefinir-senha/:token` | Valida token e exibe formulário de nova senha |
+| POST | `/redefinir-senha/:token` | Redefine a senha e marca token como usado |
 
 **Regras:**
-- Token expira em 1 hora.
-- Se SMTP não estiver configurado, o link é exibido na tela (modo teste).
-- Se o e-mail não existir no banco, uma mensagem genérica é exibida (segurança).
+- Token expira em 1 hora; uso único.
+- Se SMTP não configurado (variáveis `SMTP_*` ausentes), o link de redefinição é exibido na tela (modo teste/desenvolvimento).
+- Mensagem genérica se e-mail não encontrado (segurança — não revela existência da conta).
+
+### 5.10 Administração (`routes/admin.js`)
+
+| Método | Rota | Descrição |
+|---|---|---|
+| GET | `/admin` | Painel administrativo com estatísticas |
+| GET | `/admin/jogos` | Lista todos os jogos para editar resultados |
+| POST | `/admin/jogos/:id` | Salva resultado + flag `finalizado`; recalcula pontos automaticamente |
+| POST | `/admin/recalcular` | Recalcula TODOS os pontos de TODOS os palpites |
+| GET | `/admin/usuarios` | Gerencia participantes |
+| POST | `/admin/usuarios/:id/tornar-admin` | Promove participante a administrador |
+| POST | `/admin/usuarios/:id/rebaixar` | Rebaixa administrador a participante |
+| POST | `/admin/usuarios/:id/resetar-palpites` | Apaga palpites e palpites extras do usuário |
+| POST | `/admin/usuarios/:id/resetar-senha` | Redefine a senha do usuário |
+| POST | `/admin/usuarios/:id/excluir` | Exclui usuário e todos os seus palpites |
+| POST | `/admin/usuarios/:id/alterar-username` | Altera o username do usuário |
+| POST | `/admin/resetar-todos-palpites` | Apaga TODOS os palpites do sistema |
+| GET | `/admin/criar-participante` | Formulário para criar participante manualmente |
+| POST | `/admin/criar-participante` | Cria participante (ignorando sistema de convites) |
+| POST | `/admin/config` | Atualiza configurações (ex.: prazo dos extras) |
+
+**Regras:**
+- Todas as rotas protegidas pelo middleware `verificarAdmin`.
+- Ao finalizar um jogo com placar, os pontos de todos os palpites daquele jogo são recalculados automaticamente via `calcularPontos()`.
+- Se um jogo for "desfinalizado" (`finalizado = 0`), os pontos são zerados.
 
 ---
 
-## 4. Banco de Dados
+## 6. Sistema de Pontuação
 
-### 4.1 Dual SQLite / PostgreSQL
+### 6.1 Pontuação dos Palpites (função `calcularPontos` em `routes/admin.js`)
 
-O banco funciona de forma transparente com **SQLite** (desenvolvimento local) ou **PostgreSQL** (produção no Render). A detecção é feita pela presença da variável `DATABASE_URL`:
+A lógica segue a ordem de precedência abaixo (a primeira condição verdadeira determina os pontos):
 
-- `database/db.js` abstrai as diferenças entre os dois SGBDs.
-- `database/schema.js` cria as tabelas com sintaxe condicional (`SERIAL` vs `AUTOINCREMENT`, `TIMESTAMPTZ` vs `DATETIME`, `RETURNING` etc.).
-- As queries usam `?` como placeholder; o adaptador PostgreSQL converte para `$1`, `$2`… sequencialmente.
-- SQLite usa `PRAGMA journal_mode = WAL` e `PRAGMA foreign_keys = ON`.
+| # | Condição | Pontos |
+|---|---|---|
+| 1 | `gols_casa === palpite_casa && gols_visitante === palpite_visitante` | **10** (placar exato) |
+| 2 | Resultado real é empate E palpite é empate (qualquer placar de empate) | **7** |
+| 3 | Resultado correto (vitória/derrota) E acertou o gol de pelo menos um dos times | **7** |
+| 4 | Resultado correto (vitória/derrota) E errou os gols de ambos os times | **3** |
+| 5 | Resultado errado (inverteu vencedor) E acertou o gol de pelo menos um dos times | **2** |
+| 6 | Nenhuma das anteriores (errou resultado e gols) | **0** |
 
-### 4.2 Tabelas
+Os pontos são armazenados na coluna `pontos_obtidos` da tabela `palpites` e recalculados sempre que o admin salva ou atualiza o resultado de um jogo.
 
-#### `usuarios`
-| Coluna       | Tipo                         | Descrição                    |
-|--------------|------------------------------|------------------------------|
-| id           | SERIAL / INTEGER PK          | ID único                     |
-| nome         | TEXT NOT NULL                | Nome do participante         |
-| email        | TEXT NOT NULL UNIQUE         | E-mail (minúsculo)           |
-| senha_hash   | TEXT NOT NULL                | Hash bcrypt da senha         |
-| is_admin     | INTEGER DEFAULT 0            | 1 = administrador            |
-| criado_em    | TIMESTAMP / DATETIME DEFAULT | Data de criação              |
+### 6.2 Pontuação dos Palpites Extras
 
-#### `grupos`
-| Coluna | Tipo                 | Descrição         |
-|--------|----------------------|-------------------|
-| id     | SERIAL / INTEGER PK  | ID único          |
-| letra  | TEXT NOT NULL UNIQUE | Letra do grupo    |
-| nome   | TEXT NOT NULL        | "Grupo A", etc.   |
-
-#### `selecoes`
-| Coluna       | Tipo                 | Descrição                    |
-|--------------|----------------------|------------------------------|
-| id           | INTEGER PK           | ID (1-48, fixo do seed)      |
-| nome         | TEXT NOT NULL        | Nome em inglês               |
-| nome_pt      | TEXT NOT NULL        | Nome em português            |
-| sigla        | TEXT NOT NULL        | Sigla de 3 letras (ex: BRA)  |
-| bandeira_url | TEXT                 | URL da bandeira (flagcdn)    |
-| grupo_id     | INTEGER FK→grupos    | Grupo ao qual pertence       |
-
-#### `jogos`
-| Coluna               | Tipo                         | Descrição                         |
-|----------------------|------------------------------|-----------------------------------|
-| id                   | INTEGER PK                   | ID único (1-104, fixo do seed)    |
-| fase                 | TEXT NOT NULL                 | `grupo`, `r32`, `r16`, `qf`, `sf`, `terceiro`, `final` |
-| rodada               | INTEGER NOT NULL             | 1-9                               |
-| grupo_id             | INTEGER FK→grupos            | Grupo (apenas fase de grupos)     |
-| selecao_casa_id      | INTEGER FK→selecoes          | Time da casa (null no mata-mata)  |
-| selecao_visitante_id | INTEGER FK→selecoes          | Time visitante (null no mata-mata)|
-| data                 | TIMESTAMPTZ / DATETIME       | Data/hora do jogo                 |
-| estadio              | TEXT                         | Nome do estádio                   |
-| cidade               | TEXT                         | Cidade                            |
-| pais                 | TEXT                         | País                              |
-| gols_casa            | INTEGER                      | Gols reais (preenchido pelo admin)|
-| gols_visitante       | INTEGER                      | Gols reais (preenchido pelo admin)|
-| finalizado           | INTEGER DEFAULT 0            | 1 = jogo encerrado                |
-
-#### `palpites`
-| Coluna                | Tipo                 | Descrição                         |
-|-----------------------|----------------------|-----------------------------------|
-| id                    | SERIAL / INTEGER PK  | ID único                          |
-| usuario_id            | INTEGER FK→usuarios  | Quem palpitou                     |
-| jogo_id               | INTEGER FK→jogos     | Qual jogo                         |
-| palpite_gols_casa     | INTEGER NOT NULL     | Palpite do usuário (gols casa)    |
-| palpite_gols_visitante| INTEGER NOT NULL     | Palpite do usuário (gols visit.)  |
-| pontos_obtidos        | INTEGER DEFAULT 0    | Pontuação calculada               |
-| criado_em             | TIMESTAMP            | Data de criação                   |
-| atualizado_em         | TIMESTAMP            | Data da última edição             |
-| UNIQUE                | (usuario_id, jogo_id)| Um palpite por jogo por usuário   |
-
-#### `password_reset_tokens`
-| Coluna     | Tipo                 | Descrição                     |
-|------------|----------------------|-------------------------------|
-| id         | SERIAL / INTEGER PK  | ID único                      |
-| usuario_id | INTEGER FK→usuarios  | Usuário que solicitou         |
-| token      | TEXT NOT NULL UNIQUE  | Token aleatório de 32 bytes   |
-| expira_em  | TIMESTAMP NOT NULL    | Expira em 1 hora              |
-| usado      | INTEGER DEFAULT 0    | 1 = já utilizado              |
-| criado_em  | TIMESTAMP DEFAULT    | Data de criação               |
-
-#### `palpites_extras`
-| Coluna     | Tipo                 | Descrição                         |
-|------------|----------------------|-----------------------------------|
-| id         | SERIAL / INTEGER PK  | ID único                          |
-| usuario_id | INTEGER FK→usuarios  | Quem palpitou                     |
-| categoria  | TEXT NOT NULL        | `campeao`, `vice`, `terceiro`, `r32`, `oitavas`, `quartas`, `semi`, `finalista` |
-| selecao_id | INTEGER FK→selecoes  | Seleção escolhida                 |
-| criado_em  | TIMESTAMP DEFAULT    | Data de criação                   |
-| UNIQUE     | (usuario_id, categoria, selecao_id) |                                          |
-
-#### `resultados_extras`
-| Coluna     | Tipo                 | Descrição                         |
-|------------|----------------------|-----------------------------------|
-| id         | SERIAL / INTEGER PK  | ID único                          |
-| categoria  | TEXT NOT NULL        | Mesmas categorias dos palpites    |
-| selecao_id | INTEGER FK→selecoes  | Seleção vencedora da categoria    |
-| pontos     | INTEGER NOT NULL     | Pontos que a categoria vale       |
-| UNIQUE     | (categoria, selecao_id) |                                         |
+A pontuação é fixa por categoria, conforme tabela na seção 5.4. Os pontos são somados ao total do ranking via subquery na consulta de ranking.
 
 ---
 
-## 5. Sistema de Pontuação
+## 7. Regras de Negócio
 
-A função `calcularPontos(golsCasa, golsVisitante, palpiteCasa, palpiteVisitante)` em `routes/admin.js:15` implementa a lógica:
+1. **Admin não participa** — Usuários com `is_admin = 1` são redirecionados para `/admin` ao tentar acessar `/palpites` ou `/palpites-extras` (com mensagem flash). São excluídos do ranking.
 
-| Condição                                                   | Pontos |
-|------------------------------------------------------------|--------|
-| Placar exato (gols idênticos)                              | **10** |
-| Empate no real E empate no palpite (qualquer placar)       | **7**  |
-| Resultado correto (V/E/D) + acertou gol de pelo menos 1 time | **7** |
-| Resultado correto (V/D) sem acertar gol de nenhum time     | **3**  |
-| Resultado errado mas acertou gol de pelo menos 1 time      | **2**  |
-| Errou tudo                                                 | **0**  |
-
-**Detalhamento da lógica (em ordem de precedência):**
-1. Se `gols_casa === palpite_casa && gols_visitante === palpite_visitante` → 10 pts.
-2. Determina resultado real e do palpite (`C` = casa vence, `V` = visitante vence, `E` = empate).
-3. Se ambos são empate → 7 pts (qualquer placar de empate).
-4. Se acertou o resultado (C/V):
-   - Acertou pelo menos 1 dos gols → 7 pts.
-   - Errou ambos os gols → 3 pts.
-5. Se errou o resultado mas acertou pelo menos 1 gol → 2 pts.
-6. Senão → 0 pts.
-
-Os pontos são armazenados na coluna `pontos_obtidos` da tabela `palpites` e recalculados sempre que o admin salva/atualiza o resultado de um jogo.
-
-Os **palpites extras** têm pontuação fixa por categoria (50, 50, 50, 10, 10, 15, 20, 30) e são somados ao total do ranking via subquery.
-
----
-
-## 6. Regras de Negócio
-
-1. **Admin não participa** — Usuários com `is_admin = 1` são redirecionados para `/admin` ao tentar acessar `/palpites` ou `/palpites-extras`. Mensagens flash informam que administradores não podem participar.
-
-2. **Bloqueio de 2 minutos** — Palpites só podem ser feitos/editados até 2 minutos antes do horário do jogo. Após esse prazo, o input é desabilitado e o servidor rejeita alterações.
+2. **Bloqueio de 2 minutos** — Cada palpite de jogo é bloqueado 2 minutos antes do horário do jogo (horário de Brasília). A verificação é feita por jogo individualmente.
 
 3. **Jogos finalizados são imutáveis** — Se `finalizado = 1`, o palpite é bloqueado independentemente do horário.
 
-4. **Mata-mata bloqueado inicialmente** — A rota `/palpites/knockout` exibe mensagem informando que será liberado após a fase de grupos. Os confrontos de mata-mata têm `selecao_casa_id` e `selecao_visitante_id` nulos (preenchidos depois).
+4. **Mata-mata indisponível para palpites** — Apenas a fase de grupos está disponível para apostas. Confrontos de mata-mata têm `selecao_casa_id` e `selecao_visitante_id` nulos.
 
-5. **Recalculo automático** — Ao salvar o resultado de um jogo com `finalizado = 1`, todos os palpites daquele jogo têm seus pontos recalculados. Se o jogo for "desfinalizado", os pontos zeram.
+5. **Recálculo automático** — Ao salvar resultado com `finalizado = 1`, todos os palpites daquele jogo são recalculados. Se desfinalizado, pontos zeram.
 
-6. **Upsert de palpites** — O sistema usa INSERT ou UPDATE dependendo se o usuário já possui palpite para aquele jogo.
+6. **Upsert de palpites** — INSERT se não existe palpite para o par (usuário, jogo); UPDATE se já existe.
 
-7. **Validação de placar** — Gols são limitados a 0-99. Valores vazios ou não-numéricos são ignorados.
+7. **Validação de placar** — Gols limitados a 0–99. Valores vazios ou não numéricos são ignorados.
 
-8. **Senha mínima** — 4 caracteres (tanto no cadastro quanto na redefinição).
+8. **Senha mínima** — 4 caracteres (cadastro e redefinição).
 
-9. **Token de recuperação** — Expira em 1 hora, uso único. Se SMTP não configurado, exibe link na tela (modo teste).
+9. **Token de recuperação** — Expira em 1 hora; uso único. Sem SMTP, link é exibido na tela.
 
-10. **E-mail único** — Não permite cadastro com e-mail já existente.
+10. **Código de convite obrigatório** — Necessário no cadastro. Cada usuário recebe o seu automaticamente na criação.
+
+11. **Login flexível** — Aceita email, username ou nome (display name) no campo de login.
+
+12. **Sincronização de username** — Preenchido automaticamente a partir do prefixo do email (via migration). Atualizado quando o nome é alterado em `/config`.
+
+13. **Salvamento individual** — Cada jogo na página de palpites possui seu próprio formulário e botão "Salvar" (não há salvamento em lote).
+
+14. **Trust proxy** — `app.set('trust proxy', 1)` é essencial para o cookie de sessão funcionar atrás do proxy HTTPS do Render.
+
+15. **Horário BRT** — Todos os horários armazenados com offset -03:00. O PostgreSQL (`TIMESTAMPTZ`) normaliza para UTC internamente.
+
+16. **Extras deadline configurável** — O prazo para palpites extras é armazenado na tabela `config` (chave `extras_deadline`) e verificado no servidor.
 
 ---
 
-## 7. Deploy
+## 8. Deploy
 
-### 7.1 Render (render.yaml)
-
-O arquivo `render.yaml` define a infraestrutura para deploy automático no Render:
+### 8.1 Render (`render.yaml`)
 
 ```yaml
 databases:
@@ -348,102 +415,119 @@ services:
           property: connectionString
 ```
 
-### 7.2 Script de Setup (`database/setup.js`)
+- `SESSION_SECRET` é auto-gerado pelo Render.
+- `DATABASE_URL` é vinculada automaticamente ao banco `bolao-db`.
+- `ADMIN_EMAIL` e `ADMIN_SENHA` devem ser configurados manualmente no dashboard do Render.
+- Nome do serviço: `bolao-copa-2026`.
+- URL de produção: `https://bolao-copa-2026-zjoi.onrender.com`.
 
-O script `setup.js` é executado antes do servidor em produção:
+### 8.2 Script de Setup (`database/setup.js`)
+
+Executado antes do servidor em produção:
 1. Cria as tabelas (schema) se não existirem.
-2. Verifica se há dados; se o banco estiver vazio, executa o seed (48 seleções, 12 grupos, 104 jogos).
-3. Se as variáveis `ADMIN_EMAIL` e `ADMIN_SENHA` estiverem definidas, cria/atualiza o admin automaticamente.
-
-### 7.3 Variáveis de Ambiente
-
-| Variável          | Obrigatória | Descrição                              |
-|-------------------|-------------|----------------------------------------|
-| `PORT`            | Não         | Porta do servidor (default 3000)       |
-| `SESSION_SECRET`  | Sim         | Segredo das sessões                    |
-| `DATABASE_URL`    | Não         | Se presente, usa PostgreSQL (produção) |
-| `NODE_ENV`        | Não         | `development` ou `production`          |
-| `ADMIN_NOME`      | Não         | Nome do admin automático               |
-| `ADMIN_EMAIL`     | Não         | E-mail do admin automático             |
-| `ADMIN_SENHA`     | Não         | Senha do admin automático              |
-| `SMTP_HOST`       | Não         | Servidor SMTP (recuperação de senha)   |
-| `SMTP_PORT`       | Não         | Porta SMTP (default 587)               |
-| `SMTP_USER`       | Não         | Usuário SMTP                           |
-| `SMTP_PASS`       | Não         | Senha SMTP                             |
-| `SMTP_FROM`       | Não         | Remetente dos e-mails                  |
-| `BASE_URL`        | Não         | URL base para links no e-mail          |
+2. Verifica se há dados; se vazio, executa o seed (48 seleções, 12 grupos, 104 jogos).
+3. Se `ADMIN_EMAIL` e `ADMIN_SENHA` estiverem definidas, cria ou atualiza o administrador automaticamente.
 
 ---
 
-## 8. Estrutura de Arquivos
+## 9. Variáveis de Ambiente
+
+| Variável | Obrigatória | Descrição |
+|---|---|---|
+| `PORT` | Não | Porta do servidor (default: 3000) |
+| `SESSION_SECRET` | Sim | Segredo para assinatura dos cookies de sessão |
+| `DATABASE_URL` | Não | Se presente, usa PostgreSQL; caso contrário, SQLite |
+| `NODE_ENV` | Não | `development` ou `production` |
+| `ADMIN_NOME` | Não | Nome do administrador criado no setup (default: "Administrador") |
+| `ADMIN_EMAIL` | Não | E-mail do administrador (obrigatório se quiser criação automática) |
+| `ADMIN_SENHA` | Não | Senha do administrador (obrigatório se quiser criação automática) |
+| `BASE_URL` | Não | URL base para links em e-mails de recuperação |
+| `SMTP_HOST` | Não | Servidor SMTP para envio de e-mails |
+| `SMTP_PORT` | Não | Porta SMTP (default: 587) |
+| `SMTP_USER` | Não | Usuário SMTP |
+| `SMTP_PASS` | Não | Senha SMTP |
+| `SMTP_FROM` | Não | Remetente dos e-mails |
+
+---
+
+## 10. Estrutura de Arquivos
 
 ```
 bolao/
-├── server.js                       # Entry point: configura Express, middlewares, rotas e inicia o servidor
-├── package.json                    # Dependências e scripts (start, dev, seed, setup, criar-admin)
-├── package-lock.json               # Lock de dependências
-├── .env.example                    # Template de variáveis de ambiente
-├── .env                            # Variáveis de ambiente (ignorado pelo git)
-├── .gitignore                      # Arquivos ignorados pelo git
-├── .node-version                   # Versão do Node (18)
-├── README.md                       # Documentação do projeto
-├── render.yaml                     # Configuração de deploy no Render.com
+├── server.js                         # Entry point: configura Express, middlewares, rotas, trust proxy
+├── package.json                      # Dependências e scripts (start, dev, seed, setup, criar-admin)
+├── .env.example                      # Template de variáveis de ambiente
+├── .node-version                     # Versão do Node (18)
+├── render.yaml                       # Configuração de deploy no Render.com
 │
 ├── database/
-│   ├── db.js                       # Adaptador dual SQLite/PostgreSQL (run, get, all)
-│   ├── schema.js                   # Criação das tabelas (ambos bancos)
-│   ├── seed.js                     # Popula 12 grupos, 48 seleções, 104 jogos e 16 estádios
-│   ├── setup.js                    # Setup automático: schema + seed + admin via env vars
-│   └── criar-admin.js              # Script interativo para criar administrador
+│   ├── db.js                         # Adaptador dual SQLite/PostgreSQL (run, get, all)
+│   ├── schema.js                     # Criação das tabelas com sintaxe condicional
+│   ├── seed.js                       # Popula 12 grupos, 48 seleções, 104 jogos e 16 estádios
+│   ├── setup.js                      # Setup automático: schema + seed + admin via env vars
+│   └── criar-admin.js                # Script interativo para criar administrador
 │
 ├── routes/
-│   ├── auth.js                     # Cadastro, login, logout
-│   ├── palpites.js                 # CRUD de palpites da fase de grupos
-│   ├── extras.js                   # Palpites extras (campeão, vice, fases)
-│   ├── jogos.js                    # Listagem pública de jogos
-│   ├── ranking.js                  # Ranking geral e detalhes por usuário
-│   ├── senha.js                    # Recuperação de senha (esqueci-senha / redefinir-senha)
-│   └── admin.js                    # Painel admin: resultados, usuários, recalcular pontos
+│   ├── auth.js                       # Cadastro, login, logout
+│   ├── dashboard.js                  # Página inicial pós-login com estatísticas
+│   ├── palpites.js                   # Palpites da fase de grupos (salvamento individual)
+│   ├── extras.js                     # Palpites extras (campeão, vice, fases)
+│   ├── resumo.js                     # Estatísticas detalhadas, racha, histórico
+│   ├── config.js                     # Configurações do perfil (nome, código de convite)
+│   ├── jogos.js                      # Listagem pública de jogos
+│   ├── ranking.js                    # Ranking geral
+│   ├── senha.js                      # Recuperação de senha
+│   └── admin.js                      # Painel admin: resultados, usuários, recalcular, config
 │
 ├── middleware/
-│   └── auth.js                     # Middlewares: verificarAutenticado, verificarAdmin, jaLogado
+│   └── auth.js                       # Middlewares: verificarAutenticado, verificarAdmin, jaLogado
 │
 ├── views/
 │   ├── partials/
-│   │   ├── header.ejs             # Head HTML, nav, logo (incluído em todas as páginas)
-│   │   ├── footer.ejs             # Footer (incluído em todas as páginas)
-│   │   └── flash.ejs              # Exibição de mensagens flash (sucesso, erro, aviso)
-│   ├── home.ejs                   # Página inicial com hero, stats, regras e grupos
-│   ├── cadastro.ejs               # Formulário de criação de conta
-│   ├── login.ejs                  # Formulário de login
-│   ├── palpites.ejs               # Palpites da fase de grupos (72 jogos)
-│   ├── palpites-extras.ejs        # Palpites extras (campeão, vice, fases)
-│   ├── palpites-usuario.ejs       # Detalhamento dos palpites de um participante
-│   ├── jogos.ejs                  # Tabela de jogos pública
-│   ├── ranking.ejs                # Ranking geral com posições e pontuação
-│   ├── admin.ejs                  # Painel admin com estatísticas e ações
-│   ├── admin-jogos.ejs            # Admin: editar resultados dos jogos
-│   ├── admin-usuarios.ejs         # Admin: gerenciar participantes
-│   ├── admin-extras.ejs           # Admin: definir resultados extras
-│   ├── esqueci-senha.ejs          # Formulário "esqueci minha senha"
-│   ├── redefinir-senha.ejs        # Formulário de redefinição de senha
-│   ├── 404.ejs                    # Página de erro 404
-│   └── 500.ejs                    # Página de erro 500
+│   │   ├── header.ejs               # Head HTML, nav, logo
+│   │   ├── footer.ejs               # Footer
+│   │   └── flash.ejs                # Mensagens flash (sucesso, erro, aviso)
+│   ├── home.ejs                      # Página inicial pública
+│   ├── login.ejs                     # Formulário de login
+│   ├── cadastro.ejs                  # Formulário de cadastro
+│   ├── dashboard.ejs                 # Dashboard pós-login
+│   ├── palpites.ejs                  # Palpites da fase de grupos (72 jogos)
+│   ├── palpites-extras.ejs           # Palpites extras
+│   ├── palpites-usuario.ejs          # Detalhamento dos palpites de um participante
+│   ├── jogos.ejs                     # Tabela de jogos pública
+│   ├── ranking.ejs                   # Ranking geral
+│   ├── resumo.ejs                    # Estatísticas detalhadas
+│   ├── config.ejs                    # Configurações do perfil
+│   ├── admin.ejs                     # Painel admin
+│   ├── admin-jogos.ejs               # Admin: editar resultados
+│   ├── admin-usuarios.ejs            # Admin: gerenciar participantes
+│   ├── admin-extras.ejs              # Admin: definir resultados extras
+│   ├── esqueci-senha.ejs             # Formulário "esqueci minha senha"
+│   ├── redefinir-senha.ejs           # Formulário de redefinição de senha
+│   ├── 404.ejs                       # Página de erro 404
+│   └── 500.ejs                       # Página de erro 500
 │
 ├── public/
 │   └── css/
-│       └── style.css              # CSS completo responsivo (tema verde/amarelo/azul)
+│       └── style.css                 # CSS responsivo (tema verde/amarelo/azul)
 │
-├── data/                          # Diretório do banco SQLite (gitignorado)
-│   └── bolao.db                   # Arquivo do banco SQLite
+├── scripts/
+│   └── verificar-horarios.js         # Script utilitário para verificar horários dos jogos
 │
-├── check-db.js                    # Script utilitário: exibe palpites do banco
-├── check-jogos.js                 # Script utilitário: verifica jogos e palpites
-├── reset-palpites.js              # Script utilitário: limpa palpites e resultados
-├── promover-admin.js              # Script utilitário: promove usuário a admin via argumento
+├── data/
+│   └── bolao.db                      # Arquivo do banco SQLite (gitignorado)
 │
-├── seed_out.log                   # Log do seed (stdout)
-├── seed_err.log                   # Log do seed (stderr)
-├── server_out.log                 # Log do servidor (stdout)
-└── server_err.log                 # Log do servidor (stderr)
+├── check-db.js                       # Script: exibe palpites do banco
+├── check-jogos.js                    # Script: verifica jogos e palpites
+├── reset-palpites.js                 # Script: limpa palpites e resultados
+└── promover-admin.js                 # Script: promove usuário a admin via argumento
 ```
+
+---
+
+## 11. Notas Técnicas Adicionais
+
+- **Render free tier**: O banco PostgreSQL e o serviço web休眠 após 15 minutos de inatividade. A primeira requisição após o período de inatividade pode levar alguns segundos (cold start).
+- **Timezone**: Todas as datas de jogos são armazenadas com offset `-03:00` (BRT). O PostgreSQL (TIMESTAMPTZ) converte internamente para UTC; o SQLite armazena como datetime string.
+- **Segurança de sessão**: `sameSite: 'lax'` e `secure: true` em produção. O trust proxy é ativado com `app.set('trust proxy', 1)` para que o Express confie no header `X-Forwarded-Proto` enviado pelo proxy do Render.
+- **Índices**: A constraint UNIQUE em `palpites(usuario_id, jogo_id)` atua como índice para consultas de ranking e recálculo.

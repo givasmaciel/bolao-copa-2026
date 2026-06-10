@@ -49,7 +49,7 @@
               <%= pontos %> pts
             </div>
           <% } %>
-          <div class="jogo-data"><%= new Date(jogo.data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) %></div>
+          <div class="jogo-data"><%= new Date(jogo.data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'America/Sao_Paulo' }) %></div>
           <div class="jogo-estadio">📍 <%= jogo.estadio %>, <%= jogo.cidade %></div>
           <div style="margin-top:4px"><span class="badge badge-finalizado">Final</span></div>
         <% } else if (fechado) { %>
@@ -57,7 +57,7 @@
           <% if (temPalpite) { %>
             <div class="texto-aux">Seu palpite: <strong><%= jogo.palpite_gols_casa %> × <%= jogo.palpite_gols_visitante %></strong></div>
           <% } %>
-          <div class="jogo-data"><%= new Date(jogo.data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) %></div>
+          <div class="jogo-data"><%= new Date(jogo.data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'America/Sao_Paulo' }) %></div>
           <div class="jogo-estadio">📍 <%= jogo.estadio %>, <%= jogo.cidade %></div>
           <div style="margin-top:4px"><span class="badge badge-pendente">Fechado</span></div>
         <% } else { %>
@@ -83,7 +83,7 @@
             </div>
             <button type="submit" class="btn btn-sm btn-primary mt-1">💾 Salvar</button>
           </form>
-          <div class="jogo-data"><%= new Date(jogo.data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) %></div>
+          <div class="jogo-data"><%= new Date(jogo.data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'America/Sao_Paulo' }) %></div>
           <div class="jogo-estadio">📍 <%= jogo.estadio %>, <%= jogo.cidade %></div>
         <% } %>
       </div>
