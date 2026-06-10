@@ -1,0 +1,48 @@
+<%- include('partials/header', { active: 'admin' }) %>
+
+<%- include('partials/flash') %>
+
+<h1>👥 Gerenciar participantes</h1>
+<p class="subtitulo">Promova participantes a admin ou exclua contas.</p>
+
+<table class="ranking-tabela">
+  <thead>
+    <tr>
+      <th>Nome</th>
+      <th>E-mail</th>
+      <th class="text-center">Admin</th>
+      <th class="text-center">Desde</th>
+      <th class="text-center">Ações</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% usuarios.forEach(function(u) { %>
+      <tr>
+        <td><%= u.nome %></td>
+        <td><%= u.email %></td>
+        <td class="text-center"><%= u.is_admin ? '✅' : '—' %></td>
+        <td class="text-center"><%= new Date(u.criado_em).toLocaleDateString('pt-BR') %></td>
+        <td class="text-center" style="white-space:nowrap">
+          <% if (!u.is_admin) { %>
+            <form method="POST" action="/admin/usuarios/<%= u.id %>/tornar-admin" style="display:inline">
+              <button type="submit" class="btn btn-sm btn-amarelo" onclick="return confirm('Promover <%= u.nome %> a admin?')">Tornar admin</button>
+            </form>
+          <% } else { %>
+            <form method="POST" action="/admin/usuarios/<%= u.id %>/rebaixar" style="display:inline">
+              <button type="submit" class="btn btn-sm btn-secondary" onclick="return confirm('Rebaixar <%= u.nome %> para participante?')">Rebaixar</button>
+            </form>
+          <% } %>
+          <form method="POST" action="/admin/usuarios/<%= u.id %>/excluir" style="display:inline">
+            <button type="submit" class="btn btn-sm" style="background:var(--erro);color:white" onclick="return confirm('Excluir <%= u.nome %> e todos os palpites dele?')">Excluir</button>
+          </form>
+        </td>
+      </tr>
+    <% }); %>
+  </tbody>
+</table>
+
+<p class="texto-aux mt-2">
+  <a href="/admin">← Voltar ao painel</a>
+</p>
+
+<%- include('partials/footer') %>

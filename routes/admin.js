@@ -178,4 +178,60 @@ router.post('/recalcular', verificarAdmin, async (req, res) => {
   }
 });
 
+// GET /admin/usuarios - gerenciar participantes
+router.get('/usuarios', verificarAdmin, async (req, res) => {
+  try {
+    const usuarios = await all(
+      'SELECT id, nome, email, is_admin, criado_em FROM usuarios ORDER BY nome'
+    );
+    res.render('admin-usuarios', { title: 'Gerenciar participantes', usuarios });
+  } catch (err) {
+    console.error('Erro ao listar usuários:', err);
+    req.flash('erro', 'Erro ao carregar.');
+    res.redirect('/admin');
+  }
+});
+
+// POST /admin/usuarios/:id/tornar-admin
+router.post('/usuarios/:id/tornar-admin', verificarAdmin, async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.redirect('/admin/usuarios');
+  try {
+    await run('UPDATE usuarios SET is_admin = 1 WHERE id = ?', [id]);
+    req.flash('sucesso', 'Usuário promovido a admin.');
+  } catch (err) {
+    req.flash('erro', 'Erro ao promover.');
+  }
+  res.redirect('/admin/usuarios');
+});
+
+// POST /admin/usuarios/:id/rebaixar
+router.post('/usuarios/:id/rebaixar', verificarAdmin, async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.redirect('/admin/usuarios');
+  try {
+    await run('UPDATE usuarios SET is_admin = 0 WHERE id = ?', [id]);
+    req.flash('sucesso', 'Admin rebaixado a participante.');
+  } catch (err) {
+    req.flash('erro', 'Erro ao rebaixar.');
+  }
+  res.redirect('/admin/usuarios');
+});
+
+// POST /admin/usuarios/:id/excluir
+router.post('/usuarios/:id/excluir', verificarAdmin, async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.redirect('/admin/usuarios');
+  try {
+    await run('DELETE FROM palpites WHERE usuario_id = ?', [id]);
+    await run('DELETE FROM palpites_extras WHERE usuario_id = ?', [id]);
+    await run('DELETE FROM usuarios WHERE id = ?', [id]);
+    req.flash('sucesso', 'Participante excluído.');
+  } catch (err) {
+    console.error('Erro ao excluir:', err);
+    req.flash('erro', 'Erro ao excluir.');
+  }
+  res.redirect('/admin/usuarios');
+});
+
 module.exports = { router, calcularPontos };

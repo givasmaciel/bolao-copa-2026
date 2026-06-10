@@ -4,6 +4,9 @@ const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const { run, get } = require('../database/db');
 
+const usandoPG = !!process.env.DATABASE_URL;
+const AGORA = usandoPG ? 'NOW()' : "datetime('now')";
+
 const router = express.Router();
 
 function criarTransportador() {
@@ -96,21 +99,11 @@ router.get('/redefinir-senha/:token', async (req, res) => {
     const reset = await get(
       `SELECT id, usuario_id, expira_em, usado
        FROM password_reset_tokens
-       WHERE token = ? AND usado = 0 AND expira_em > datetime('now')`,
+       WHERE token = ? AND usado = 0 AND expira_em > ${AGORA}`,
       [token]
     );
 
-    // Tenta também no formato PG (NOW())
-    const resetPG = !reset ? await get(
-      `SELECT id, usuario_id, expira_em, usado
-       FROM password_reset_tokens
-       WHERE token = ? AND usado = 0 AND expira_em > NOW()`,
-      [token]
-    ) : null;
-
-    const valido = reset || resetPG;
-
-    if (!valido) {
+    if (!reset) {
       req.flash('erro', 'Link inválido ou expirado. Solicite um novo.');
       return res.redirect('/esqueci-senha');
     }
@@ -138,21 +131,12 @@ router.post('/redefinir-senha/:token', async (req, res) => {
   }
 
   try {
-    const reset = await get(
+    const valido = await get(
       `SELECT id, usuario_id, expira_em, usado
        FROM password_reset_tokens
-       WHERE token = ? AND usado = 0 AND expira_em > datetime('now')`,
+       WHERE token = ? AND usado = 0 AND expira_em > ${AGORA}`,
       [token]
     );
-
-    const resetPG = !reset ? await get(
-      `SELECT id, usuario_id, expira_em, usado
-       FROM password_reset_tokens
-       WHERE token = ? AND usado = 0 AND expira_em > NOW()`,
-      [token]
-    ) : null;
-
-    const valido = reset || resetPG;
 
     if (!valido) {
       req.flash('erro', 'Link inválido ou expirado.');
