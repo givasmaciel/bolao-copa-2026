@@ -320,10 +320,22 @@ router.post('/resetar-todos-palpites', verificarAdmin, async (req, res) => {
     // Resultados oficiais (admin) podem ser resetados sempre
     await run('DELETE FROM resultados_extras');
 
-    req.flash('sucesso', 'Palpites pendentes resetados (jogos já finalizados e bets após prazo foram preservados).');
+    req.flash('sucesso', 'Palpites pendentes + resultados oficiais resetados (jogos já finalizados e bets após prazo preservados).');
   } catch (err) {
     console.error('Erro ao resetar:', err);
     req.flash('erro', 'Erro ao resetar.');
+  }
+  res.redirect('/admin');
+});
+
+// POST /admin/resetar-oficiais - reseta APENAS os resultados oficiais (sem mexer em palpites)
+router.post('/resetar-oficiais', verificarAdmin, async (req, res) => {
+  try {
+    await run('DELETE FROM resultados_extras');
+    req.flash('sucesso', 'Resultados oficiais (extras) resetados. Palpites dos participantes preservados.');
+  } catch (err) {
+    console.error('Erro ao resetar oficiais:', err);
+    req.flash('erro', 'Erro ao resetar oficiais.');
   }
   res.redirect('/admin');
 });
