@@ -22,6 +22,9 @@ const PORT = process.env.PORT || 3000;
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
+// Trust proxy (Render, Heroku, etc)
+app.set('trust proxy', 1);
+
 // Middlewares
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
