@@ -16,10 +16,10 @@ router.get('/cadastro', jaLogado, (req, res) => {
 
 // POST /cadastro
 router.post('/cadastro', jaLogado, async (req, res) => {
-  const { nome, email, senha, confirmar, codigo } = req.body;
+  const { nome, email, senha, confirmar } = req.body;
 
   // Validações
-  if (!nome || !email || !senha || !codigo) {
+  if (!nome || !email || !senha) {
     req.flash('erro', 'Preencha todos os campos.');
     return res.render('cadastro', { title: 'Criar conta', dados: req.body });
   }
@@ -33,13 +33,6 @@ router.post('/cadastro', jaLogado, async (req, res) => {
   }
 
   try {
-    // Valida código de convite
-    const convidante = await get('SELECT id FROM usuarios WHERE codigo_convite = ?', [codigo.trim().toLowerCase()]);
-    if (!convidante) {
-      req.flash('erro', 'Código de convite inválido. Você precisa de um convite de quem já participa.');
-      return res.render('cadastro', { title: 'Criar conta', dados: req.body });
-    }
-
     const emailLimpo = email.toLowerCase().trim();
     const existe = await get('SELECT id FROM usuarios WHERE email = ?', [emailLimpo]);
     if (existe) {
