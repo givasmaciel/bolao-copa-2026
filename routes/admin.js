@@ -328,7 +328,6 @@ router.post('/resetar-todos-palpites', verificarAdmin, async (req, res) => {
   }
   res.redirect('/admin');
 });
-});
 
 // POST /admin/usuarios/criar - cria um novo participante
 router.post('/usuarios/criar', verificarAdmin, async (req, res) => {
