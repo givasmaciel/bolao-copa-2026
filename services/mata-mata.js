@@ -120,7 +120,8 @@ async function gerarMataMata() {
 
 async function limparMataMata() {
   const result = await run(
-    "UPDATE jogos SET selecao_casa_id = NULL, selecao_visitante_id = NULL WHERE fase != 'grupo' AND finalizado = 0"
+    "UPDATE jogos SET selecao_casa_id = NULL, selecao_visitante_id = NULL WHERE fase != 'grupo' AND finalizado = 0",
+    []
   );
   return result.changes || 0;
 }

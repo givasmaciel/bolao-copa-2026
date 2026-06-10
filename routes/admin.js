@@ -475,7 +475,8 @@ router.post('/mata-mata/limpar', verificarAdmin, async (req, res) => {
     const total = await limparMataMata();
     req.flash('sucesso', `${total} confrontos foram limpos.`);
   } catch (err) {
-    req.flash('erro', 'Erro ao limpar confrontos.');
+    console.error('Erro ao limpar confrontos:', err);
+    req.flash('erro', 'Erro ao limpar confrontos.' + (err.message ? ' (' + err.message + ')' : ''));
   }
   res.redirect('/admin/mata-mata');
 });
