@@ -353,6 +353,29 @@ router.post('/usuarios/criar', verificarAdmin, async (req, res) => {
   res.redirect('/admin/usuarios');
 });
 
+// POST /admin/usuarios/:id/alterar-username
+router.post('/usuarios/:id/alterar-username', verificarAdmin, async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.redirect('/admin/usuarios');
+  const { username } = req.body;
+  try {
+    const usernameLimpo = username ? username.trim().toLowerCase() : null;
+    if (usernameLimpo) {
+      const existe = await get('SELECT id FROM usuarios WHERE username = ? AND id != ?', [usernameLimpo, id]);
+      if (existe) {
+        req.flash('erro', 'Este nome de usuário já está em uso.');
+        return res.redirect('/admin/usuarios');
+      }
+    }
+    await run('UPDATE usuarios SET username = ? WHERE id = ?', [usernameLimpo, id]);
+    req.flash('sucesso', 'Nome de usuário atualizado.');
+  } catch (err) {
+    console.error('Erro ao alterar username:', err);
+    req.flash('erro', 'Erro ao alterar username.');
+  }
+  res.redirect('/admin/usuarios');
+});
+
 // POST /admin/usuarios/:id/excluir
 router.post('/usuarios/:id/excluir', verificarAdmin, async (req, res) => {
   const id = parseInt(req.params.id, 10);

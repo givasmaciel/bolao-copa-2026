@@ -51,6 +51,15 @@
         <td class="text-center"><%= new Date(u.criado_em).toLocaleDateString('pt-BR') %></td>
         <td class="text-center" style="white-space:nowrap">
           <details style="display:inline-block;vertical-align:middle">
+            <summary class="btn btn-sm btn-secondary" style="cursor:pointer">👤 Usuário</summary>
+            <div style="position:absolute;background:var(--card-bg);border:1px solid var(--border);padding:8px;border-radius:8px;z-index:10;margin-top:4px">
+              <form method="POST" action="/admin/usuarios/<%= u.id %>/alterar-username" style="display:flex;gap:4px">
+                <input type="text" name="username" value="<%= u.username || '' %>" placeholder="nome de usuário" class="form-control" style="width:130px">
+                <button type="submit" class="btn btn-sm btn-primary">Salvar</button>
+              </form>
+            </div>
+          </details>
+          <details style="display:inline-block;vertical-align:middle">
             <summary class="btn btn-sm btn-secondary" style="cursor:pointer">🔑 Senha</summary>
             <div style="position:absolute;background:var(--card-bg);border:1px solid var(--border);padding:8px;border-radius:8px;z-index:10;margin-top:4px">
               <form method="POST" action="/admin/usuarios/<%= u.id %>/resetar-senha" style="display:flex;gap:4px">

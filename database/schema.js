@@ -240,6 +240,17 @@ async function criarSchema() {
     // Coluna já existe, ignorar
   }
 
+  // Preenche username para usuários existentes que não têm
+  try {
+    if (usandoPG) {
+      await run("UPDATE usuarios SET username = LOWER(SPLIT_PART(email, '@', 1)) WHERE username IS NULL AND email LIKE '%@%'");
+    } else {
+      await run("UPDATE usuarios SET username = LOWER(SUBSTR(email, 1, INSTR(email, '@') - 1)) WHERE username IS NULL AND email LIKE '%@%'");
+    }
+  } catch (e) {
+    console.warn('Aviso: não foi possível preencher usernames automaticamente:', e.message);
+  }
+
   console.log('✅ Schema criado/verificado');
 }
 
