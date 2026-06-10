@@ -13,6 +13,7 @@ const jogosRoutes = require('./routes/jogos');
 const rankingRoutes = require('./routes/ranking');
 const senhaRoutes = require('./routes/senha');
 const extrasRoutes = require('./routes/extras');
+const testeRoutes = require('./routes/teste');
 const { router: adminRoutes } = require('./routes/admin');
 
 const app = express();
@@ -61,6 +62,7 @@ app.use('/', senhaRoutes);
 app.use('/palpites-extras', extrasRoutes.router);
 app.use('/admin', adminRoutes);
 app.use('/admin', extrasRoutes.adminRouter);
+app.use('/teste', testeRoutes);
 
 // 404
 app.use((req, res) => {

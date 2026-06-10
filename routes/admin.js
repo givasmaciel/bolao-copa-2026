@@ -94,7 +94,7 @@ router.get('/jogos', verificarAdmin, async (req, res) => {
       ORDER BY j.id
     `);
 
-    res.render('admin-jogos', { title: 'Editar resultados', jogos });
+    res.render('admin-jogos', { title: 'Editar resultados', jogos, query: req.query });
   } catch (err) {
     console.error('Erro ao listar jogos admin:', err);
     req.flash('erro', 'Erro ao carregar jogos.');
@@ -279,6 +279,68 @@ router.post('/usuarios/:id/excluir', verificarAdmin, async (req, res) => {
     req.flash('erro', 'Erro ao excluir.');
   }
   res.redirect('/admin/usuarios');
+});
+
+// POST /admin/gerar-testes - cria 4 jogos-teste para amanhã
+router.post('/gerar-testes', verificarAdmin, async (req, res) => {
+  try {
+    const amanha = new Date();
+    amanha.setDate(amanha.getDate() + 1);
+    amanha.setHours(0, 0, 0, 0);
+
+    const data = amanha.toISOString().split('T')[0];
+
+    // Usa 8 seleções existentes para 4 jogos
+    const selecoes = await all('SELECT id FROM selecoes ORDER BY id LIMIT 8');
+    if (selecoes.length < 8) {
+      req.flash('erro', 'Precisa de pelo menos 8 seleções no banco.');
+      return res.redirect('/admin');
+    }
+
+    const horarios = ['10:00-03:00', '14:00-03:00', '17:00-03:00', '21:00-03:00'];
+    let count = 0;
+
+    for (let i = 0; i < 4; i++) {
+      const casa = selecoes[i * 2].id;
+      const visitante = selecoes[i * 2 + 1].id;
+
+      const existe = await get(
+        'SELECT id FROM jogos WHERE tipo = ? AND selecao_casa_id = ? AND selecao_visitante_id = ?',
+        ['teste', casa, visitante]
+      );
+      if (!existe) {
+        await run(
+          `INSERT INTO jogos (fase, rodada, selecao_casa_id, selecao_visitante_id, data, tipo, estadio, cidade, pais)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          ['teste', 1, casa, visitante, `${data} ${horarios[i]}`, 'teste', 'Estádio de Teste', 'Cidade Teste', 'Brasil']
+        );
+        count++;
+      }
+    }
+
+    req.flash('sucesso', `${count} jogo(s)-teste criado(s) para amanhã (${data}).`);
+    res.redirect('/admin');
+  } catch (err) {
+    console.error('Erro ao gerar testes:', err);
+    req.flash('erro', 'Erro ao gerar.');
+    res.redirect('/admin');
+  }
+});
+
+// POST /admin/deletar-testes - remove todos os jogos-teste e palpites relacionados
+router.post('/deletar-testes', verificarAdmin, async (req, res) => {
+  try {
+    const ids = await all("SELECT id FROM jogos WHERE tipo = 'teste'");
+    for (const j of ids) {
+      await run('DELETE FROM palpites WHERE jogo_id = ?', [j.id]);
+    }
+    await run("DELETE FROM jogos WHERE tipo = 'teste'");
+    req.flash('sucesso', `${ids.length} jogo(s)-teste e palpites removidos.`);
+  } catch (err) {
+    console.error('Erro ao deletar testes:', err);
+    req.flash('erro', 'Erro ao remover.');
+  }
+  res.redirect('/admin');
 });
 
 module.exports = { router, calcularPontos };

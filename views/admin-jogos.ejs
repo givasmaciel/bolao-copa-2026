@@ -18,6 +18,7 @@
         <option value="sf" <%= typeof query !== 'undefined' && query.fase === 'sf' ? 'selected' : '' %>>Semis</option>
         <option value="terceiro" <%= typeof query !== 'undefined' && query.fase === 'terceiro' ? 'selected' : '' %>>3º lugar</option>
         <option value="final" <%= typeof query !== 'undefined' && query.fase === 'final' ? 'selected' : '' %>>Final</option>
+        <option value="teste" <%= typeof query !== 'undefined' && query.fase === 'teste' ? 'selected' : '' %>>🧪 Teste</option>
       </select>
     </div>
     <% if (typeof query !== 'undefined' && query.fase) { %>
@@ -42,6 +43,7 @@
                value="<%= jogo.gols_visitante !== null ? jogo.gols_visitante : '' %>" placeholder="—" style="width:60px">
       </div>
       <div class="jogo-data">
+        <% if (jogo.fase === 'teste') { %><span class="badge badge-pendente">🧪 Teste</span> <% } %>
         <% if (jogo.grupo_letra) { %>Grupo <%= jogo.grupo_letra %> • <% } %>
         <%= new Date(jogo.data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) %>
       </div>

@@ -22,6 +22,7 @@
           <li><a href="/jogos" class="<%= typeof active !== 'undefined' && active === 'jogos' ? 'active' : '' %>">Jogos</a></li>
           <% if (usuario) { %>
             <li><a href="/palpites" class="<%= typeof active !== 'undefined' && active === 'palpites' ? 'active' : '' %>">Meus palpites</a></li>
+            <li><a href="/teste" class="<%= typeof active !== 'undefined' && active === 'teste' ? 'active' : '' %>">🧪 Teste</a></li>
             <li><a href="/palpites-extras" class="<%= typeof active !== 'undefined' && active === 'extras' ? 'active' : '' %>">Extras</a></li>
             <li><a href="/ranking" class="<%= typeof active !== 'undefined' && active === 'ranking' ? 'active' : '' %>">Ranking</a></li>
             <% if (usuario.is_admin) { %>
