@@ -5,6 +5,46 @@ const { verificarAdmin } = require('../middleware/auth');
 
 const router = express.Router();
 
+// GET /admin/diagnostic - verifica estado do banco (acesso sem login, use chave)
+router.get('/diagnostic', async (req, res) => {
+  if (req.query.chave !== 'verificar123') {
+    return res.status(403).send('Acesso negado');
+  }
+  try {
+    const usandoPG = !!process.env.DATABASE_URL;
+    const totalUsers = await get('SELECT COUNT(*) AS total FROM usuarios');
+    const adminUser = await get("SELECT id, email, is_admin, length(senha_hash) AS hash_len, substring(senha_hash, 1, 30) AS hash_inicio FROM usuarios WHERE email = 'gpmmac@gmail.com'");
+    const envEmail = process.env.ADMIN_EMAIL || '(não definido)';
+    const envSenhaLen = (process.env.ADMIN_SENHA || '').length;
+
+    const testHash = adminUser ? await bcrypt.compare('M@ciel80', adminUser.hash_inicio + '...') : false;
+    // bcrypt.compare precisa do hash completo, refaz
+    let senhaOk = false;
+    if (adminUser) {
+      const fullUser = await get("SELECT senha_hash FROM usuarios WHERE email = 'gpmmac@gmail.com'");
+      senhaOk = await bcrypt.compare('M@ciel80', fullUser.senha_hash);
+    }
+
+    res.json({
+      usandoPG,
+      total_usuarios: totalUsers?.total || 0,
+      admin: adminUser ? {
+        id: adminUser.id,
+        email: adminUser.email,
+        is_admin: adminUser.is_admin,
+        hash_len: adminUser.hash_len
+      } : null,
+      env: {
+        ADMIN_EMAIL: envEmail,
+        ADMIN_SENHA_length: envSenhaLen
+      },
+      senha_ok: senhaOk
+    });
+  } catch (err) {
+    res.status(500).json({ erro: err.message });
+  }
+});
+
 // Sistema de pontuação
 // - Placar exato: 10 pts
 // - Empate (qualquer placar): 7 pts
