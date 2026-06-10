@@ -73,7 +73,6 @@ router.post('/', verificarAutenticado, async (req, res) => {
 
   const usuarioId = req.session.usuario.id;
 
-  // Valida campos obrigatórios e limites
   const erros = [];
   for (const cat of CATEGORIAS) {
     if (MULTI_CATS.has(cat.id)) {
@@ -120,6 +119,71 @@ router.post('/', verificarAutenticado, async (req, res) => {
     }
 
     req.flash('sucesso', 'Palpites extras salvos com sucesso!');
+    res.redirect('/palpites-extras');
+  } catch (err) {
+    console.error('Erro ao salvar palpites extras:', err);
+    req.flash('erro', 'Erro ao salvar.');
+    res.redirect('/palpites-extras');
+  }
+});
+
+// POST /palpites-extras/:categoria - salva uma categoria individualmente
+router.post('/:categoria', verificarAutenticado, async (req, res) => {
+  const cat = CATEGORIAS.find(c => c.id === req.params.categoria);
+  if (!cat) {
+    req.flash('erro', 'Categoria inválida.');
+    return res.redirect('/palpites-extras');
+  }
+  if (req.session.usuario.is_admin) {
+    req.flash('erro', 'Administradores não podem participar do bolão.');
+    return res.redirect('/admin');
+  }
+  if (new Date() >= await getDataLimite()) {
+    req.flash('erro', 'O prazo para palpites extras já encerrou.');
+    return res.redirect('/palpites-extras');
+  }
+
+  const usuarioId = req.session.usuario.id;
+
+  // Valida campos obrigatórios e limites
+  const erros = [];
+  if (MULTI_CATS.has(cat.id)) {
+    const selecoes = req.body.selecoes;
+    const ids = selecoes ? (Array.isArray(selecoes) ? selecoes : [selecoes]) : [];
+    if (ids.length > cat.max) {
+      erros.push(`${cat.nome}: máximo ${cat.max} seleções.`);
+    }
+  } else {
+    if (!req.body.selecao) {
+      erros.push(`Selecione ${cat.nome}.`);
+    }
+  }
+  if (erros.length > 0) {
+    req.flash('erro', erros.join(' '));
+    return res.redirect('/palpites-extras');
+  }
+
+  try {
+    await run('DELETE FROM palpites_extras WHERE usuario_id = ? AND categoria = ?', [usuarioId, cat.id]);
+
+    if (MULTI_CATS.has(cat.id)) {
+      const selecoes = req.body.selecoes;
+      const ids = Array.isArray(selecoes) ? selecoes : [selecoes];
+      for (const sId of ids) {
+        await run(
+          'INSERT INTO palpites_extras (usuario_id, categoria, selecao_id) VALUES (?, ?, ?)',
+          [usuarioId, cat.id, parseInt(sId, 10)]
+        );
+      }
+    } else {
+      const sId = req.body.selecao;
+      await run(
+        'INSERT INTO palpites_extras (usuario_id, categoria, selecao_id) VALUES (?, ?, ?)',
+        [usuarioId, cat.id, parseInt(sId, 10)]
+      );
+    }
+
+    req.flash('sucesso', `${cat.nome} salvo com sucesso!`);
     res.redirect('/palpites-extras');
   } catch (err) {
     console.error('Erro ao salvar palpites extras:', err);

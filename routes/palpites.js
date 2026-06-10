@@ -57,102 +57,74 @@ router.get('/', verificarAutenticado, async (req, res) => {
   }
 });
 
-// POST /palpites - salva vários palpites de uma vez
-// Espera-se: palpites_json = '[ { jogoId, casa, visitante }, ... ]' (JSON stringificado)
-router.post('/', verificarAutenticado, async (req, res) => {
+// POST /palpites/:jogoId - salva o palpite de um jogo específico
+router.post('/:jogoId', verificarAutenticado, async (req, res) => {
   const usuarioId = req.session.usuario.id;
   if (req.session.usuario.is_admin) {
     req.flash('erro', 'Administradores não podem participar do bolão.');
     return res.redirect('/admin');
   }
-  let palpites = [];
-  if (req.body.palpites_json) {
-    try {
-      palpites = JSON.parse(req.body.palpites_json);
-      if (!Array.isArray(palpites)) palpites = [];
-    } catch (e) {
-      palpites = [];
-    }
+
+  const jogoId = parseInt(req.params.jogoId, 10);
+  const casa = parseInt(req.body.casa, 10);
+  const visitante = parseInt(req.body.visitante, 10);
+
+  if (isNaN(jogoId) || isNaN(casa) || isNaN(visitante)) {
+    req.flash('erro', 'Palpite inválido.');
+    return res.redirect('/palpites');
   }
 
-  let salvos = 0;
-  let ignorados = 0;
+  if (casa < 0 || casa > 99 || visitante < 0 || visitante > 99) {
+    req.flash('erro', 'Placar inválido. Use valores entre 0 e 99.');
+    return res.redirect('/palpites');
+  }
 
   try {
-    for (const palpite of palpites) {
-      if (!palpite || palpite.jogoId === undefined || palpite.casa === undefined || palpite.visitante === undefined) {
-        ignorados++;
-        continue;
-      }
+    // Verifica se o jogo existe, está na fase de grupos e ainda não começou
+    const jogo = await get(
+      "SELECT id, data, finalizado FROM jogos WHERE id = ? AND fase = 'grupo'",
+      [jogoId]
+    );
+    if (!jogo) {
+      req.flash('erro', 'Jogo não encontrado.');
+      return res.redirect('/palpites');
+    }
 
-      const jogoId = parseInt(palpite.jogoId, 10);
-      const casa = parseInt(palpite.casa, 10);
-      const visitante = parseInt(palpite.visitante, 10);
+    // Verifica se o jogo já começou (fecha 2 min antes) ou já foi finalizado
+    const agora = new Date();
+    const dataJogo = new Date(jogo.data);
+    const margem = new Date(dataJogo.getTime() - 2 * 60 * 1000);
+    if (agora >= margem || jogo.finalizado === 1) {
+      req.flash('erro', 'Este jogo já fechou para palpites.');
+      return res.redirect('/palpites');
+    }
 
-      if (isNaN(jogoId) || isNaN(casa) || isNaN(visitante)) {
-        ignorados++;
-        continue;
-      }
-      if (casa < 0 || casa > 99 || visitante < 0 || visitante > 99) {
-        ignorados++;
-        continue;
-      }
+    // Faz upsert
+    const existe = await get(
+      'SELECT id FROM palpites WHERE usuario_id = ? AND jogo_id = ?',
+      [usuarioId, jogoId]
+    );
 
-      // Verifica se o jogo existe, está na fase de grupos e ainda não começou
-      const jogo = await get(
-        "SELECT id, data, finalizado FROM jogos WHERE id = ? AND fase = 'grupo'",
-        [jogoId]
+    if (existe) {
+      await run(
+        `UPDATE palpites
+         SET palpite_gols_casa = ?, palpite_gols_visitante = ?, atualizado_em = CURRENT_TIMESTAMP
+         WHERE id = ?`,
+        [casa, visitante, existe.id]
       );
-      if (!jogo) {
-        ignorados++;
-        continue;
-      }
-
-      // Verifica se o jogo já começou (fecha 2 min antes) ou já foi finalizado
-      const agora = new Date();
-      const dataJogo = new Date(jogo.data);
-      const margem = new Date(dataJogo.getTime() - 2 * 60 * 1000);
-      if (agora >= margem || jogo.finalizado === 1) {
-        ignorados++;
-        continue;
-      }
-
-      // Faz upsert
-      const existe = await get(
-        'SELECT id FROM palpites WHERE usuario_id = ? AND jogo_id = ?',
-        [usuarioId, jogoId]
+    } else {
+      await run(
+        `INSERT INTO palpites (usuario_id, jogo_id, palpite_gols_casa, palpite_gols_visitante)
+         VALUES (?, ?, ?, ?)`,
+        [usuarioId, jogoId, casa, visitante]
       );
-
-      if (existe) {
-        await run(
-          `UPDATE palpites
-           SET palpite_gols_casa = ?, palpite_gols_visitante = ?, atualizado_em = CURRENT_TIMESTAMP
-           WHERE id = ?`,
-          [casa, visitante, existe.id]
-        );
-      } else {
-        await run(
-          `INSERT INTO palpites (usuario_id, jogo_id, palpite_gols_casa, palpite_gols_visitante)
-           VALUES (?, ?, ?, ?)`,
-          [usuarioId, jogoId, casa, visitante]
-        );
-      }
-      salvos++;
     }
 
-    if (salvos > 0) {
-      req.flash('sucesso', `${salvos} palpite(s) salvos com sucesso!`);
-    }
-    if (ignorados > 0) {
-      req.flash('aviso', `${ignorados} palpite(s) ignorados (jogos já iniciados ou inválidos).`);
-    }
-    if (salvos === 0 && ignorados === 0) {
-      req.flash('aviso', 'Nenhum palpite foi enviado.');
-    }
+    req.flash('sucesso', 'Palpite salvo com sucesso!');
     res.redirect('/palpites');
   } catch (err) {
-    console.error('Erro ao salvar palpites:', err);
-    req.flash('erro', 'Erro ao salvar palpites.');
+    console.error('Erro ao salvar palpite:', err);
+    req.flash('erro', 'Erro ao salvar palpite.');
     res.redirect('/palpites');
   }
 });

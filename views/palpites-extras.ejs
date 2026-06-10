@@ -14,25 +14,27 @@
   <div class="flash aviso">⚠ O prazo para palpites extras já encerrou.</div>
 <% } %>
 
-<form method="POST" action="/palpites-extras">
-  <div class="grid grid-2">
-    <% categorias.forEach(function(cat) { %>
-      <div class="card">
+<div class="grid grid-2">
+  <% categorias.forEach(function(cat) { %>
+    <form method="POST" action="/palpites-extras/<%= cat.id %>" class="card">
+      <div>
         <div class="flex-between">
           <h3 style="margin:0"><%= cat.nome %></h3>
           <div class="text-right">
             <span class="pontos-badge"><%= cat.pts %> pts</span>
             <% if (cat.max > 1) { %>
-              <div class="texto-aux mt-1">Escolha até <%= cat.max %> seleções</div>
+              <div class="texto-aux mt-1">
+                <span id="count-<%= cat.id %>"><%= palpites[cat.id] ? palpites[cat.id].length : 0 %></span> / <%= cat.max %> selecionadas
+              </div>
             <% } %>
           </div>
         </div>
         <div class="form-group mt-2" style="margin-bottom:0">
           <% if (multiCats.has(cat.id)) { %>
-            <div style="max-height:320px; overflow-y:auto; border:1px solid var(--cinza); border-radius:8px; padding:8px">
+            <div style="max-height:320px; overflow-y:auto; border:1px solid var(--cinza); border-radius:8px; padding:8px" class="selecoes-lista" data-categoria="<%= cat.id %>">
               <% selecoes.forEach(function(s) { %>
                 <label style="display:flex; align-items:center; gap:8px; padding:4px 6px; border-radius:4px; cursor:pointer; <%= palpites[cat.id] && palpites[cat.id].includes(s.id) ? 'background:var(--cinza-claro);font-weight:600' : '' %>">
-                  <input type="checkbox" name="<%= cat.id %>" value="<%= s.id %>"
+                  <input type="checkbox" name="selecoes" value="<%= s.id %>"
                     <%= palpites[cat.id] && palpites[cat.id].includes(s.id) ? 'checked' : '' %>
                     <%= prazoPassou ? 'disabled' : '' %>>
                   <%= s.nome_pt %>
@@ -40,7 +42,7 @@
               <% }); %>
             </div>
           <% } else { %>
-            <select name="<%= cat.id %>" class="form-control" <%= prazoPassou ? 'disabled' : '' %>>
+            <select name="selecao" class="form-control" <%= prazoPassou ? 'disabled' : '' %>>
               <option value="">— Selecione —</option>
               <% selecoes.forEach(function(s) { %>
                 <option value="<%= s.id %>" <%= palpites[cat.id] && palpites[cat.id].includes(s.id) ? 'selected' : '' %>>
@@ -51,14 +53,32 @@
           <% } %>
         </div>
       </div>
-    <% }); %>
-  </div>
+      <% if (!prazoPassou) { %>
+        <div class="text-center mt-3">
+          <button type="submit" class="btn btn-primary">💾 Salvar <%= cat.nome %></button>
+        </div>
+      <% } %>
+    </form>
+  <% }); %>
+</div>
 
-  <% if (!prazoPassou) { %>
-    <div class="text-center mt-3 mb-2">
-      <button type="submit" class="btn btn-primary btn-lg">💾 Salvar palpites extras</button>
-    </div>
-  <% } %>
-</form>
+<script>
+document.querySelectorAll('.selecoes-lista').forEach(function(container) {
+  var catId = container.dataset.categoria;
+  var checkboxes = container.querySelectorAll('input[type="checkbox"]');
+  var counter = document.getElementById('count-' + catId);
+  var max = parseInt(container.closest('.card').querySelector('.texto-aux')?.textContent?.match(/(\d+)\s*\/\s*(\d+)/)?.[2]) || Infinity;
+  checkboxes.forEach(function(cb) {
+    cb.addEventListener('change', function() {
+      var checked = container.querySelectorAll('input[type="checkbox"]:checked').length;
+      if (this.checked && checked > max) {
+        this.checked = false;
+        checked--;
+      }
+      counter.textContent = checked;
+    });
+  });
+});
+</script>
 
 <%- include('partials/footer') %>

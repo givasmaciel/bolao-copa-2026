@@ -20,126 +20,80 @@
   </div>
 </div>
 
-<form method="POST" action="/palpites" id="form-palpites">
-  <input type="hidden" name="palpites_json" id="palpites_json" value="">
-  <% const agora = new Date(); %>
+<% const agora = new Date(); %>
 
-  <% Object.keys(rodadas).sort(function(a,b) { return parseInt(a) - parseInt(b); }).forEach(function(rodada) { %>
-    <h2 class="jogo-rodada-titulo">Rodada <%= rodada %></h2>
-    <% rodadas[rodada].forEach(function(jogo) { %>
-      <%
-        const dataJogo = new Date(jogo.data);
-        const margem = new Date(dataJogo.getTime() - 2 * 60 * 1000);
-        const fechado = agora >= margem;
-        const finalizado = jogo.finalizado === 1;
-        const temPalpite = jogo.palpite_gols_casa !== null && jogo.palpite_gols_casa !== undefined;
-        const pontos = jogo.pontos_obtidos || 0;
-      %>
-      <div class="jogo-card <%= finalizado ? 'finalizado' : (fechado ? 'iniciado' : '') %>">
-        <div class="jogo-time">
-          <img src="<%= jogo.casa_bandeira %>" alt="<%= jogo.casa_pt %>">
-          <span><%= jogo.casa_pt %></span>
-        </div>
+<% Object.keys(rodadas).sort(function(a,b) { return parseInt(a) - parseInt(b); }).forEach(function(rodada) { %>
+  <h2 class="jogo-rodada-titulo">Rodada <%= rodada %></h2>
+  <% rodadas[rodada].forEach(function(jogo) { %>
+    <%
+      const dataJogo = new Date(jogo.data);
+      const margem = new Date(dataJogo.getTime() - 2 * 60 * 1000);
+      const fechado = agora >= margem;
+      const finalizado = jogo.finalizado === 1;
+      const temPalpite = jogo.palpite_gols_casa !== null && jogo.palpite_gols_casa !== undefined;
+      const pontos = jogo.pontos_obtidos || 0;
+    %>
+    <div class="jogo-card <%= finalizado ? 'finalizado' : (fechado ? 'iniciado' : '') %>">
+      <div class="jogo-time">
+        <img src="<%= jogo.casa_bandeira %>" alt="<%= jogo.casa_pt %>">
+        <span><%= jogo.casa_pt %></span>
+      </div>
 
-        <div class="jogo-info">
-          <% if (finalizado) { %>
-            <div class="jogo-placar-display">
-              <%= jogo.gols_casa %> × <%= jogo.gols_visitante %>
+      <div class="jogo-info">
+        <% if (finalizado) { %>
+          <div class="jogo-placar-display">
+            <%= jogo.gols_casa %> × <%= jogo.gols_visitante %>
+          </div>
+          <% if (temPalpite) { %>
+            <div class="pontos-badge <%= pontos === 0 ? 'zero' : '' %>">
+              <%= pontos %> pts
             </div>
-            <% if (temPalpite) { %>
-              <div class="pontos-badge <%= pontos === 0 ? 'zero' : '' %>">
-                <%= pontos %> pts
-              </div>
-            <% } %>
-            <div class="jogo-data"><%= new Date(jogo.data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) %></div>
-            <div class="jogo-estadio">📍 <%= jogo.estadio %>, <%= jogo.cidade %></div>
-            <div style="margin-top:4px"><span class="badge badge-finalizado">Final</span></div>
-          <% } else if (fechado) { %>
-            <div class="jogo-placar-display">? × ?</div>
-            <% if (temPalpite) { %>
-              <div class="texto-aux">Seu palpite: <strong><%= jogo.palpite_gols_casa %> × <%= jogo.palpite_gols_visitante %></strong></div>
-            <% } %>
-            <div class="jogo-data"><%= new Date(jogo.data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) %></div>
-            <div class="jogo-estadio">📍 <%= jogo.estadio %>, <%= jogo.cidade %></div>
-            <div style="margin-top:4px"><span class="badge badge-pendente">Fechado</span></div>
-          <% } else { %>
+          <% } %>
+          <div class="jogo-data"><%= new Date(jogo.data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) %></div>
+          <div class="jogo-estadio">📍 <%= jogo.estadio %>, <%= jogo.cidade %></div>
+          <div style="margin-top:4px"><span class="badge badge-finalizado">Final</span></div>
+        <% } else if (fechado) { %>
+          <div class="jogo-placar-display">? × ?</div>
+          <% if (temPalpite) { %>
+            <div class="texto-aux">Seu palpite: <strong><%= jogo.palpite_gols_casa %> × <%= jogo.palpite_gols_visitante %></strong></div>
+          <% } %>
+          <div class="jogo-data"><%= new Date(jogo.data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) %></div>
+          <div class="jogo-estadio">📍 <%= jogo.estadio %>, <%= jogo.cidade %></div>
+          <div style="margin-top:4px"><span class="badge badge-pendente">Fechado</span></div>
+        <% } else { %>
+          <form method="POST" action="/palpites/<%= jogo.id %>" class="jogo-form">
             <div class="jogo-placar">
               <input
                 type="number"
-                name="casa_<%= jogo.id %>"
+                name="casa"
                 min="0" max="99"
                 value="<%= temPalpite ? jogo.palpite_gols_casa : '' %>"
                 placeholder="0"
-                data-jogo-id="<%= jogo.id %>"
-                data-campo="casa"
+                required
               >
               <span class="x">×</span>
               <input
                 type="number"
-                name="visitante_<%= jogo.id %>"
+                name="visitante"
                 min="0" max="99"
                 value="<%= temPalpite ? jogo.palpite_gols_visitante : '' %>"
                 placeholder="0"
-                data-jogo-id="<%= jogo.id %>"
-                data-campo="visitante"
+                required
               >
             </div>
-            <div class="jogo-data"><%= new Date(jogo.data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) %></div>
-            <div class="jogo-estadio">📍 <%= jogo.estadio %>, <%= jogo.cidade %></div>
-          <% } %>
-        </div>
-
-        <div class="jogo-time visitante">
-          <span><%= jogo.visitante_pt %></span>
-          <img src="<%= jogo.visitante_bandeira %>" alt="<%= jogo.visitante_pt %>">
-        </div>
+            <button type="submit" class="btn btn-sm btn-primary mt-1">💾 Salvar</button>
+          </form>
+          <div class="jogo-data"><%= new Date(jogo.data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) %></div>
+          <div class="jogo-estadio">📍 <%= jogo.estadio %>, <%= jogo.cidade %></div>
+        <% } %>
       </div>
-    <% }); %>
+
+      <div class="jogo-time visitante">
+        <span><%= jogo.visitante_pt %></span>
+        <img src="<%= jogo.visitante_bandeira %>" alt="<%= jogo.visitante_pt %>">
+      </div>
+    </div>
   <% }); %>
-
-  <div class="text-center mt-3 mb-2">
-    <button type="submit" class="btn btn-primary btn-lg">💾 Salvar todos os palpites</button>
-    <p class="texto-aux mt-1">Você pode alterar seus palpites até 2 minutos antes do jogo começar.</p>
-  </div>
-</form>
-
-<script>
-// Antes de submeter, coleta todos os palpites e coloca num único campo JSON
-(function() {
-  const form = document.getElementById('form-palpites');
-  if (!form) return;
-  const jsonField = document.getElementById('palpites_json');
-
-  form.addEventListener('submit', function(e) {
-    const palpites = [];
-    // Agrupa inputs pelo jogo_id
-    const porJogo = {};
-    form.querySelectorAll('input[type="number"][data-jogo-id]').forEach(function(input) {
-      const jogoId = input.getAttribute('data-jogo-id');
-      const campo = input.getAttribute('data-campo');
-      if (!porJogo[jogoId]) porJogo[jogoId] = {};
-      porJogo[jogoId][campo] = input.value;
-    });
-    for (const [jogoId, vals] of Object.entries(porJogo)) {
-      if (vals.casa !== '' && vals.visitante !== '') {
-        palpites.push({
-          jogoId: parseInt(jogoId, 10),
-          casa: parseInt(vals.casa, 10),
-          visitante: parseInt(vals.visitante, 10)
-        });
-      }
-    }
-    jsonField.value = JSON.stringify(palpites);
-  });
-
-  // Atalho: tecla Enter nos inputs submete o form
-  form.addEventListener('keydown', function(e) {
-    if (e.key === 'Enter' && e.target.tagName === 'INPUT') {
-      e.preventDefault();
-      form.requestSubmit();
-    }
-  });
-})();
-</script>
+<% }); %>
 
 <%- include('partials/footer') %>
