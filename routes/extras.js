@@ -9,7 +9,7 @@ const CATEGORIAS = [
   { id: 'campeao', nome: 'Campeão', pts: 150, max: 1 },
   { id: 'vice', nome: 'Vice-campeão', pts: 150, max: 1 },
   { id: 'terceiro', nome: 'Terceiro lugar', pts: 150, max: 1 },
-  { id: 'r32', nome: '1/16 avos de Final', pts: 10, max: 32 },
+  { id: 'r32', nome: '1/16 avos de Final', pts: 5, max: 32 },
   { id: 'oitavas', nome: 'Oitavas de Final', pts: 10, max: 16 },
   { id: 'quartas', nome: 'Quartas de Final', pts: 15, max: 8 },
   { id: 'semi', nome: 'Semifinal', pts: 30, max: 4 },
