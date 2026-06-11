@@ -87,7 +87,7 @@ router.post('/login', jaLogado, async (req, res) => {
     return res.render('login', { title: 'Entrar' });
   }
 
-  console.log('[LOGIN] req.secure:', req.secure, '| headers x-forwarded-proto:', req.headers['x-forwarded-proto'], '| NODE_ENV:', process.env.NODE_ENV, '| cookie:', req.headers.cookie);
+  console.log('[LOGIN] req.secure:', req.secure, '| headers x-forwarded-proto:', req.headers['x-forwarded-proto'], '| NODE_ENV:', process.env.NODE_ENV);
 
   try {
     const identifier = email; // campo do form chama 'email' mas aceita qualquer identificador

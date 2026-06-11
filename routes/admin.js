@@ -9,7 +9,7 @@ const router = express.Router();
 
 // GET /admin/diagnostic - verifica estado do banco (acesso sem login, use chave)
 router.get('/diagnostic', async (req, res) => {
-  if (req.query.chave !== 'verificar123') {
+  if (req.query.chave !== (process.env.DIAGNOSTIC_KEY || 'verificar123')) {
     return res.status(403).send('Acesso negado');
   }
   try {
@@ -438,8 +438,8 @@ router.post('/jogos/:id/limite', verificarAdmin, async (req, res) => {
   res.redirect('/admin/jogos');
 });
 
-// GET /admin/jogos/:id/limpar-limite - limpa prazo personalizado
-router.get('/jogos/:id/limpar-limite', verificarAdmin, async (req, res) => {
+// POST /admin/jogos/:id/limpar-limite - limpa prazo personalizado
+router.post('/jogos/:id/limpar-limite', verificarAdmin, async (req, res) => {
   const jogoId = parseInt(req.params.id, 10);
   if (isNaN(jogoId)) return res.redirect('/admin/jogos');
   try {
