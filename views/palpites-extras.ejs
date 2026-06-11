@@ -16,11 +16,7 @@
   function tick() {
     var agora = new Date();
     var diff = prazo.getTime() - agora.getTime();
-    if (diff <= 0) {
-      el.innerHTML = '🔒 Prazo encerrado! Os palpites extras estão travados.';
-      el.style.color = 'var(--erro)';
-      return;
-    }
+    if (diff <= 0) { el.innerHTML = '🔒 Prazo encerrado!'; el.style.color = 'var(--erro)'; return; }
     var totalSeg = Math.floor(diff / 1000);
     var d = Math.floor(totalSeg / 86400);
     var h = Math.floor((totalSeg % 86400) / 3600);
@@ -30,11 +26,7 @@
     if (d > 0) partes.push(d + 'd');
     partes.push(h + 'h ' + m + 'min ' + s + 's');
     el.innerHTML = '⏱ Faltam <strong>' + partes.join(' ') + '</strong> para o prazo final';
-    if (diff < 86400000) {
-      el.style.color = 'var(--erro)';
-    } else {
-      el.style.color = '';
-    }
+    el.style.color = diff < 86400000 ? 'var(--erro)' : '';
   }
   tick();
   setInterval(tick, 1000);
@@ -42,20 +34,9 @@
 </script>
 
 <% if (!prazoPassou) { %>
-  <!-- Pontuação Máxima Possível -->
-  <div class="card mb-2" style="border-left:4px solid var(--azul)">
-    <h3 style="margin:0 0 10px">📊 Pontuação Máxima Possível</h3>
-    <div style="display:flex;flex-wrap:wrap;gap:8px">
-      <% categorias.forEach(function(cat) { %>
-        <span style="background:var(--cinza-claro);padding:4px 10px;border-radius:6px;font-size:0.82rem;white-space:nowrap">
-          <%= cat.nome %>: <strong><%= cat.pts * cat.max %> pts</strong>
-        </span>
-      <% }); %>
-      <span style="background:var(--azul);color:#fff;padding:4px 10px;border-radius:6px;font-size:0.82rem;font-weight:600;white-space:nowrap">
-        Total: <strong><%= maxTotal %> pts</strong>
-      </span>
-    </div>
-  </div>
+<div class="flash info" style="margin-bottom:16px;border-left:4px solid var(--azul);padding:12px 16px;background:var(--cinza-claro);border-radius:8px">
+  <strong>📌 Importante:</strong> Os palpites extras são independentes entre as fases. Não é necessário manter coerência entre as escolhas — cada categoria é uma aposta separada e pontuada individualmente. Você pode, por exemplo, eleger um Campeão sem tê-lo colocado como Finalista.
+</div>
 <% } %>
 
 <%
@@ -65,16 +46,13 @@
 <div class="card" style="border-left:4px solid var(--verde); margin-bottom:20px">
   <h3 style="margin:0 0 12px">✅ Seus palpites extras salvos</h3>
   <div class="grid grid-2">
-    <% ordem.forEach(function(catId) { 
-      const cat = categorias.find(function(c) { return c.id === catId; });
-      if (!cat) return;
-    %>
+    <% categorias.forEach(function(cat) { %>
       <% if (palpites[cat.id] && palpites[cat.id].length > 0) { %>
         <div style="background:var(--cinza-claro);padding:10px 14px;border-radius:8px;border-left:3px solid var(--verde)">
           <strong style="font-size:0.85rem;display:block;margin-bottom:6px"><%= cat.nome %> (<%= cat.pts %> pts)</strong>
           <div style="display:flex;flex-wrap:wrap;gap:4px">
             <% 
-              const selecoesCat = selecoes.filter(function(s) { return palpites[cat.id].includes(s.id); });
+              const selecoesCat = todasSelecoes.filter(function(s) { return palpites[cat.id].includes(s.id); });
               selecoesCat.forEach(function(s) { 
             %>
               <span style="display:inline-block;background:var(--verde);color:#fff;padding:3px 10px;border-radius:12px;font-size:0.8rem;font-weight:500">
@@ -92,19 +70,14 @@
 <% if (prazoPassou) { %>
   <div class="flash aviso" style="margin-bottom:20px">⚠ O prazo para palpites extras já encerrou. Confira abaixo os palpites de todos os participantes.</div>
 
-  <% ordem.forEach(function(catId) { 
-    const cat = categorias.find(function(c) { return c.id === catId; });
-    if (!cat) return;
-    const agrupado = palpitesAgrupado[cat.id];
-    if (!agrupado) return;
-  %>
+  <% categorias.forEach(function(cat) { const agrupado = palpitesAgrupado[cat.id]; if (!agrupado) return; %>
     <div class="card mb-2">
       <h3 style="margin:0 0 12px"><%= cat.nome %> (<%= cat.pts %> pts)</h3>
       <% 
         const selecaoIds = Object.keys(agrupado).map(Number);
         selecaoIds.sort(function(a, b) { return agrupado[b].length - agrupado[a].length; });
       %>
-      <% selecaoIds.forEach(function(selId) { const participantes = agrupado[selId]; const selecao = selecoes.find(function(s) { return s.id === selId; }); if (!selecao) return; %>
+      <% selecaoIds.forEach(function(selId) { const participantes = agrupado[selId]; const selecao = todasSelecoes.find(function(s) { return s.id === selId; }); if (!selecao) return; %>
         <div style="display:flex;align-items:center;gap:10px;padding:6px 10px;border-radius:6px;background:var(--cinza-claro);margin-bottom:4px">
           <span style="font-weight:600;min-width:160px"><%= selecao.nome_pt %></span>
           <div style="flex:1;height:24px;background:#e2e8f0;border-radius:12px;overflow:hidden">
@@ -129,254 +102,81 @@
 <% } %>
 
 <% if (!prazoPassou) { %>
-<form id="form-extras" method="POST" action="/palpites-extras">
-  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-
-  <div style="display:flex;flex-direction:column;gap:16px">
-    <% ordem.forEach(function(catId) { 
-      const cat = categorias.find(function(c) { return c.id === catId; });
-      if (!cat) return;
-      const selecionados = (palpites[cat.id] || []).length;
-      const completo = selecionados >= cat.max;
-      const disponivel = disponiveis[cat.id] || [];
-    %>
-    <div class="card" style="border-left:4px solid <%= completo ? 'var(--verde)' : (selecionados > 0 ? 'var(--amarelo)' : 'var(--cinza)') %>">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px">
-        <div>
-          <h3 style="margin:0;display:inline"><%= cat.nome %></h3>
-          <span class="pontos-badge" style="margin-left:8px"><%= cat.pts %> pts</span>
+<div class="grid grid-2">
+  <% categorias.forEach(function(cat) { %>
+    <form method="POST" action="/palpites-extras/<%= cat.id %>" class="card">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div>
+        <div class="flex-between">
+          <h3 style="margin:0"><%= cat.nome %></h3>
+          <div class="text-right">
+            <span class="pontos-badge"><%= cat.pts %> pts</span>
+            <% if (cat.max > 1) { %>
+              <div class="texto-aux mt-1">
+                <span id="count-<%= cat.id %>"><%= palpites[cat.id] ? palpites[cat.id].length : 0 %></span> / <%= cat.max %> selecionadas
+              </div>
+            <% } %>
+          </div>
         </div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <% if (completo) { %>
-            <strong id="badge-<%= cat.id %>" style="color:var(--verde);font-size:0.85rem">🟢 Completo (<%= selecionados %>/<%= cat.max %>)</strong>
-          <% } else if (selecionados > 0) { %>
-            <strong id="badge-<%= cat.id %>" style="color:var(--amarelo);font-size:0.85rem">🟡 <%= selecionados %>/<%= cat.max %></strong>
+        <div class="form-group mt-2" style="margin-bottom:0">
+          <% if (multiCats.has(cat.id)) { %>
+            <div style="max-height:320px; overflow-y:auto; border:1px solid var(--cinza); border-radius:8px; padding:8px" class="selecoes-lista" data-categoria="<%= cat.id %>">
+              <% todasSelecoes.forEach(function(s) { %>
+                <label style="display:flex; align-items:center; gap:8px; padding:4px 6px; border-radius:4px; cursor:pointer; <%= palpites[cat.id] && palpites[cat.id].includes(s.id) ? 'background:var(--cinza-claro);font-weight:600' : '' %>">
+                  <input type="checkbox" name="selecoes" value="<%= s.id %>"
+                    <%= palpites[cat.id] && palpites[cat.id].includes(s.id) ? 'checked' : '' %>
+                    <%= prazoPassou ? 'disabled' : '' %>>
+                  <%= s.nome_pt %>
+                </label>
+              <% }); %>
+            </div>
           <% } else { %>
-            <span id="badge-<%= cat.id %>" style="color:var(--cinza);font-size:0.85rem">⬜ 0/<%= cat.max %></span>
+            <select name="selecao" class="form-control" <%= prazoPassou ? 'disabled' : '' %>>
+              <option value="">— Selecione —</option>
+              <% todasSelecoes.forEach(function(s) { %>
+                <option value="<%= s.id %>" <%= palpites[cat.id] && palpites[cat.id].includes(s.id) ? 'selected' : '' %>>
+                  <%= s.nome_pt %>
+                </option>
+              <% }); %>
+            </select>
           <% } %>
         </div>
       </div>
-
-      <% if (multiCats.has(cat.id)) { %>
-        <div class="selecoes-lista" data-categoria="<%= cat.id %>" data-max="<%= cat.max %>" style="max-height:280px;overflow-y:auto;border:1px solid var(--cinza);border-radius:8px;padding:6px">
-          <% selecoes.forEach(function(s) { %>
-            <% const checked = palpites[cat.id] && palpites[cat.id].includes(s.id); %>
-            <% const disponivelParaCat = disponivel.includes(s.id); %>
-            <label class="sel-item" data-categoria="<%= cat.id %>" data-selecao="<%= s.id %>"
-              style="display:<%= disponivelParaCat ? 'flex' : 'none' %>;align-items:center;gap:8px;padding:4px 6px;border-radius:4px;cursor:pointer;<%= checked ? 'background:var(--cinza-claro);font-weight:600' : '' %>">
-              <input type="checkbox" name="<%= cat.id %>" value="<%= s.id %>"
-                <%= checked ? 'checked' : '' %>
-                <%= !disponivelParaCat ? 'disabled' : '' %>>
-              <%= s.nome_pt %>
-            </label>
-          <% }); %>
+      <% if (!prazoPassou) { %>
+        <div class="text-center mt-3">
+          <button type="submit" class="btn btn-primary">💾 Salvar <%= cat.nome %></button>
         </div>
-      <% } else { %>
-        <select name="<%= cat.id %>" class="form-control sel-dropdown" data-categoria="<%= cat.id %>">
-          <option value="">— Selecione —</option>
-          <% selecoes.forEach(function(s) { %>
-            <% const selecionado = palpites[cat.id] && palpites[cat.id].includes(s.id); %>
-            <% const disponivelParaCat = disponivel.includes(s.id); %>
-            <option value="<%= s.id %>" 
-              <%= selecionado ? 'selected' : '' %>
-              <%= !disponivelParaCat && !selecionado ? 'disabled style="display:none"' : '' %>>
-              <%= s.nome_pt %>
-            </option>
-          <% }); %>
-        </select>
       <% } %>
-    </div>
-    <% }); %>
-  </div>
+    </form>
+  <% }); %>
+</div>
 
-  <div class="text-center mt-3" style="margin-bottom:30px">
+<div class="text-center mt-3" style="margin-bottom:30px">
+  <form method="POST" action="/palpites-extras" style="display:inline">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
     <button type="submit" class="btn btn-primary btn-lg">💾 Salvar todos os palpites extras</button>
-  </div>
-</form>
+  </form>
+</div>
 
 <script>
-(function() {
-  var ordem = <%= JSON.stringify(ordem) %>;
-  var multiCats = new Set(<%= JSON.stringify([...multiCats]) %>);
-
-  function getSelected() {
-    var result = {};
-    ordem.forEach(function(catId) {
-      if (multiCats.has(catId)) {
-        var checks = document.querySelectorAll('.selecoes-lista[data-categoria="' + catId + '"] input[type="checkbox"]:checked');
-        result[catId] = Array.from(checks).map(function(cb) { return parseInt(cb.value); });
-      } else {
-        var sel = document.querySelector('select.sel-dropdown[data-categoria="' + catId + '"]');
-        var val = sel ? parseInt(sel.value) : NaN;
-        result[catId] = isNaN(val) ? [] : [val];
-      }
-    });
-    return result;
-  }
-
-  function computeAvailable(selected) {
-    var todas = <%= JSON.stringify(selecoes.map(function(s){ return s.id; })) %>;
-    var disp = {};
-    disp.r32 = todas;
-    for (var i = 0; i < ordem.length; i++) {
-      var atual = ordem[i];
-      var prox = ordem[i + 1];
-      if (!prox || prox === 'terceiro') continue;
-      disp[prox] = selected[atual] && selected[atual].length > 0 ? selected[atual] : [];
-    }
-    disp.campeao = selected.finalista && selected.finalista.length > 0 ? selected.finalista : [];
-    disp.vice = selected.finalista && selected.finalista.length > 0 ? selected.finalista : [];
-    disp.terceiro = todas;
-    return disp;
-  }
-
-  function updateBadge(catId, checkCount, max) {
-    var el = document.getElementById('badge-' + catId);
-    if (!el) return;
-    if (checkCount >= max) {
-      el.outerHTML = '<strong id="badge-' + catId + '" style="color:var(--verde);font-size:0.85rem">🟢 Completo (' + checkCount + '/' + max + ')</strong>';
-    } else if (checkCount > 0) {
-      el.outerHTML = '<strong id="badge-' + catId + '" style="color:var(--amarelo);font-size:0.85rem">🟡 ' + checkCount + '/' + max + '</strong>';
-    } else {
-      el.outerHTML = '<span id="badge-' + catId + '" style="color:var(--cinza);font-size:0.85rem">⬜ 0/' + max + '</span>';
-    }
-  }
-
-  // Only disable/hide unavailable options; never auto-uncheck saved valid data
-  function initDisabled() {
-    var saved = getSelected();
-    var disp = computeAvailable(saved);
-
-    ordem.forEach(function(catId) {
-      var max, checkCount = 0;
-      if (multiCats.has(catId)) {
-        var container = document.querySelector('.selecoes-lista[data-categoria="' + catId + '"]');
-        if (!container) return;
-        max = parseInt(container.dataset.max);
-        container.querySelectorAll('.sel-item').forEach(function(label) {
-          var selId = parseInt(label.dataset.selecao);
-          var cb = label.querySelector('input[type="checkbox"]');
-          var available = (disp[catId] || []).indexOf(selId) !== -1;
-          if (cb.checked) checkCount++;
-          if (available) {
-            label.style.display = 'flex';
-            cb.disabled = false;
-          } else if (!cb.checked) {
-            label.style.display = 'none';
-            cb.disabled = true;
-          } else {
-            // invalid saved selection — show warning but keep visible
-            label.style.display = 'flex';
-            label.style.outline = '2px solid var(--erro)';
-            label.title = '⚠ Esta seleção não está mais disponível com base nas suas escolhas anteriores.';
-            cb.style.outline = '2px solid var(--erro)';
-          }
-        });
-        updateBadge(catId, checkCount, max);
-      } else {
-        var sel = document.querySelector('select.sel-dropdown[data-categoria="' + catId + '"]');
-        if (!sel) return;
-        sel.querySelectorAll('option').forEach(function(opt) {
-          if (opt.value === '') return;
-          var optId = parseInt(opt.value);
-          var available = (disp[catId] || []).indexOf(optId) !== -1;
-          if (!available && !opt.selected) {
-            opt.disabled = true;
-            opt.style.display = 'none';
-          }
-        });
-      }
-    });
-  }
-
-  // Full refresh — called on user interaction, auto-unchecks as needed
-  function refreshUI() {
-    var selected = getSelected();
-    var disp = computeAvailable(selected);
-
-    ordem.forEach(function(catId) {
-      var max, checkCount = 0;
-      if (multiCats.has(catId)) {
-        var container = document.querySelector('.selecoes-lista[data-categoria="' + catId + '"]');
-        if (!container) return;
-        max = parseInt(container.dataset.max);
-        container.querySelectorAll('.sel-item').forEach(function(label) {
-          var selId = parseInt(label.dataset.selecao);
-          var cb = label.querySelector('input[type="checkbox"]');
-          var available = (disp[catId] || []).indexOf(selId) !== -1;
-          if (!available && cb.checked) {
-            cb.checked = false;
-          }
-          if (available || cb.checked) {
-            label.style.display = 'flex';
-            cb.disabled = !available;
-          } else {
-            label.style.display = 'none';
-          }
-          label.style.outline = '';
-          label.title = '';
-          cb.style.outline = '';
-          if (cb.checked) checkCount++;
-        });
-
-        if (checkCount > max) {
-          var checked = container.querySelectorAll('input[type="checkbox"]:checked');
-          for (var j = max; j < checked.length; j++) {
-            checked[j].checked = false;
-            checkCount--;
-          }
-        }
-        updateBadge(catId, checkCount, max);
-      } else {
-        var sel = document.querySelector('select.sel-dropdown[data-categoria="' + catId + '"]');
-        if (!sel) return;
-        var currentVal = parseInt(sel.value);
-        sel.querySelectorAll('option').forEach(function(opt) {
-          if (opt.value === '') return;
-          var optId = parseInt(opt.value);
-          var available = (disp[catId] || []).indexOf(optId) !== -1;
-          var isSelected = opt.selected;
-          if (!available && !isSelected) {
-            opt.disabled = true;
-            opt.style.display = 'none';
-          } else {
-            opt.disabled = false;
-            opt.style.display = '';
-          }
-        });
-        if (currentVal && !isNaN(currentVal)) {
-          var stillAvailable = (disp[catId] || []).indexOf(currentVal) !== -1;
-          if (!stillAvailable) sel.value = '';
-        }
-      }
-    });
-  }
-
-  // attach listeners
-  document.querySelectorAll('.selecoes-lista input[type="checkbox"]').forEach(function(cb) {
+document.querySelectorAll('.selecoes-lista').forEach(function(container) {
+  var catId = container.dataset.categoria;
+  var checkboxes = container.querySelectorAll('input[type="checkbox"]');
+  var counter = document.getElementById('count-' + catId);
+  var max = parseInt(cat.max) || Infinity;
+  try { max = parseInt(container.closest('.card').querySelector('.texto-aux')?.textContent?.match(/(\d+)\s*\/\s*(\d+)/)?.[2]) || Infinity; } catch(e) {}
+  checkboxes.forEach(function(cb) {
     cb.addEventListener('change', function() {
-      var container = this.closest('.selecoes-lista');
-      var max = parseInt(container.dataset.max);
       var checked = container.querySelectorAll('input[type="checkbox"]:checked').length;
       if (this.checked && checked > max) {
         this.checked = false;
+        checked--;
       }
-      refreshUI();
+      counter.textContent = checked;
     });
   });
-
-  document.querySelectorAll('select.sel-dropdown').forEach(function(sel) {
-    sel.addEventListener('change', refreshUI);
-  });
-
-  // Initial: only disable unavailable, never auto-uncheck
-  initDisabled();
-})();
+});
 </script>
-<% } %>
-
-<% if (!temExtras && !prazoPassou) { %>
-  <div class="flash aviso" style="margin-top:20px">👆 Selecione acima suas apostas para cada fase e clique em "Salvar todos os palpites extras".</div>
 <% } %>
 
 <%- include('partials/footer') %>

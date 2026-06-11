@@ -18,37 +18,6 @@ const CATEGORIAS = [
 
 const MULTI_CATS = new Set(['r32', 'oitavas', 'quartas', 'semi', 'finalista']);
 const DATA_LIMITE_PADRAO = '2026-06-11T15:55-03:00';
-const ORDEM_HIERARQUIA = ['r32', 'oitavas', 'quartas', 'semi', 'finalista', 'campeao', 'vice', 'terceiro'];
-
-function calcularDisponiveis(palpites, selecoes) {
-  const todas = selecoes.map(function(s) { return s.id; });
-  const disp = { r32: todas };
-  for (let i = 0; i < ORDEM_HIERARQUIA.length; i++) {
-    const atual = ORDEM_HIERARQUIA[i];
-    const prox = ORDEM_HIERARQUIA[i + 1];
-    if (!prox || prox === 'terceiro') continue;
-    disp[prox] = palpites[atual] && palpites[atual].length > 0 ? palpites[atual] : [];
-  }
-  disp.campeao = palpites.finalista && palpites.finalista.length > 0 ? palpites.finalista : [];
-  disp.vice = palpites.finalista && palpites.finalista.length > 0 ? palpites.finalista : [];
-  disp.terceiro = todas;
-  return disp;
-}
-
-function validarHierarquia(palpites, catId, ids) {
-  const dependencia = {
-    oitavas: 'r32', quartas: 'oitavas', semi: 'quartas',
-    finalista: 'semi', campeao: 'finalista', vice: 'finalista'
-  };
-  const dep = dependencia[catId];
-  if (dep && palpites[dep] && palpites[dep].length > 0) {
-    const permitidos = new Set(palpites[dep]);
-    for (const id of ids) {
-      if (!permitidos.has(id)) return 'Seleção inválida: você só pode escolher entre as seleções que selecionou em ' + CATEGORIAS.find(function(c){return c.id===dep;}).nome + '.';
-    }
-  }
-  return null;
-}
 
 async function getDataLimite() {
   const row = await get("SELECT valor FROM config WHERE chave = 'extras_data_limite'");
@@ -79,7 +48,6 @@ router.get('/', verificarAutenticado, async (req, res) => {
       mapa[p.categoria].push(p.selecao_id);
     }
 
-    const disponiveis = calcularDisponiveis(mapa, selecoes);
     const prazoPassou = new Date() >= await getDataLimite();
 
     let palpitesAgrupado = {};
@@ -102,15 +70,12 @@ router.get('/', verificarAutenticado, async (req, res) => {
     res.render('palpites-extras', {
       title: 'Palpites Extras',
       categorias: CATEGORIAS,
-      ordem: ORDEM_HIERARQUIA,
-      selecoes,
+      todasSelecoes: selecoes,
       palpites: mapa,
-      disponiveis,
       multiCats: MULTI_CATS,
       prazoPassou,
       dataLimite: await getDataLimite(),
-      palpitesAgrupado,
-      maxTotal
+      palpitesAgrupado
     });
   } catch (err) {
     console.error('Erro ao carregar palpites extras:', err);
@@ -132,23 +97,16 @@ router.post('/', verificarAutenticado, async (req, res) => {
   const usuarioId = req.session.usuario.id;
 
   const erros = [];
-  const selecionado = {};
   for (const cat of CATEGORIAS) {
     if (MULTI_CATS.has(cat.id)) {
       const vals = req.body[cat.id];
-      const ids = vals ? (Array.isArray(vals) ? vals : [vals]).map(Number) : [];
-      if (ids.length > cat.max) {
-        erros.push(`${cat.nome}: máximo ${cat.max} seleções.`);
+      if (vals) {
+        const ids = Array.isArray(vals) ? vals : [vals];
+        if (ids.length > cat.max) {
+          erros.push(`${cat.nome}: máximo ${cat.max} seleções.`);
+        }
       }
-      selecionado[cat.id] = ids;
-    } else {
-      const id = parseInt(req.body[cat.id], 10);
-      selecionado[cat.id] = isNaN(id) ? [] : [id];
     }
-  }
-  for (const cat of CATEGORIAS) {
-    const err = validarHierarquia(selecionado, cat.id, selecionado[cat.id]);
-    if (err) erros.push(err);
   }
   if (erros.length > 0) {
     req.flash('erro', erros.join(' '));
@@ -159,11 +117,22 @@ router.post('/', verificarAutenticado, async (req, res) => {
     await run('DELETE FROM palpites_extras WHERE usuario_id = ?', [usuarioId]);
 
     for (const cat of CATEGORIAS) {
-      const ids = selecionado[cat.id] || [];
-      for (const sId of ids) {
+      if (MULTI_CATS.has(cat.id)) {
+        const vals = req.body[cat.id];
+        if (!vals) continue;
+        const ids = Array.isArray(vals) ? vals : [vals];
+        for (const sId of ids) {
+          await run(
+            'INSERT INTO palpites_extras (usuario_id, categoria, selecao_id) VALUES (?, ?, ?)',
+            [usuarioId, cat.id, parseInt(sId, 10)]
+          );
+        }
+      } else {
+        const sId = req.body[cat.id];
+        if (!sId) continue;
         await run(
           'INSERT INTO palpites_extras (usuario_id, categoria, selecao_id) VALUES (?, ?, ?)',
-          [usuarioId, cat.id, sId]
+          [usuarioId, cat.id, parseInt(sId, 10)]
         );
       }
     }
@@ -195,39 +164,14 @@ router.post('/:categoria', verificarAutenticado, async (req, res) => {
 
   const usuarioId = req.session.usuario.id;
 
-  // Valida campos obrigatórios e limites
-  let erros = [];
+  const erros = [];
   if (MULTI_CATS.has(cat.id)) {
-    const vals = req.body.selecoes;
-    const ids = vals ? (Array.isArray(vals) ? vals : [vals]).map(Number) : [];
+    const selecoes = req.body.selecoes;
+    const ids = selecoes ? (Array.isArray(selecoes) ? selecoes : [selecoes]) : [];
     if (ids.length > cat.max) {
       erros.push(`${cat.nome}: máximo ${cat.max} seleções.`);
     }
   }
-
-  // Carrega palpites atuais para validar hierarquia
-  const atuais = await all(
-    'SELECT categoria, selecao_id FROM palpites_extras WHERE usuario_id = ?',
-    [usuarioId]
-  );
-  const mapaAtual = {};
-  for (const p of atuais) {
-    if (!mapaAtual[p.categoria]) mapaAtual[p.categoria] = [];
-    mapaAtual[p.categoria].push(p.selecao_id);
-  }
-
-  if (MULTI_CATS.has(cat.id)) {
-    const vals = req.body.selecoes;
-    const ids = vals ? (Array.isArray(vals) ? vals : [vals]).map(Number) : [];
-    const err = validarHierarquia(Object.assign({}, mapaAtual, { [cat.id]: ids }), cat.id, ids);
-    if (err) erros.push(err);
-  } else {
-    const id = parseInt(req.body.selecao, 10);
-    const ids = isNaN(id) ? [] : [id];
-    const err = validarHierarquia(Object.assign({}, mapaAtual, { [cat.id]: ids }), cat.id, ids);
-    if (err) erros.push(err);
-  }
-
   if (erros.length > 0) {
     req.flash('erro', erros.join(' '));
     return res.redirect('/palpites-extras');
@@ -237,22 +181,20 @@ router.post('/:categoria', verificarAutenticado, async (req, res) => {
     await run('DELETE FROM palpites_extras WHERE usuario_id = ? AND categoria = ?', [usuarioId, cat.id]);
 
     if (MULTI_CATS.has(cat.id)) {
-      const vals = req.body.selecoes;
-      const ids = vals ? (Array.isArray(vals) ? vals : [vals]).map(Number) : [];
+      const selecoes = req.body.selecoes;
+      const ids = Array.isArray(selecoes) ? selecoes : [selecoes];
       for (const sId of ids) {
         await run(
           'INSERT INTO palpites_extras (usuario_id, categoria, selecao_id) VALUES (?, ?, ?)',
-          [usuarioId, cat.id, sId]
+          [usuarioId, cat.id, parseInt(sId, 10)]
         );
       }
     } else {
-      const sId = parseInt(req.body.selecao, 10);
-      if (!isNaN(sId)) {
-        await run(
-          'INSERT INTO palpites_extras (usuario_id, categoria, selecao_id) VALUES (?, ?, ?)',
-          [usuarioId, cat.id, sId]
-        );
-      }
+      const sId = req.body.selecao;
+      await run(
+        'INSERT INTO palpites_extras (usuario_id, categoria, selecao_id) VALUES (?, ?, ?)',
+        [usuarioId, cat.id, parseInt(sId, 10)]
+      );
     }
 
     req.flash('sucesso', `${cat.nome} salvo com sucesso!`);
