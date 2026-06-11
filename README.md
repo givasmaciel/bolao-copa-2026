@@ -24,19 +24,19 @@ Deploy automático no Render (free tier) via Blueprint com PostgreSQL. Localment
 | Placar exato | **20** |
 | Resultado certo + 1 gol de um time | **14** |
 | Empate (qualquer placar) | **14** |
-| Só resultado (vitória/derrota) | **6** |
-| Errou resultado + acertou 1 gol | **4** |
+| Só resultado (vitória/derrota) | **8** |
+| Errou resultado + acertou 1 gol | **3** |
 | Errou tudo | **0** |
 
 ## Pontuação — Extras
 
 | Categoria | Pontos | Máx. seleções |
 |---|---|---|
-| Campeão | 150 | 1 |
+| Campeão | 200 | 1 |
 | Vice-campeão | 150 | 1 |
-| Terceiro lugar | 150 | 1 |
-| Finalista | 30 | 2 |
-| Semifinal | 20 | 4 |
+| Terceiro lugar | 100 | 1 |
+| Finalista | 50 | 2 |
+| Semifinal | 30 | 4 |
 | Quartas | 15 | 8 |
 | Oitavas | 10 | 16 |
 | 1/16 avos | 10 | 32 |
