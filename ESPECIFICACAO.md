@@ -214,9 +214,9 @@ Armazena configurações do sistema, como o prazo limite dos palpites extras (ex
 
 | Categoria | Seleções por usuário | Pontos por acerto |
 |---|---|---|
-| `campeao` | 1 | 50 |
-| `vice` | 1 | 50 |
-| `terceiro` | 1 | 50 |
+| `campeao` | 1 | 150 |
+| `vice` | 1 | 150 |
+| `terceiro` | 1 | 150 |
 | `finalista` | 2 | 30 |
 | `semi` | 4 | 20 |
 | `quartas` | 8 | 15 |

@@ -32,9 +32,9 @@ Deploy automático no Render (free tier) via Blueprint com PostgreSQL. Localment
 
 | Categoria | Pontos | Máx. seleções |
 |---|---|---|
-| Campeão | 50 | 1 |
-| Vice-campeão | 50 | 1 |
-| Terceiro lugar | 50 | 1 |
+| Campeão | 150 | 1 |
+| Vice-campeão | 150 | 1 |
+| Terceiro lugar | 150 | 1 |
 | Finalista | 30 | 2 |
 | Semifinal | 20 | 4 |
 | Quartas | 15 | 8 |
