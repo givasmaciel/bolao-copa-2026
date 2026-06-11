@@ -70,7 +70,37 @@
 <% } %>
 
 <% if (prazoPassou) { %>
-  <div class="flash aviso">⚠ O prazo para palpites extras já encerrou.</div>
+  <div class="flash aviso" style="margin-bottom:20px">⚠ O prazo para palpites extras já encerrou. Confira abaixo os palpites de todos os participantes.</div>
+
+  <% categorias.forEach(function(cat) { const agrupado = palpitesAgrupado[cat.id]; if (!agrupado) return; %>
+    <div class="card mb-2">
+      <h3 style="margin:0 0 12px"><%= cat.nome %> (<%= cat.pts %> pts)</h3>
+      <% 
+        const selecaoIds = Object.keys(agrupado).map(Number);
+        selecaoIds.sort(function(a, b) { return agrupado[b].length - agrupado[a].length; });
+      %>
+      <% selecaoIds.forEach(function(selId) { const participantes = agrupado[selId]; const selecao = selecoes.find(function(s) { return s.id === selId; }); if (!selecao) return; %>
+        <div style="display:flex;align-items:center;gap:10px;padding:6px 10px;border-radius:6px;background:var(--cinza-claro);margin-bottom:4px">
+          <span style="font-weight:600;min-width:160px"><%= selecao.nome_pt %></span>
+          <div style="flex:1;height:24px;background:#e2e8f0;border-radius:12px;overflow:hidden">
+            <div style="height:100%;background:var(--verde);border-radius:12px;display:flex;align-items:center;padding-left:8px;font-size:0.75rem;color:#fff;font-weight:600;width:<%= Math.max(15, participantes.length / Object.values(agrupado).reduce(function(s,arr){return s+arr.length},0) * 100) %>%">
+              <%= participantes.length %> pessoa<%= participantes.length !== 1 ? 's' : '' %>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:3px;margin:2px 0 8px <%= selecaoIds.indexOf(selId) === selecaoIds.length-1 ? '0' : '0' %>">
+          <% participantes.forEach(function(p) { %>
+            <span style="display:inline-block;font-size:0.75rem;padding:2px 8px;border-radius:10px;background:<%= p.usuario_id === usuario.id ? 'var(--amarelo)' : '#e2e8f0' %>;font-weight:<%= p.usuario_id === usuario.id ? '700' : '400' %>">
+              <%= p.nome %><%= p.usuario_id === usuario.id ? ' (você)' : '' %>
+            </span>
+          <% }); %>
+        </div>
+      <% }); %>
+      <% if (selecaoIds.length === 0) { %>
+        <p class="texto-aux">Nenhum palpite registrado nesta categoria.</p>
+      <% } %>
+    </div>
+  <% }); %>
 <% } %>
 
 <div class="grid grid-2">

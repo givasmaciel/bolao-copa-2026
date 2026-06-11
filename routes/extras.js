@@ -50,6 +50,21 @@ router.get('/', verificarAutenticado, async (req, res) => {
 
     const prazoPassou = new Date() >= await getDataLimite();
 
+    let palpitesAgrupado = {};
+    if (prazoPassou) {
+      const rows = await all(`
+        SELECT pe.categoria, pe.selecao_id, u.nome, u.id AS usuario_id
+        FROM palpites_extras pe
+        JOIN usuarios u ON pe.usuario_id = u.id
+        ORDER BY pe.categoria, pe.selecao_id
+      `);
+      for (const r of rows) {
+        if (!palpitesAgrupado[r.categoria]) palpitesAgrupado[r.categoria] = {};
+        if (!palpitesAgrupado[r.categoria][r.selecao_id]) palpitesAgrupado[r.categoria][r.selecao_id] = [];
+        palpitesAgrupado[r.categoria][r.selecao_id].push(r);
+      }
+    }
+
     res.render('palpites-extras', {
       title: 'Palpites Extras',
       categorias: CATEGORIAS,
@@ -57,7 +72,8 @@ router.get('/', verificarAutenticado, async (req, res) => {
       palpites: mapa,
       multiCats: MULTI_CATS,
       prazoPassou,
-      dataLimite: await getDataLimite()
+      dataLimite: await getDataLimite(),
+      palpitesAgrupado
     });
   } catch (err) {
     console.error('Erro ao carregar palpites extras:', err);
