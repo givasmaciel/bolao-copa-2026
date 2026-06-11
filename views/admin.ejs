@@ -35,11 +35,13 @@
     <a href="/admin/usuarios" class="btn btn-secondary btn-lg">👥 Gerenciar participantes</a>
     <a href="/admin/extras" class="btn btn-amarelo btn-lg">🏆 Resultados extras</a>
     <form method="POST" action="/admin/recalcular" style="display:contents">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
       <button type="submit" class="btn btn-amarelo btn-lg" onclick="return confirm('Recalcular todos os pontos dos palpites?')">
         🔄 Recalcular todos os pontos
       </button>
     </form>
     <form method="POST" action="/admin/resetar-todos-palpites" style="display:contents">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
       <button type="submit" class="btn btn-lg" style="background:var(--erro);color:white" onclick="return confirm('⚠️ Resetar palpites pendentes + resultados oficiais? Jogos finalizados e bets após prazo são preservados.')">
         🗑 Resetar palpites pendentes
       </button>

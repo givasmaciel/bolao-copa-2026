@@ -9,6 +9,7 @@
   <p class="texto-aux">Seu nome aparece no ranking e também serve para fazer login.</p>
 
   <form method="POST" action="/config/nome" class="form-inline" style="display:flex; gap:8px; align-items:end; flex-wrap:wrap">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
     <div class="form-group" style="margin:0;flex:1;min-width:200px">
       <label for="nome">Nome</label>
       <input type="text" id="nome" name="nome" class="form-control" value="<%= usuario.nome %>" placeholder="Seu nome" required>

@@ -24,11 +24,6 @@ router.get('/', verificarAutenticado, async (req, res) => {
       WHERE p.usuario_id = ? AND j.finalizado = 1
     `, [userId]);
 
-    const totalFinalizados = await get(`
-      SELECT COUNT(*) AS total FROM jogos WHERE fase = 'grupo' AND finalizado = 1
-    `);
-    const tf = totalFinalizados?.total || 1;
-
     // Pontos por rodada
     const porRodada = await all(`
       SELECT j.rodada, COALESCE(SUM(p.pontos_obtidos), 0) AS pontos
@@ -111,8 +106,7 @@ router.get('/', verificarAutenticado, async (req, res) => {
     res.render('resumo', {
       title: 'Meu resumo',
       stats,
-      totalFinalizados: tf,
-      aproveitamento: Math.round(stats.palpites_certos / tf * 100),
+      aproveitamento: stats.total_palpites > 0 ? Math.round(stats.palpites_certos / stats.total_palpites * 100) : 0,
       porRodada,
       jogosFinalizados,
       participantes,

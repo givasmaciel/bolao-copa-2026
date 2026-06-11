@@ -75,8 +75,17 @@ router.get('/', async (req, res) => {
       rodadaMap[r.usuario_id][r.rodada] = r.pontos;
     });
 
-    const rodadas = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-    const labels = { 1:'R1', 2:'R2', 3:'R3', 4:'32av', 5:'16av', 6:'QF', 7:'SF', 8:'3º', 9:'Final' };
+    // Busca rodadas dinâmicas do banco (em vez de array fixo)
+    const fasesRodada = await all(
+      'SELECT DISTINCT rodada, fase FROM jogos WHERE fase IS NOT NULL ORDER BY rodada'
+    );
+    const rodadas = fasesRodada.map(f => f.rodada);
+    const faseLabel = { grupo: r => 'R' + r, r32: '32av', r16: '16av', qf: 'QF', sf: 'SF', terceiro: '3º', final: 'Final' };
+    const labels = {};
+    fasesRodada.forEach(f => {
+      const gen = faseLabel[f.fase];
+      labels[f.rodada] = typeof gen === 'function' ? gen(f.rodada) : gen;
+    });
 
     res.render('ranking', { title: 'Ranking do Bolão', ranking, totais, rodadaMap, rodadas, labels });
   } catch (err) {

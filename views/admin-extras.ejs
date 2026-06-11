@@ -8,6 +8,7 @@
 <div class="card mb-2">
   <h3>📅 Prazo dos palpites extras</h3>
   <form method="POST" action="/admin/extras/config" class="flex gap-1" style="align-items:end; flex-wrap:wrap">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
     <div class="form-group" style="margin:0">
       <label>Data e hora limite (formato: <code>YYYY-MM-DDTHH:MM</code>)</label>
       <input type="text" name="data_limite" class="form-control" style="width:220px"
@@ -30,6 +31,7 @@
 <div class="grid grid-2">
   <% catsOrdenadas.forEach(function(cat) { %>
     <form method="POST" action="/admin/extras" class="card">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
       <input type="hidden" name="_categoria" value="<%= cat.id %>">
       <div>
         <div class="flex-between">

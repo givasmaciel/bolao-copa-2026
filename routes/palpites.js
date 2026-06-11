@@ -219,10 +219,6 @@ router.get('/jogo/:id', verificarAutenticado, async (req, res) => {
       ORDER BY p.pontos_obtidos DESC, u.nome ASC
     `, [jogoId]);
 
-    // Palpites extras do usuário logado para este jogo
-    const diffCasa = Math.abs(jogo.gols_casa - jogo.gols_visitante);
-    const diffPalpite = palpites.map(p => Math.abs(p.palpite_gols_casa - p.palpite_gols_visitante));
-
     res.render('jogo-palpites', {
       title: `${jogo.casa_pt} × ${jogo.visitante_pt}`,
       jogo, palpites

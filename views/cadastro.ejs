@@ -8,6 +8,7 @@
     <p class="subtitulo">Entre para o bolão da Copa 2026!</p>
 
     <form method="POST" action="/cadastro">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
       <div class="form-group">
         <label for="nome">Nome</label>
         <input type="text" id="nome" name="nome" class="form-control" required autofocus value="<%= dados.nome || '' %>" placeholder="Como quer ser chamado">

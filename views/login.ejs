@@ -8,6 +8,7 @@
     <p class="subtitulo">Acesse sua conta para fazer seus palpites</p>
 
     <form method="POST" action="/login">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
       <div class="form-group">
         <label for="email">E-mail ou usuário</label>
         <input type="text" id="email" name="email" class="form-control" required autofocus value="<%= typeof body !== 'undefined' && body ? body.email : '' %>" placeholder="seu@email.com ou usuário">

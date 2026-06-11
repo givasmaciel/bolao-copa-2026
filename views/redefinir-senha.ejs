@@ -8,6 +8,7 @@
     <p class="subtitulo">Escolha uma nova senha para sua conta.</p>
 
     <form method="POST" action="/redefinir-senha/<%= token %>">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
       <div class="form-row">
         <div class="form-group">
           <label for="senha">Nova senha</label>

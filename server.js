@@ -48,6 +48,32 @@ app.use(session({
 }));
 app.use(flash());
 
+// CSRF token — gera e valida
+const crypto = require('crypto');
+app.use((req, res, next) => {
+  if (!req.session.csrfToken) {
+    req.session.csrfToken = crypto.randomUUID();
+  }
+  res.locals.csrfToken = req.session.csrfToken;
+  next();
+});
+
+// Middleware de validação CSRF para métodos que alteram estado
+function csrfProtection(req, res, next) {
+  if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) return next();
+  const token = req.body?._csrf || req.query?._csrf || req.headers?.['x-csrf-token'];
+  if (!token || token !== req.session.csrfToken) {
+    console.warn('CSRF inválido:', req.method, req.originalUrl);
+    if (req.accepts('json')) {
+      return res.status(403).json({ ok: false, erro: 'CSRF inválido. Recarregue a página e tente novamente.' });
+    }
+    req.flash('erro', 'Sessão expirada. Recarregue a página e tente novamente.');
+    return res.redirect('back');
+  }
+  next();
+}
+app.use(csrfProtection);
+
 // Disponibiliza flash messages e usuário para as views
 app.use((req, res, next) => {
   res.locals.sucesso = req.flash('sucesso');

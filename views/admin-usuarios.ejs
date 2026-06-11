@@ -8,6 +8,7 @@
 <div class="card mb-3" style="border-left:4px solid var(--verde)">
   <h3 style="margin-top:0">➕ Criar novo participante</h3>
   <form method="POST" action="/admin/usuarios/criar" class="grid grid-4" style="align-items:end">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
     <div class="form-group" style="margin:0">
       <label for="nome">Nome</label>
       <input type="text" id="nome" name="nome" class="form-control" required>
@@ -54,6 +55,7 @@
             <summary class="btn btn-sm btn-secondary" style="cursor:pointer">👤 Usuário</summary>
             <div style="position:absolute;background:var(--card-bg);border:1px solid var(--border);padding:8px;border-radius:8px;z-index:10;margin-top:4px">
               <form method="POST" action="/admin/usuarios/<%= u.id %>/alterar-username" style="display:flex;gap:4px">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                 <input type="text" name="username" value="<%= u.username || '' %>" placeholder="nome de usuário" class="form-control" style="width:130px">
                 <button type="submit" class="btn btn-sm btn-primary">Salvar</button>
               </form>
@@ -63,6 +65,7 @@
             <summary class="btn btn-sm btn-secondary" style="cursor:pointer">🔑 Senha</summary>
             <div style="position:absolute;background:var(--card-bg);border:1px solid var(--border);padding:8px;border-radius:8px;z-index:10;margin-top:4px">
               <form method="POST" action="/admin/usuarios/<%= u.id %>/resetar-senha" style="display:flex;gap:4px">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                 <input type="password" name="nova_senha" placeholder="Nova senha" minlength="4" required class="form-control" style="width:140px">
                 <button type="submit" class="btn btn-sm btn-primary">Salvar</button>
               </form>
@@ -70,17 +73,21 @@
           </details>
           <% if (!u.is_admin) { %>
             <form method="POST" action="/admin/usuarios/<%= u.id %>/tornar-admin" style="display:inline">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
               <button type="submit" class="btn btn-sm btn-amarelo" onclick="return confirm('Promover <%= u.nome %> a admin?')">Tornar admin</button>
             </form>
           <% } else { %>
             <form method="POST" action="/admin/usuarios/<%= u.id %>/rebaixar" style="display:inline">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
               <button type="submit" class="btn btn-sm btn-secondary" onclick="return confirm('Rebaixar <%= u.nome %> para participante?')">Rebaixar</button>
             </form>
           <% } %>
           <form method="POST" action="/admin/usuarios/<%= u.id %>/resetar-palpites" style="display:inline">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
             <button type="submit" class="btn btn-sm btn-secondary" onclick="return confirm('Resetar TODOS os palpites de <%= u.nome %>?')">Resetar palpites</button>
           </form>
           <form method="POST" action="/admin/usuarios/<%= u.id %>/excluir" style="display:inline">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
             <button type="submit" class="btn btn-sm" style="background:var(--erro);color:white" onclick="return confirm('Excluir <%= u.nome %> e todos os palpites dele?')">Excluir</button>
           </form>
         </td>

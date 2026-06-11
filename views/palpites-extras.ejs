@@ -45,6 +45,7 @@
 <div class="grid grid-2">
   <% categorias.forEach(function(cat) { %>
     <form method="POST" action="/palpites-extras/<%= cat.id %>" class="card">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
       <div>
         <div class="flex-between">
           <h3 style="margin:0"><%= cat.nome %></h3>

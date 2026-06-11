@@ -127,6 +127,7 @@
           </div>
         <% } else { %>
           <form method="POST" action="/palpites/<%= jogo.id %>" class="jogo-form">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
             <div class="jogo-placar">
               <input
                 type="number"
@@ -165,6 +166,7 @@
 <% }); %>
 
 <script>
+const CSRF_TOKEN = '<%= csrfToken %>';
 async function salvarRodada(rd, btn) {
   if (!confirm('Salvar todos os palpites ABERTOS da rodada ' + rd + '?')) return;
   const jogos = {};
@@ -191,7 +193,7 @@ async function salvarRodada(rd, btn) {
     btn.textContent = '⏳ Salvando...';
     const res = await fetch('/palpites/salvar-rodada', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN },
       body: JSON.stringify({ rodada: rd, jogos })
     });
     const data = await res.json();

@@ -7,9 +7,11 @@
 
 <div class="mb-2 flex gap-1" style="flex-wrap:wrap">
   <form method="POST" action="/admin/mata-mata/gerar">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
     <button type="submit" class="btn btn-primary">⚡ Gerar automaticamente</button>
   </form>
   <form method="POST" action="/admin/mata-mata/limpar" onsubmit="return confirm('Limpar TODOS os confrontos do mata-mata?')">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
     <button type="submit" class="btn btn-secondary" style="background:var(--erro);color:white">🗑 Limpar todos</button>
   </form>
   <a href="/admin/jogos" class="btn btn-secondary">📝 Editar resultados/placares</a>
@@ -30,6 +32,7 @@
   <h2 class="jogo-rodada-titulo"><%= fase.label %></h2>
   <% jogosFase.forEach(function(jogo) { %>
     <form method="POST" action="/admin/mata-mata/<%= jogo.id %>/editar" class="jogo-card <%= jogo.finalizado === 1 ? 'finalizado' : '' %>">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
       <div class="jogo-time" style="flex:1">
         <span><%= jogo.casa_pt || 'A definir' %></span>
       </div>

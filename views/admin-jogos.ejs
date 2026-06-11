@@ -30,6 +30,7 @@
 
 <% jogosFiltrados.forEach(function(jogo) { %>
   <form method="POST" action="/admin/jogos/<%= jogo.id %>" class="jogo-card <%= jogo.finalizado === 1 ? 'finalizado' : '' %>">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
     <div class="jogo-time">
       <span><%= jogo.casa_pt || 'A definir' %></span>
     </div>
@@ -59,6 +60,7 @@
       <a href="#" class="btn btn-sm btn-secondary mt-1" style="font-size:0.75rem" onclick="event.preventDefault(); document.getElementById('limite-form-<%= jogo.id %>').style.display = document.getElementById('limite-form-<%= jogo.id %>').style.display === 'none' ? 'block' : 'none'">⏰ Prazo</a>
       <div id="limite-form-<%= jogo.id %>" style="display:none;margin-top:6px">
         <form method="POST" action="/admin/jogos/<%= jogo.id %>/limite" style="display:flex;gap:4px;flex-wrap:wrap;justify-content:center">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
           <input type="datetime-local" name="palpite_limite" class="form-control" style="width:auto;font-size:0.8rem"
             value="<%= jogo.palpite_limite ? new Date(jogo.palpite_limite).toLocaleString('sv-SE', { timeZone:'America/Sao_Paulo' }).replace(' ', 'T').substring(0,16) : '' %>">
           <button type="submit" class="btn btn-sm btn-primary" style="font-size:0.75rem">Definir</button>

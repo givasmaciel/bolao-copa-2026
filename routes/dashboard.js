@@ -49,7 +49,7 @@ router.get('/', verificarAutenticado, async (req, res) => {
       LIMIT 5
     `);
 
-    // Estatísticas do usuário
+    // Estatísticas do usuário (apenas jogos finalizados)
     const stats = await get(`
       SELECT
         COUNT(p.id) AS total_palpites,
@@ -57,7 +57,8 @@ router.get('/', verificarAutenticado, async (req, res) => {
         SUM(CASE WHEN p.pontos_obtidos > 0 THEN 1 ELSE 0 END) AS palpites_certos,
         SUM(CASE WHEN p.pontos_obtidos = 20 THEN 1 ELSE 0 END) AS placares_exatos
       FROM palpites p
-      WHERE p.usuario_id = ?
+      JOIN jogos j ON j.id = p.jogo_id
+      WHERE p.usuario_id = ? AND j.finalizado = 1
     `, [userId]);
 
     const totalFinalizados = await get(`
