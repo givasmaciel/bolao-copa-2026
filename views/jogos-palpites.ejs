@@ -93,7 +93,7 @@
         <tbody>
           <% palpites.forEach(function(p) { if (!p.temPalpite) return; %>
             <tr style="<%= p.usuario_id === usuarioId ? 'font-weight:700;background:var(--cinza-claro)' : '' %>">
-              <td><%= p.nome %><%= p.usuario_id === usuarioId ? ' <span style="font-size:0.75rem;opacity:0.6">(você)</span>' : '' %></td>
+              <td><%= p.nome %><%- p.usuario_id === usuarioId ? ' <span style="font-size:0.75rem;opacity:0.6">(você)</span>' : '' %></td>
               <td class="text-center"><%= p.palpite_gols_casa %>×<%= p.palpite_gols_visitante %></td>
               <% if (jogo.finalizado === 1) { %>
                 <td class="text-center" style="<%= p.pontos_obtidos > 0 ? 'color:var(--verde);font-weight:700' : 'color:var(--erro)' %>">
