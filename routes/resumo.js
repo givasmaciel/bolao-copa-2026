@@ -16,7 +16,7 @@ router.get('/', verificarAutenticado, async (req, res) => {
         COALESCE(SUM(CASE WHEN p.pontos_obtidos > 0 THEN 1 ELSE 0 END), 0) AS palpites_certos,
         COALESCE(SUM(CASE WHEN p.pontos_obtidos = 20 THEN 1 ELSE 0 END), 0) AS placares_exatos,
         COALESCE(SUM(CASE WHEN p.pontos_obtidos = 14 THEN 1 ELSE 0 END), 0) AS resultados_exatos,
-        COALESCE(SUM(CASE WHEN p.pontos_obtidos = 6 THEN 1 ELSE 0 END), 0) AS so_resultados,
+        COALESCE(SUM(CASE WHEN p.pontos_obtidos = 10 THEN 1 ELSE 0 END), 0) AS so_resultados,
         COALESCE(SUM(CASE WHEN p.pontos_obtidos = 4 THEN 1 ELSE 0 END), 0) AS acertou_um_gol,
         COALESCE(SUM(CASE WHEN p.pontos_obtidos = 0 THEN 1 ELSE 0 END), 0) AS errou_tudo
       FROM palpites p

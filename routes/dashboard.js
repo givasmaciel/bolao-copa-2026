@@ -55,7 +55,7 @@ router.get('/', verificarAutenticado, async (req, res) => {
         COUNT(p.id) AS total_palpites,
         COALESCE(SUM(p.pontos_obtidos), 0) AS total_pontos,
         SUM(CASE WHEN p.pontos_obtidos > 0 THEN 1 ELSE 0 END) AS palpites_certos,
-        SUM(CASE WHEN p.pontos_obtidos = 10 THEN 1 ELSE 0 END) AS placares_exatos
+        SUM(CASE WHEN p.pontos_obtidos = 20 THEN 1 ELSE 0 END) AS placares_exatos
       FROM palpites p
       WHERE p.usuario_id = ?
     `, [userId]);

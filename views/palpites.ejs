@@ -194,10 +194,11 @@ async function salvarRodada(rd, btn) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ rodada: rd, jogos })
     });
-    if (res.redirected || res.ok) {
+    const data = await res.json();
+    if (data.ok) {
       location.reload();
     } else {
-      alert('Erro ao salvar.');
+      alert(data.erro || 'Erro ao salvar.');
       btn.disabled = false;
       btn.textContent = '💾 Salvar todos';
     }

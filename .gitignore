@@ -1,12 +1,8 @@
-node_modules/
-data/
-*.db
-*.db-journal
+node_modules
 .env
-.DS_Store
-npm-debug.log
 *.log
+*.db
+*.db-shm
+*.db-wal
+data/
 .claude/
-TestSprite.html
-TestSprite.pdf
-TestSprite_files/

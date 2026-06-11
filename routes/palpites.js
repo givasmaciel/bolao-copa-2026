@@ -8,14 +8,12 @@ const router = express.Router();
 router.post('/salvar-rodada', verificarAutenticado, async (req, res) => {
   const usuarioId = req.session.usuario.id;
   if (req.session.usuario.is_admin) {
-    req.flash('erro', 'Administradores não podem participar do bolão.');
-    return res.redirect('/admin');
+    return res.status(403).json({ ok: false, erro: 'Administradores não podem participar do bolão.' });
   }
 
   const { rodada, jogos } = req.body;
   if (!rodada || !jogos) {
-    req.flash('erro', 'Dados inválidos.');
-    return res.redirect('/palpites');
+    return res.status(400).json({ ok: false, erro: 'Dados inválidos.' });
   }
 
   let salvos = 0;
@@ -54,7 +52,7 @@ router.post('/salvar-rodada', verificarAutenticado, async (req, res) => {
   }
 
   req.flash('sucesso', salvos + ' palpites salvos na rodada ' + rodada + '!');
-  res.redirect('/palpites');
+  res.json({ ok: true });
 });
 
 // GET /palpites - mostra todos os jogos (fase de grupos) para o usuário dar palpites
