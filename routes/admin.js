@@ -51,8 +51,8 @@ router.get('/diagnostic', async (req, res) => {
 // - Placar exato: 20 pts
 // - Empate (placar exato ou não): 14 pts
 // - Resultado certo + gols de 1 time: 14 pts
-// - Só resultado exceto empate (V/D): 10 pts
-// - Errou resultado mas acertou gol de 1 time: 4 pts
+// - Só resultado exceto empate (V/D): 8 pts
+// - Errou resultado mas acertou gol de 1 time: 3 pts
 // - Errou tudo: 0 pts
 function calcularPontos(golsCasa, golsVisitante, palpiteCasa, palpiteVisitante) {
   if (golsCasa === null || golsVisitante === null ||
@@ -84,10 +84,10 @@ function calcularPontos(golsCasa, golsVisitante, palpiteCasa, palpiteVisitante) 
 
   if (resReal === resPalpite) {
     if (acertouGolTime) return 14;
-    return 10;
+    return 8;
   }
 
-  if (acertouGolTime) return 4;
+  if (acertouGolTime) return 3;
   return 0;
 }
 
