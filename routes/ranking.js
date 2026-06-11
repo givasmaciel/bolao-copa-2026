@@ -1,5 +1,6 @@
 const express = require('express');
 const { all, get } = require('../database/db');
+const { CATEGORIAS } = require('./extras');
 
 const router = express.Router();
 
@@ -100,6 +101,7 @@ router.get('/usuario/:id', async (req, res) => {
     const palpites = await all(`
       SELECT
         j.id, j.rodada, j.data, j.finalizado, j.gols_casa, j.gols_visitante,
+        j.palpite_limite,
         sc.nome_pt AS casa_pt, sc.sigla AS casa_sigla,
         sv.nome_pt AS visitante_pt, sv.sigla AS visitante_sigla,
         p.palpite_gols_casa, p.palpite_gols_visitante, p.pontos_obtidos
@@ -119,9 +121,22 @@ router.get('/usuario/:id', async (req, res) => {
       FROM palpites WHERE usuario_id = ?
     `, [usuarioId]);
 
+    // Busca palpites extras (só passa pro view se tiver)
+    const extras = await all(
+      'SELECT pe.categoria, pe.selecao_id, s.nome_pt FROM palpites_extras pe LEFT JOIN selecoes s ON s.id = pe.selecao_id WHERE pe.usuario_id = ? ORDER BY pe.categoria',
+      [usuarioId]
+    );
+
+    const extrasDeadline = await get("SELECT valor FROM config WHERE chave = 'extras_data_limite'");
+    const extrasPrazo = extrasDeadline ? new Date(extrasDeadline.valor) : new Date('2026-06-11T15:55-03:00');
+    const extrasLiberado = new Date() >= extrasPrazo;
+
     res.render('palpites-usuario', {
       title: `Palpites de ${usuario.nome}`,
-      usuario, palpites, stats
+      usuario, palpites, stats,
+      agora: new Date(),
+      extras, extrasLiberado, extrasPrazo,
+      CATEGORIAS
     });
   } catch (err) {
     console.error('Erro ao listar palpites do usuário:', err);

@@ -37,8 +37,15 @@
   </div>
 <% } else { %>
   <h2>Palpites por rodada</h2>
+  <p class="texto-aux">🔒 Palpites de jogos ainda abertos são exibidos apenas após o fechamento.</p>
   <% let rodadaAtual = null; %>
   <% palpites.forEach(function(p) { %>
+    <%
+      const dataJogo = new Date(p.data);
+      const palpiteLimite = p.palpite_limite ? new Date(p.palpite_limite) : null;
+      const margem = palpiteLimite || new Date(dataJogo.getTime() - 2 * 60 * 1000);
+      const fechado = agora >= margem || p.finalizado === 1;
+    %>
     <% if (p.rodada !== rodadaAtual) { %>
       <% if (rodadaAtual !== null) { %><% /* fecha a anterior */ %><% } %>
       <h3 class="jogo-rodada-titulo">Rodada <%= p.rodada %></h3>
@@ -55,8 +62,12 @@
           <div class="jogo-placar-display" style="color:#aaa">×</div>
         <% } %>
         <div style="margin-top:6px">
-          <strong>Palpite:</strong>
-          <%= p.palpite_gols_casa %> × <%= p.palpite_gols_visitante %>
+          <% if (fechado) { %>
+            <strong>Palpite:</strong>
+            <%= p.palpite_gols_casa %> × <%= p.palpite_gols_visitante %>
+          <% } else { %>
+            <span style="color:var(--cinza-escuro);font-size:0.85rem">🔒 Palpite bloqueado até o fechamento do jogo</span>
+          <% } %>
         </div>
         <% if (p.finalizado === 1) { %>
           <div class="pontos-badge <%= (p.pontos_obtidos || 0) === 0 ? 'zero' : '' %>">
@@ -69,6 +80,29 @@
       </div>
     </div>
   <% }); %>
+
+  <% if (typeof extras !== 'undefined' && extrasLiberado) { %>
+    <div class="card mt-2">
+      <h3 style="margin-top:0">🏆 Palpites extras</h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px">
+        <% CATEGORIAS.forEach(function(cat) { %>
+          <% const picks = extras.filter(function(e) { return e.categoria === cat.id; }); %>
+          <% if (picks.length > 0) { %>
+            <div style="background:var(--cinza-claro);padding:8px 12px;border-radius:8px">
+              <strong style="font-size:0.8rem;display:block;margin-bottom:4px"><%= cat.nome %></strong>
+              <% picks.forEach(function(e) { %>
+                <span style="display:inline-block;background:var(--azul);color:#fff;padding:2px 8px;border-radius:10px;font-size:0.75rem;margin:1px"><%= e.nome_pt %></span>
+              <% }); %>
+            </div>
+          <% } %>
+        <% }); %>
+      </div>
+    </div>
+  <% } else if (typeof extras !== 'undefined' && extras.length > 0) { %>
+    <div class="card text-center">
+      <p class="texto-aux">🔒 Palpites extras bloqueados até <%= extrasPrazo.toLocaleString('pt-BR', { dateStyle:'long', timeStyle:'short', timeZone:'America/Sao_Paulo' }) %></p>
+    </div>
+  <% } %>
 
   <div class="text-center mt-3">
     <a href="/ranking" class="btn btn-secondary">← Voltar ao ranking</a>
