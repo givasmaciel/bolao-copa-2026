@@ -110,7 +110,9 @@
           <div class="jogo-data"><%= new Date(jogo.data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'America/Sao_Paulo' }) %></div>
           <div class="jogo-estadio">📍 <%= jogo.estadio %>, <%= jogo.cidade %></div>
           <div style="margin-top:4px"><span class="badge badge-finalizado">Final</span></div>
-          <div class="texto-aux" style="font-size:0.72rem;margin-top:2px"><%= jogo.total_bets %> palpites</div>
+          <div style="margin-top:4px">
+            <a href="/palpites/jogo/<%= jogo.id %>" class="btn btn-sm btn-secondary" style="font-size:0.7rem;padding:3px 8px">📋 Ver palpites</a>
+          </div>
         <% } else if (fechado) { %>
           <div class="jogo-placar-display">? × ?</div>
           <% if (temPalpite) { %>
@@ -119,7 +121,9 @@
           <div class="jogo-data"><%= new Date(jogo.data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'America/Sao_Paulo' }) %></div>
           <div class="jogo-estadio">📍 <%= jogo.estadio %>, <%= jogo.cidade %></div>
           <div style="margin-top:4px"><span class="badge badge-pendente">Fechado</span></div>
-          <div class="texto-aux" style="font-size:0.72rem;margin-top:2px"><%= jogo.total_bets %> palpites</div>
+          <div style="margin-top:4px">
+            <a href="/palpites/jogo/<%= jogo.id %>" class="btn btn-sm btn-secondary" style="font-size:0.7rem;padding:3px 8px">📋 Ver palpites</a>
+          </div>
         <% } else { %>
           <form method="POST" action="/palpites/<%= jogo.id %>" class="jogo-form">
             <div class="jogo-placar">

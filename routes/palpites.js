@@ -132,6 +132,57 @@ router.post('/:jogoId', verificarAutenticado, async (req, res) => {
   }
 });
 
+// GET /palpites/jogo/:id - mostra todos os palpites de um jogo (só após travar)
+router.get('/jogo/:id', verificarAutenticado, async (req, res) => {
+  const jogoId = parseInt(req.params.id, 10);
+  if (isNaN(jogoId)) return res.redirect('/palpites');
+
+  try {
+    const jogo = await get(`
+      SELECT j.id, j.data, j.palpite_limite, j.finalizado, j.gols_casa, j.gols_visitante,
+        j.estadio, j.cidade, j.fase, j.rodada,
+        sc.nome_pt AS casa_pt, sc.sigla AS casa_sigla, sc.bandeira_url AS casa_bandeira,
+        sv.nome_pt AS visitante_pt, sv.sigla AS visitante_sigla, sv.bandeira_url AS visitante_bandeira
+      FROM jogos j
+      LEFT JOIN selecoes sc ON j.selecao_casa_id = sc.id
+      LEFT JOIN selecoes sv ON j.selecao_visitante_id = sv.id
+      WHERE j.id = ?
+    `, [jogoId]);
+    if (!jogo) { req.flash('erro', 'Jogo não encontrado.'); return res.redirect('/palpites'); }
+
+    // Verifica se o jogo está travado ou finalizado
+    const agora = new Date();
+    const dataJogo = new Date(jogo.data);
+    const limite = jogo.palpite_limite ? new Date(jogo.palpite_limite) : null;
+    const margem = limite || new Date(dataJogo.getTime() - 2 * 60 * 1000);
+    if (agora < margem && !jogo.finalizado) {
+      req.flash('erro', 'Este jogo ainda está aberto para palpites.');
+      return res.redirect('/palpites');
+    }
+
+    const palpites = await all(`
+      SELECT u.nome, p.palpite_gols_casa, p.palpite_gols_visitante, p.pontos_obtidos
+      FROM palpites p
+      JOIN usuarios u ON u.id = p.usuario_id
+      WHERE p.jogo_id = ? AND u.is_admin = 0
+      ORDER BY p.pontos_obtidos DESC, u.nome ASC
+    `, [jogoId]);
+
+    // Palpites extras do usuário logado para este jogo
+    const diffCasa = Math.abs(jogo.gols_casa - jogo.gols_visitante);
+    const diffPalpite = palpites.map(p => Math.abs(p.palpite_gols_casa - p.palpite_gols_visitante));
+
+    res.render('jogo-palpites', {
+      title: `${jogo.casa_pt} × ${jogo.visitante_pt}`,
+      jogo, palpites
+    });
+  } catch (err) {
+    console.error('Erro ao carregar palpites do jogo:', err);
+    req.flash('erro', 'Erro ao carregar.');
+    res.redirect('/palpites');
+  }
+});
+
 // POST /palpites/salvar-rodada - salva todos os palpites de uma rodada
 router.post('/salvar-rodada', verificarAutenticado, async (req, res) => {
   const usuarioId = req.session.usuario.id;
