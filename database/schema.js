@@ -157,11 +157,8 @@ async function criarSchema() {
 
   await run(tabelaReset);
 
-  await run('DROP TABLE IF EXISTS palpites_extras');
-  await run('DROP TABLE IF EXISTS resultados_extras');
-
   const tabelaExtrasPG = `
-    CREATE TABLE palpites_extras (
+    CREATE TABLE IF NOT EXISTS palpites_extras (
       id SERIAL PRIMARY KEY,
       usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
       categoria TEXT NOT NULL,
@@ -171,7 +168,7 @@ async function criarSchema() {
     )
   `;
   const tabelaExtrasSQLite = `
-    CREATE TABLE palpites_extras (
+    CREATE TABLE IF NOT EXISTS palpites_extras (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       usuario_id INTEGER NOT NULL,
       categoria TEXT NOT NULL,
@@ -184,7 +181,7 @@ async function criarSchema() {
   await run(usandoPG ? tabelaExtrasPG : tabelaExtrasSQLite);
 
   const tabelaResultPG = `
-    CREATE TABLE resultados_extras (
+    CREATE TABLE IF NOT EXISTS resultados_extras (
       id SERIAL PRIMARY KEY,
       categoria TEXT NOT NULL,
       selecao_id INTEGER REFERENCES selecoes(id),
@@ -193,7 +190,7 @@ async function criarSchema() {
     )
   `;
   const tabelaResultSQLite = `
-    CREATE TABLE resultados_extras (
+    CREATE TABLE IF NOT EXISTS resultados_extras (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       categoria TEXT NOT NULL,
       selecao_id INTEGER,

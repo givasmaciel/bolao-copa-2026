@@ -62,7 +62,7 @@ function calcularPontos(golsCasa, golsVisitante, palpiteCasa, palpiteVisitante) 
 
   // Placar exato
   if (golsCasa === palpiteCasa && golsVisitante === palpiteVisitante) {
-    return 10;
+    return 20;
   }
 
   // Determina resultado real e do palpite
@@ -75,19 +75,19 @@ function calcularPontos(golsCasa, golsVisitante, palpiteCasa, palpiteVisitante) 
   else if (palpiteCasa < palpiteVisitante) { resPalpite = 'V'; }
   else { resPalpite = 'E'; }
 
-  // Empate (qualquer placar) vale 7 pts
-  if (resReal === 'E' && resPalpite === 'E') return 7;
+  // Empate (qualquer placar) vale 14 pts
+  if (resReal === 'E' && resPalpite === 'E') return 14;
 
   const acertouGolCasa = golsCasa === palpiteCasa;
   const acertouGolVisitante = golsVisitante === palpiteVisitante;
   const acertouGolTime = acertouGolCasa || acertouGolVisitante;
 
   if (resReal === resPalpite) {
-    if (acertouGolTime) return 7;
-    return 3;
+    if (acertouGolTime) return 14;
+    return 6;
   }
 
-  if (acertouGolTime) return 2;
+  if (acertouGolTime) return 4;
   return 0;
 }
 

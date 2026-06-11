@@ -327,11 +327,11 @@ A lógica segue a ordem de precedência abaixo (a primeira condição verdadeira
 
 | # | Condição | Pontos |
 |---|---|---|
-| 1 | `gols_casa === palpite_casa && gols_visitante === palpite_visitante` | **10** (placar exato) |
-| 2 | Resultado real é empate E palpite é empate (qualquer placar de empate) | **7** |
-| 3 | Resultado correto (vitória/derrota) E acertou o gol de pelo menos um dos times | **7** |
-| 4 | Resultado correto (vitória/derrota) E errou os gols de ambos os times | **3** |
-| 5 | Resultado errado (inverteu vencedor) E acertou o gol de pelo menos um dos times | **2** |
+| 1 | `gols_casa === palpite_casa && gols_visitante === palpite_visitante` | **20** (placar exato) |
+| 2 | Resultado real é empate E palpite é empate (qualquer placar de empate) | **14** |
+| 3 | Resultado correto (vitória/derrota) E acertou o gol de pelo menos um dos times | **14** |
+| 4 | Resultado correto (vitória/derrota) E errou os gols de ambos os times | **6** |
+| 5 | Resultado errado (inverteu vencedor) E acertou o gol de pelo menos um dos times | **4** |
 | 6 | Nenhuma das anteriores (errou resultado e gols) | **0** |
 
 Os pontos são armazenados na coluna `pontos_obtidos` da tabela `palpites` e recalculados sempre que o admin salva ou atualiza o resultado de um jogo.

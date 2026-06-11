@@ -21,11 +21,11 @@ Deploy automático no Render (free tier) via Blueprint com PostgreSQL. Localment
 
 | Acerto | Pontos |
 |---|---|
-| Placar exato | **10** |
-| Resultado certo + 1 gol de um time | **7** |
-| Empate (qualquer placar) | **7** |
-| Só resultado (vitória/derrota) | **3** |
-| Errou resultado + acertou 1 gol | **2** |
+| Placar exato | **20** |
+| Resultado certo + 1 gol de um time | **14** |
+| Empate (qualquer placar) | **14** |
+| Só resultado (vitória/derrota) | **6** |
+| Errou resultado + acertou 1 gol | **4** |
 | Errou tudo | **0** |
 
 ## Pontuação — Extras
