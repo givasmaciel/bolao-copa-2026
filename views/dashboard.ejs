@@ -44,6 +44,24 @@
   </div>
 <% } %>
 
+<% if (alertaExtras) { %>
+  <div class="card" style="border-left:4px solid var(--amarelo);background:#fffde7;margin-bottom:16px">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <div style="font-size:1.8rem">🏆</div>
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:1rem">Palpites Extras</div>
+        <div style="font-size:0.85rem;margin-top:4px">
+          Você ainda não salvou seus palpites extras!
+          <% if (extrasDataLimite) { %>
+            O prazo encerra em <strong><%= extrasDataLimite.toLocaleString('pt-BR', { dateStyle: 'long', timeStyle: 'short', timeZone: 'America/Sao_Paulo' }) %></strong>.
+          <% } %>
+        </div>
+        <a href="/palpites-extras" class="btn btn-sm btn-primary" style="margin-top:6px">🏆 Fazer palpites extras</a>
+      </div>
+    </div>
+  </div>
+<% } %>
+
 <div class="grid grid-4 mb-2">
   <div class="stat-card">
     <div class="stat-valor"><%= stats.total_pontos %></div>

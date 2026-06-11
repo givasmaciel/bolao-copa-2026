@@ -79,6 +79,18 @@ router.get('/', verificarAutenticado, async (req, res) => {
       ORDER BY j.data DESC LIMIT 5
     `, [userId]);
 
+    // Verifica se usuário já salvou palpites extras
+    const extrasRow = await get("SELECT COUNT(*) AS total FROM palpites_extras WHERE usuario_id = ?", [userId]);
+    const temExtrasSalvos = (extrasRow?.total || 0) > 0;
+    const dataLimiteRow = await get("SELECT valor FROM config WHERE chave = 'extras_data_limite'");
+    let extrasDataLimite = null;
+    if (dataLimiteRow) {
+      const d = new Date(dataLimiteRow.valor);
+      if (!isNaN(d.getTime())) extrasDataLimite = d;
+    }
+    const extrasPrazoPassou = extrasDataLimite ? new Date() >= extrasDataLimite : true;
+    const alertaExtras = !req.session.usuario.is_admin && !temExtrasSalvos && !extrasPrazoPassou;
+
     // Processa próximo jogo para alerta
     let nextGame = null;
     if (proximosJogos.length > 0) {
@@ -119,7 +131,9 @@ router.get('/', verificarAutenticado, async (req, res) => {
       top5,
       stats: stats || { total_palpites: 0, total_pontos: 0, palpites_certos: 0, placares_exatos: 0 },
       totalFinalizados: totalFinalizados?.total || 0,
-      recentes
+      recentes,
+      alertaExtras,
+      extrasDataLimite
     });
   } catch (err) {
     console.error('Erro no dashboard:', err);
