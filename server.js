@@ -16,6 +16,7 @@ const extrasRoutes = require('./routes/extras');
 const { router: adminRoutes } = require('./routes/admin');
 const configRoutes = require('./routes/config');
 const DbSessionStore = require('./database/session-store');
+const sessionStore = new DbSessionStore();
 const dashboardRoutes = require('./routes/dashboard');
 const resumoRoutes = require('./routes/resumo');
 const classificacaoRoutes = require('./routes/classificacao');
@@ -41,7 +42,7 @@ app.use(session({
   secret: process.env.SESSION_SECRET || 'bolao-copa-2026-secret',
   resave: false,
   saveUninitialized: false,
-  store: new DbSessionStore(),
+  store: sessionStore,
   cookie: {
     maxAge: 1000 * 60 * 60 * 24 * 30, // 30 dias
     secure: process.env.NODE_ENV === 'production',
@@ -63,7 +64,8 @@ app.use((req, res, next) => {
 // Middleware de validação CSRF para métodos que alteram estado
 function csrfProtection(req, res, next) {
   if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) return next();
-  const token = req.body?._csrf || req.query?._csrf || req.headers?.['x-csrf-token'];
+  let token = req.body?._csrf || req.query?._csrf || req.headers?.['x-csrf-token'];
+  if (Array.isArray(token)) token = token[0];
   if (!token || token !== req.session.csrfToken) {
     console.warn('CSRF inválido:', {
       method: req.method,
@@ -163,6 +165,11 @@ app.use((err, req, res, next) => {
 (async () => {
   try {
     await criarSchema();
+
+    // Limpa sessões expiradas no startup e a cada 1h
+    sessionStore.clearExpired();
+    setInterval(() => sessionStore.clearExpired(), 60 * 60 * 1000);
+
     app.listen(PORT, () => {
       console.log('');
       console.log('⚽ ========================================');

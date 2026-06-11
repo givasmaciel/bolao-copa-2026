@@ -57,6 +57,17 @@ class DbSessionStore extends Store {
       .then(() => callback(null))
       .catch(err => callback(err));
   }
+
+  clearExpired() {
+    const agora = new Date().toISOString();
+    run('DELETE FROM sessions WHERE expires IS NOT NULL AND expires <= ?', [agora])
+      .then(result => {
+        if (result.changes > 0) {
+          console.log(`🧹 ${result.changes} sessão(ões) expirada(s) removida(s)`);
+        }
+      })
+      .catch(err => console.error('Erro ao limpar sessões expiradas:', err));
+  }
 }
 
 module.exports = DbSessionStore;

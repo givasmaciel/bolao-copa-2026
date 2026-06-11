@@ -7,8 +7,39 @@
 
 <div class="card mb-2" style="border-left:4px solid var(--amarelo)">
   <p><strong>📅 Data limite:</strong> <%= dataLimite.toLocaleString('pt-BR', { dateStyle: 'long', timeStyle: 'short', timeZone: 'America/Sao_Paulo' }) %></p>
-  <p class="texto-aux mt-1">Após essa data, os palpites extras serão travados.</p>
+  <p id="extras-countdown" class="texto-aux mt-1" style="font-weight:600;font-size:0.9rem">Carregando...</p>
 </div>
+<script>
+(function() {
+  var prazo = new Date('<%= dataLimite.toISOString() %>');
+  var el = document.getElementById('extras-countdown');
+  function tick() {
+    var agora = new Date();
+    var diff = prazo.getTime() - agora.getTime();
+    if (diff <= 0) {
+      el.innerHTML = '🔒 Prazo encerrado! Os palpites extras estão travados.';
+      el.style.color = 'var(--erro)';
+      return;
+    }
+    var totalSeg = Math.floor(diff / 1000);
+    var d = Math.floor(totalSeg / 86400);
+    var h = Math.floor((totalSeg % 86400) / 3600);
+    var m = Math.floor((totalSeg % 3600) / 60);
+    var s = totalSeg % 60;
+    var partes = [];
+    if (d > 0) partes.push(d + 'd');
+    partes.push(h + 'h ' + m + 'min ' + s + 's');
+    el.innerHTML = '⏱ Faltam <strong>' + partes.join(' ') + '</strong> para o prazo final';
+    if (diff < 86400000) {
+      el.style.color = 'var(--erro)';
+    } else {
+      el.style.color = '';
+    }
+  }
+  tick();
+  setInterval(tick, 1000);
+})();
+</script>
 
 <% 
   const temExtras = Object.values(palpites).some(function(arr) { return arr && arr.length > 0; });
