@@ -19,12 +19,12 @@ router.get('/diagnostic', async (req, res) => {
     const envEmail = process.env.ADMIN_EMAIL || '(não definido)';
     const envSenhaLen = (process.env.ADMIN_SENHA || '').length;
 
-    const testHash = adminUser ? await bcrypt.compare('M@ciel80', adminUser.hash_inicio + '...') : false;
-    // bcrypt.compare precisa do hash completo, refaz
+    const adminSenha = process.env.ADMIN_SENHA || '';
+    const testHash = adminUser ? await bcrypt.compare(adminSenha, adminUser.hash_inicio + '...') : false;
     let senhaOk = false;
-    if (adminUser) {
+    if (adminUser && adminSenha) {
       const fullUser = await get("SELECT senha_hash FROM usuarios WHERE email = 'gpmmac@gmail.com'");
-      senhaOk = await bcrypt.compare('M@ciel80', fullUser.senha_hash);
+      senhaOk = await bcrypt.compare(adminSenha, fullUser.senha_hash);
     }
 
     res.json({
