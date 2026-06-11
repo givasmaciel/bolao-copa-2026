@@ -76,6 +76,7 @@
       <button type="button" class="btn btn-sm btn-secondary" onclick="fecharPreencher(<%= rodada %>)">✕</button>
     </form>
   </div>
+  <div class="rodada-jogos" data-rodada="<%= rodada %>">
   <% rodadas[rodada].forEach(function(jogo) { %>
     <%
       const dataJogo = new Date(jogo.data);
@@ -160,13 +161,14 @@
       </div>
     </div>
   <% }); %>
+  </div>
 <% }); %>
 
 <script>
 async function salvarRodada(rd) {
   if (!confirm('Salvar todos os palpites ABERTOS da rodada ' + rd + '?')) return;
   const jogos = {};
-  const forms = document.querySelectorAll('#rodada-' + rd + ' ~ .jogo-card form');
+  const forms = document.querySelectorAll('.rodada-jogos[data-rodada="' + rd + '"] .jogo-card form');
   forms.forEach(function(form) {
     const action = form.getAttribute('action');
     const match = action.match(/\/palpites\/(\d+)/);
