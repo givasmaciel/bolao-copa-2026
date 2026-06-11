@@ -1,0 +1,126 @@
+<%- include('partials/header', { active: 'jogos' }) %>
+
+<%- include('partials/flash') %>
+
+<div style="margin-bottom:20px">
+  <a href="/jogos" class="texto-aux" style="text-decoration:none;display:inline-flex;align-items:center;gap:4px">&larr; Voltar para jogos</a>
+</div>
+
+<div class="jogo-card <%= jogo.finalizado === 1 ? 'finalizado' : '' %>" style="margin-bottom:24px">
+  <div class="jogo-time">
+    <% if (jogo.casa_bandeira) { %>
+      <img src="<%= jogo.casa_bandeira %>" alt="<%= jogo.casa_pt %>">
+    <% } %>
+    <span><%= jogo.casa_pt %></span>
+  </div>
+  <div class="jogo-info">
+    <% if (jogo.finalizado === 1) { %>
+      <div class="jogo-placar-display"><%= jogo.gols_casa %> × <%= jogo.gols_visitante %></div>
+    <% } else { %>
+      <div class="jogo-placar-display" style="color:#aaa">×</div>
+    <% } %>
+    <div class="jogo-data"><%= new Date(jogo.data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'America/Sao_Paulo' }) %></div>
+    <div class="jogo-estadio"><%= jogo.estadio %>, <%= jogo.cidade %></div>
+  </div>
+  <div class="jogo-time visitante">
+    <span><%= jogo.visitante_pt %></span>
+    <% if (jogo.visitante_bandeira) { %>
+      <img src="<%= jogo.visitante_bandeira %>" alt="<%= jogo.visitante_pt %>">
+    <% } %>
+  </div>
+</div>
+
+<% if (!bloqueado) { %>
+  <div class="card text-center" style="padding:40px 20px">
+    <div style="font-size:3rem;margin-bottom:12px">🔒</div>
+    <h2 style="margin:0 0 8px">Palpites ocultos</h2>
+    <p class="texto-aux" style="margin:0;font-size:1.1rem">
+      Os palpites serão revelados quando o jogo for bloqueado.
+    </p>
+  </div>
+<% } else { %>
+  <% 
+    const chaves = Object.keys(agrupado).sort(function(a, b) {
+      return agrupado[b].length - agrupado[a].length;
+    });
+    const meuPalpite = palpites.find(function(p) { return p.usuario_id === usuarioId; });
+    const meuPlacar = meuPalpite && meuPalpite.temPalpite ? meuPalpite.palpite_gols_casa + '×' + meuPalpite.palpite_gols_visitante : null;
+  %>
+
+  <% if (chaves.length > 0) { %>
+    <div class="card mb-2">
+      <h3 style="margin:0 0 12px">📊 Apostas por resultado</h3>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <% chaves.forEach(function(chave) { const participantes = agrupado[chave]; %>
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;background:<%= chave === meuPlacar ? 'var(--amarelo)' : 'var(--cinza-claro)' %>;font-weight:<%= chave === meuPlacar ? '700' : '400' %>">
+            <span style="font-size:1.1rem;min-width:70px;text-align:center;font-weight:700"><%= chave %></span>
+            <div style="flex:1;height:28px;background:#e2e8f0;border-radius:14px;overflow:hidden">
+              <div style="height:100%;width:<%= (participantes.length / palpites.filter(function(p){return p.temPalpite;}).length * 100) %>% ;background:var(--verde);border-radius:14px;display:flex;align-items:center;padding-left:10px;font-size:0.75rem;color:#fff;font-weight:600;min-width:fit-content">
+                <%= participantes.length %> pessoa<%= participantes.length !== 1 ? 's' : '' %>
+              </div>
+            </div>
+            <% if (chave === meuPlacar) { %>
+              <span style="font-size:0.75rem;background:var(--texto);color:#fff;padding:2px 8px;border-radius:10px;white-space:nowrap">Seu palpite</span>
+            <% } %>
+          </div>
+        <% }); %>
+        <div class="texto-aux mt-1" style="font-size:0.85rem">
+          Total: <%= palpites.filter(function(p){return p.temPalpite;}).length %> participantes
+        </div>
+      </div>
+    </div>
+  <% } %>
+
+  <div class="card">
+    <h3 style="margin:0 0 12px">
+      <% if (jogo.finalizado === 1) { %>
+        📋 Resultado dos palpites
+      <% } else { %>
+        📋 Palpites dos participantes
+      <% } %>
+    </h3>
+    <div style="overflow-x:auto">
+      <table class="ranking-tabela" style="margin-top:4px">
+        <thead>
+          <tr>
+            <th>Participante</th>
+            <th class="text-center">Palpite</th>
+            <% if (jogo.finalizado === 1) { %>
+              <th class="text-center">Pontos</th>
+            <% } %>
+          </tr>
+        </thead>
+        <tbody>
+          <% palpites.forEach(function(p) { if (!p.temPalpite) return; %>
+            <tr style="<%= p.usuario_id === usuarioId ? 'font-weight:700;background:var(--cinza-claro)' : '' %>">
+              <td><%= p.nome %><%= p.usuario_id === usuarioId ? ' <span style="font-size:0.75rem;opacity:0.6">(você)</span>' : '' %></td>
+              <td class="text-center"><%= p.palpite_gols_casa %>×<%= p.palpite_gols_visitante %></td>
+              <% if (jogo.finalizado === 1) { %>
+                <td class="text-center" style="<%= p.pontos_obtidos > 0 ? 'color:var(--verde);font-weight:700' : 'color:var(--erro)' %>">
+                  <% if (p.pontos_obtidos > 0) { %>+<% } %><%= p.pontos_obtidos %>
+                </td>
+              <% } %>
+            </tr>
+          <% }); %>
+          <% if (palpites.filter(function(p){return p.temPalpite;}).length === 0) { %>
+            <tr>
+              <td colspan="<%= jogo.finalizado === 1 ? 3 : 2 %>" class="text-center texto-aux" style="padding:20px">
+                Nenhum palpite registrado para este jogo.
+              </td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <% if (jogo.finalizado === 1) { %>
+    <div class="card mt-2 text-center" style="border-left:4px solid var(--verde)">
+      <p style="margin:0;font-size:1.05rem">
+        <strong>Resultado oficial:</strong> <%= jogo.casa_pt %> <%= jogo.gols_casa %>×<%= jogo.gols_visitante %> <%= jogo.visitante_pt %>
+      </p>
+    </div>
+  <% } %>
+<% } %>
+
+<%- include('partials/footer') %>

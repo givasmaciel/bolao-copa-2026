@@ -33,6 +33,11 @@
         <% } else { %>
           <div style="margin-top:4px"><span class="badge badge-knockout">Mata-mata</span></div>
         <% } %>
+        <% if (typeof usuario !== 'undefined' && usuario) { %>
+          <div style="margin-top:6px">
+            <a href="/jogos/<%= jogo.id %>/palpites" class="btn btn-sm btn-secondary" style="font-size:0.7rem">👥 Ver palpites</a>
+          </div>
+        <% } %>
       </div>
 
       <div class="jogo-time visitante">
