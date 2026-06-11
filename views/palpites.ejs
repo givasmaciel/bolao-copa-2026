@@ -64,7 +64,7 @@
   <div class="flex" style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
     <h2 class="jogo-rodada-titulo" style="margin:0">Rodada <%= rodada %></h2>
     <button class="btn btn-sm btn-secondary" onclick="palpitarRodada(<%= rodada %>)" style="font-size:0.8rem">⚡ Preencher todos</button>
-    <button class="btn btn-sm btn-primary" onclick="salvarRodada(<%= rodada %>)" style="font-size:0.8rem">💾 Salvar todos</button>
+    <button class="btn btn-sm btn-primary" onclick="salvarRodada(<%= rodada %>, this)" style="font-size:0.8rem">💾 Salvar todos</button>
   </div>
   <div id="rodada-<%= rodada %>-preencher" style="display:none;margin-bottom:8px;background:var(--bg-card);padding:8px;border-radius:8px">
     <form onsubmit="return preencherRodada(event, <%= rodada %>)" class="flex gap-1" style="align-items:center;flex-wrap:wrap">
@@ -165,10 +165,12 @@
 <% }); %>
 
 <script>
-async function salvarRodada(rd) {
+async function salvarRodada(rd, btn) {
   if (!confirm('Salvar todos os palpites ABERTOS da rodada ' + rd + '?')) return;
   const jogos = {};
-  const forms = document.querySelectorAll('.rodada-jogos[data-rodada="' + rd + '"] .jogo-card form');
+  const container = document.querySelector('.rodada-jogos[data-rodada="' + rd + '"]');
+  if (!container) { alert('Rodada não encontrada.'); return; }
+  const forms = container.querySelectorAll('.jogo-card form');
   forms.forEach(function(form) {
     const action = form.getAttribute('action');
     const match = action.match(/\/palpites\/(\d+)/);
@@ -185,7 +187,6 @@ async function salvarRodada(rd) {
     return;
   }
   try {
-    const btn = event.target;
     btn.disabled = true;
     btn.textContent = '⏳ Salvando...';
     const res = await fetch('/palpites/salvar-rodada', {
@@ -202,6 +203,8 @@ async function salvarRodada(rd) {
     }
   } catch (err) {
     alert('Erro ao salvar.');
+    btn.disabled = false;
+    btn.textContent = '💾 Salvar todos';
   }
 }
 
