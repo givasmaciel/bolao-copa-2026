@@ -157,6 +157,23 @@ async function criarSchema() {
 
   await run(tabelaReset);
 
+  // Tabela de sessões (store persistente)
+  const tabelaSessoesPG = `
+    CREATE TABLE IF NOT EXISTS sessions (
+      sid TEXT PRIMARY KEY,
+      data TEXT NOT NULL,
+      expires TIMESTAMPTZ
+    )
+  `;
+  const tabelaSessoesSQLite = `
+    CREATE TABLE IF NOT EXISTS sessions (
+      sid TEXT PRIMARY KEY,
+      data TEXT NOT NULL,
+      expires DATETIME
+    )
+  `;
+  await run(usandoPG ? tabelaSessoesPG : tabelaSessoesSQLite);
+
   const tabelaExtrasPG = `
     CREATE TABLE IF NOT EXISTS palpites_extras (
       id SERIAL PRIMARY KEY,

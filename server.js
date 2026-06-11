@@ -15,6 +15,7 @@ const senhaRoutes = require('./routes/senha');
 const extrasRoutes = require('./routes/extras');
 const { router: adminRoutes } = require('./routes/admin');
 const configRoutes = require('./routes/config');
+const DbSessionStore = require('./database/session-store');
 const dashboardRoutes = require('./routes/dashboard');
 const resumoRoutes = require('./routes/resumo');
 const classificacaoRoutes = require('./routes/classificacao');
@@ -40,6 +41,7 @@ app.use(session({
   secret: process.env.SESSION_SECRET || 'bolao-copa-2026-secret',
   resave: false,
   saveUninitialized: false,
+  store: new DbSessionStore(),
   cookie: {
     maxAge: 1000 * 60 * 60 * 24 * 30, // 30 dias
     secure: process.env.NODE_ENV === 'production',
@@ -63,7 +65,13 @@ function csrfProtection(req, res, next) {
   if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) return next();
   const token = req.body?._csrf || req.query?._csrf || req.headers?.['x-csrf-token'];
   if (!token || token !== req.session.csrfToken) {
-    console.warn('CSRF inválido:', req.method, req.originalUrl);
+    console.warn('CSRF inválido:', {
+      method: req.method,
+      url: req.originalUrl,
+      hasSessionCsrf: !!req.session.csrfToken,
+      tokenRecebido: token ? token.substring(0, 8) + '...' : null,
+      sessionId: req.sessionID
+    });
     if (req.accepts('json')) {
       return res.status(403).json({ ok: false, erro: 'CSRF inválido. Recarregue a página e tente novamente.' });
     }
