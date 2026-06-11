@@ -12,8 +12,8 @@ const CATEGORIAS = [
   { id: 'r32', nome: '1/16 avos de Final', pts: 10, max: 32 },
   { id: 'oitavas', nome: 'Oitavas de Final', pts: 10, max: 16 },
   { id: 'quartas', nome: 'Quartas de Final', pts: 15, max: 8 },
-  { id: 'semi', nome: 'Semifinal', pts: 20, max: 4 },
-  { id: 'finalista', nome: 'Finalista', pts: 30, max: 2 }
+  { id: 'semi', nome: 'Semifinal', pts: 30, max: 4 },
+  { id: 'finalista', nome: 'Finalista', pts: 50, max: 2 }
 ];
 
 const MULTI_CATS = new Set(['r32', 'oitavas', 'quartas', 'semi', 'finalista']);
