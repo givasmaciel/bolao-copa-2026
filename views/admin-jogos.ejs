@@ -29,48 +29,48 @@
 <% const jogosFiltrados = typeof query !== 'undefined' && query.fase ? jogos.filter(function(j){ return j.fase === query.fase; }) : jogos; %>
 
 <% jogosFiltrados.forEach(function(jogo) { %>
-  <form method="POST" action="/admin/jogos/<%= jogo.id %>" class="jogo-card <%= jogo.finalizado === 1 ? 'finalizado' : '' %>">
-    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-    <div class="jogo-time">
-      <span><%= jogo.casa_pt || 'A definir' %></span>
-    </div>
-    <div class="jogo-info">
-      <div class="jogo-placar">
-        <input type="number" name="gols_casa" min="0" max="99" class="form-control"
-               value="<%= jogo.gols_casa !== null ? jogo.gols_casa : '' %>" placeholder="—" style="width:60px">
-        <span class="x">×</span>
-        <input type="number" name="gols_visitante" min="0" max="99" class="form-control"
-               value="<%= jogo.gols_visitante !== null ? jogo.gols_visitante : '' %>" placeholder="—" style="width:60px">
+  <div class="jogo-card <%= jogo.finalizado === 1 ? 'finalizado' : '' %>">
+    <form method="POST" action="/admin/jogos/<%= jogo.id %>" class="jogo-form-main">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="jogo-time">
+        <span><%= jogo.casa_pt || 'A definir' %></span>
       </div>
-      <div class="jogo-data">
-        <% if (jogo.grupo_letra) { %>Grupo <%= jogo.grupo_letra %> • <% } %>
-        <%= new Date(jogo.data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'America/Sao_Paulo' }) %>
-      </div>
-      <% if (jogo.palpite_limite) { %>
-        <div style="font-size:0.75rem;color:#c0392b;margin-top:4px">
-          Prazo alterado: <%= new Date(jogo.palpite_limite).toLocaleString('pt-BR', { dateStyle:'short', timeStyle:'short', timeZone:'America/Sao_Paulo' }) %>
-          <a href="/admin/jogos/<%= jogo.id %>/limpar-limite" class="texto-aux" style="margin-left:6px;color:#c0392b" onclick="return confirm('Limpar prazo personalizado?')">✕ limpar</a>
+      <div class="jogo-info">
+        <div class="jogo-placar">
+          <input type="number" name="gols_casa" min="0" max="99" class="form-control"
+                 value="<%= jogo.gols_casa !== null ? jogo.gols_casa : '' %>" placeholder="—" style="width:60px">
+          <span class="x">×</span>
+          <input type="number" name="gols_visitante" min="0" max="99" class="form-control"
+                 value="<%= jogo.gols_visitante !== null ? jogo.gols_visitante : '' %>" placeholder="—" style="width:60px">
         </div>
-      <% } %>
-      <label class="flex gap-1 mt-1" style="justify-content:center; font-size:0.85rem">
-        <input type="checkbox" name="finalizado" value="1" <%= jogo.finalizado === 1 ? 'checked' : '' %>>
-        Finalizado
-      </label>
-      <button type="submit" class="btn btn-primary btn-sm mt-1">💾 Salvar</button>
-      <a href="#" class="btn btn-sm btn-secondary mt-1" style="font-size:0.75rem" onclick="event.preventDefault(); document.getElementById('limite-form-<%= jogo.id %>').style.display = document.getElementById('limite-form-<%= jogo.id %>').style.display === 'none' ? 'block' : 'none'">⏰ Prazo</a>
-      <div id="limite-form-<%= jogo.id %>" style="display:none;margin-top:6px">
-        <form method="POST" action="/admin/jogos/<%= jogo.id %>/limite" style="display:flex;gap:4px;flex-wrap:wrap;justify-content:center">
-          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-          <input type="datetime-local" name="palpite_limite" class="form-control" style="width:auto;font-size:0.8rem"
-            value="<%= jogo.palpite_limite ? new Date(jogo.palpite_limite).toLocaleString('sv-SE', { timeZone:'America/Sao_Paulo' }).replace(' ', 'T').substring(0,16) : '' %>">
-          <button type="submit" class="btn btn-sm btn-primary" style="font-size:0.75rem">Definir</button>
-        </form>
+        <div class="jogo-data">
+          <% if (jogo.grupo_letra) { %>Grupo <%= jogo.grupo_letra %> • <% } %>
+          <%= new Date(jogo.data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'America/Sao_Paulo' }) %>
+        </div>
+        <% if (jogo.palpite_limite) { %>
+          <div style="font-size:0.75rem;color:#c0392b;margin-top:4px">
+            Prazo alterado: <%= new Date(jogo.palpite_limite).toLocaleString('pt-BR', { dateStyle:'short', timeStyle:'short', timeZone:'America/Sao_Paulo' }) %>
+            <a href="/admin/jogos/<%= jogo.id %>/limpar-limite" class="texto-aux" style="margin-left:6px;color:#c0392b" onclick="return confirm('Limpar prazo personalizado?')">✕ limpar</a>
+          </div>
+        <% } %>
+        <label class="flex gap-1 mt-1" style="justify-content:center; font-size:0.85rem">
+          <input type="checkbox" name="finalizado" value="1" <%= jogo.finalizado === 1 ? 'checked' : '' %>>
+          Finalizado
+        </label>
+        <button type="submit" class="btn btn-primary btn-sm mt-1">💾 Salvar</button>
+        <a href="#" class="btn btn-sm btn-secondary mt-1" style="font-size:0.75rem" onclick="event.preventDefault(); document.getElementById('limite-form-<%= jogo.id %>').classList.toggle('visible')">⏰ Prazo</a>
       </div>
-    </div>
-    <div class="jogo-time visitante">
-      <span><%= jogo.visitante_pt || 'A definir' %></span>
-    </div>
-  </form>
+      <div class="jogo-time visitante">
+        <span><%= jogo.visitante_pt || 'A definir' %></span>
+      </div>
+    </form>
+    <form method="POST" action="/admin/jogos/<%= jogo.id %>/limite" id="limite-form-<%= jogo.id %>" class="jogo-form-limite">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <input type="datetime-local" name="palpite_limite" class="form-control" style="width:auto;font-size:0.8rem"
+        value="<%= jogo.palpite_limite ? new Date(jogo.palpite_limite).toLocaleString('sv-SE', { timeZone:'America/Sao_Paulo' }).replace(' ', 'T').substring(0,16) : '' %>">
+      <button type="submit" class="btn btn-sm btn-primary" style="font-size:0.75rem">Definir</button>
+    </form>
+  </div>
 <% }); %>
 
 <%- include('partials/footer') %>
