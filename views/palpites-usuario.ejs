@@ -25,12 +25,12 @@
       </div>
     </div>
     <div class="stat-card">
-      <div class="stat-valor">
-        <% if (stats.total > 0) { %>
-          <%= Math.round(((stats.acertos || 0) / stats.total) * 100) %>%
-        <% } else { %>—<% } %>
-      </div>
-      <div class="stat-label">Taxa de acerto</div>
+      <div class="stat-valor"><%= aproveitamento %>%</div>
+      <div class="stat-label">Aproveitamento</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-valor" style="font-size:1rem"><%= totalDisputado %></div>
+      <div class="stat-label">Pontos disputados</div>
     </div>
   </div>
 <% } %>

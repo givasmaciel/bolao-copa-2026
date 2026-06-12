@@ -6,7 +6,7 @@
 <p class="subtitulo">Veja quem está mandando bem nos palpites da Copa 2026!</p>
 
 <% if (totais) { %>
-  <div class="grid grid-4 mb-2">
+  <div class="grid grid-5 mb-2">
     <div class="stat-card">
       <div class="stat-valor"><%= totais.total_usuarios %></div>
       <div class="stat-label">Participantes</div>
@@ -22,6 +22,10 @@
     <div class="stat-card">
       <div class="stat-valor"><%= ranking.length > 0 ? ranking[0].total_pontos : 0 %></div>
       <div class="stat-label">Pontos do líder</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-valor"><%= totalDisputado %></div>
+      <div class="stat-label">Pontos disponíveis</div>
     </div>
   </div>
 <% } %>
@@ -41,6 +45,7 @@
         <th class="text-center">Melhor</th>
         <th class="text-center">Extras</th>
         <th class="text-center">Bônus</th>
+        <th class="text-center">Aproveit.</th>
         <th class="text-center">Pontos</th>
       </tr>
     </thead>
@@ -61,6 +66,7 @@
           <td class="text-center"><%= u.maior_palpite %> pts</td>
           <td class="text-center"><%= u.extras_pontos > 0 ? '+' + u.extras_pontos : '—' %></td>
           <td class="text-center"><%= u.bonus_pontos > 0 ? '+' + u.bonus_pontos : '—' %></td>
+          <td class="text-center"><%= u.aproveitamento %>%</td>
           <td class="text-center pontos"><%= u.total_pontos %></td>
         </tr>
       <% }); %>

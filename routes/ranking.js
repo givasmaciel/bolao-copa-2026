@@ -126,7 +126,22 @@ router.get('/', async (req, res) => {
       });
     }
 
-    res.render('ranking', { title: 'Ranking do Bolão', ranking, totais, rodadaMap, rodadas, labels, extrasResultados, extrasPorCategoria, CATEGORIAS });
+    // Calcula total de pontos disputados (soma dos pts_exato dos jogos finalizados + extras)
+    const totalJogos = await get(`
+      SELECT COALESCE(SUM(fp.pts_exato), 0) AS total
+      FROM jogos j
+      JOIN fase_pontuacao fp ON fp.fase = j.fase
+      WHERE j.finalizado = 1
+    `);
+    const totalExtras = await get('SELECT COALESCE(SUM(pontos), 0) AS total FROM resultados_extras');
+    const totalDisputado = (totalJogos?.total || 0) + (totalExtras?.total || 0);
+
+    // Adiciona aproveitamento a cada participante
+    for (const u of ranking) {
+      u.aproveitamento = totalDisputado > 0 ? Math.round((u.total_pontos / totalDisputado) * 100) : 0;
+    }
+
+    res.render('ranking', { title: 'Ranking do Bolão', ranking, totais, rodadaMap, rodadas, labels, extrasResultados, extrasPorCategoria, CATEGORIAS, totalDisputado });
   } catch (err) {
     console.error('Erro ao listar ranking:', err);
     req.flash('erro', 'Erro ao carregar ranking.');
@@ -181,10 +196,24 @@ router.get('/usuario/:id', async (req, res) => {
     const extrasPrazo = extrasDeadline ? new Date(extrasDeadline.valor) : new Date('2026-06-11T15:55-03:00');
     const extrasLiberado = new Date() >= extrasPrazo;
 
+    // Calcula aproveitamento
+    const totalJogos = await get(`
+      SELECT COALESCE(SUM(fp.pts_exato), 0) AS total
+      FROM jogos j
+      JOIN fase_pontuacao fp ON fp.fase = j.fase
+      WHERE j.finalizado = 1
+    `);
+    const totalExtras = await get('SELECT COALESCE(SUM(pontos), 0) AS total FROM resultados_extras');
+    const totalDisputado = (totalJogos?.total || 0) + (totalExtras?.total || 0);
+    const totalUsuario = (stats?.pontos || 0) + (bonusRow?.total || 0);
+    const aproveitamento = totalDisputado > 0 ? Math.round((totalUsuario / totalDisputado) * 100) : 0;
+
     res.render('palpites-usuario', {
       title: `Palpites de ${usuario.nome}`,
       usuario, palpites, stats,
       bonusPontos: bonusRow?.total || 0,
+      totalDisputado,
+      aproveitamento,
       agora: new Date(),
       extras, extrasLiberado, extrasPrazo,
       CATEGORIAS
