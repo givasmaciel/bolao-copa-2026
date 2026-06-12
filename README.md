@@ -12,7 +12,7 @@ Deploy automático no Render (free tier) via Blueprint com PostgreSQL. Localment
 - **Dashboard** (`/dashboard`) — cards de estatísticas, próximos 5 jogos, palpites pendentes, top 5 do ranking, banner de alerta com contagem regressiva em BRT, notificação de palpites extras pendentes
 - **Resumo** (`/resumo`) — estatísticas detalhadas por tipo de ponto, pontos por rodada, racha (comparação head-to-head) com qualquer participante, histórico de jogos finalizados
 - **Visualização pública de palpites** (`/jogos/:id/palpites`) — 3 níveis de visibilidade: 🔒 oculto antes do fechamento, 👀 visível sem pontos após fechar, visível com pontos após resultado; agrupamento por pontuação; destaca o palpite do visitante
-- **Config** (`/config`) — participante altera próprio nome (sincronizado com username) e visualiza seu código de convite
+- **Config** (`/config`) — participante altera próprio nome (sincronizado com username)
 - **Admin como juiz** — não participa, não aparece no ranking, redirecionado de `/palpites`
 - **Pontos bônus** — admin pode conceder pontos extras a participantes que entraram tarde, para não perderem a motivação
 - **Rotas administrativas** — resultados dos jogos, recalcular pontos, gerenciar usuários (promover/rebaixar/excluir/resetar senha, resetar palpites individual/massa, alterar username, criar participante), admin extras, admin config
@@ -96,16 +96,17 @@ database/
   criar-admin.js — script manual de criação de admin
 
 routes/
-  auth.js        — cadastro (com invite code), login (email/username/nome), logout
+  auth.js        — cadastro aberto, login (email/username/nome), logout
   palpites.js    — palpites por jogo, trava 2 min antes, exclusão de admin
   extras.js      — palpites extras independentes, save individual e em lote, revelação pós-prazo
-  dashboard.js   — cards, próximos jogos, top 5, banner com contagem regressiva
+  dashboard.js   — cards, próximos jogos, top 5, banner com contagem regressiva, pontuação por fase
   resumo.js      — stats detalhadas, pontos por rodada, racha, histórico
-  config.js      — alterar nome (sincroniza com username), exibir convite
+  config.js      — alterar nome (sincroniza com username)
+  classificacao.js — classificação dos grupos
   jogos.js       — listagem pública dos 104 jogos
   ranking.js     — ranking com pontos extras, desempate, exclui admins
   senha.js       — reset de senha com token + email
-  admin.js       — resultados, recalcular, usuários, criar participante, extras, config
+  admin.js       — resultados, recalcular, usuários, criar participante, extras, config, pontuação por fase, pontos bônus
 
 middleware/
   auth.js        — verificarAutenticado, verificarAdmin, jaLogado
@@ -114,7 +115,7 @@ views/
   partials/      — header.ejs (nav), footer.ejs, flash.ejs
   home.ejs       — landing page com regras
   login.ejs      — formulário de login (email/username/nome)
-  cadastro.ejs   — cadastro com campo de código de convite
+  cadastro.ejs   — cadastro aberto
   dashboard.ejs  — painel do participante
   palpites.ejs   — formulários por jogo com botão salvar individual
   palpites-extras.ejs — formulários por categoria com grid, busca, bandeiras, progresso, preview pts
@@ -123,8 +124,9 @@ views/
   jogos.ejs      — tabela de jogos públicas
   ranking.ejs    — ranking com posições
   resumo.ejs     — estatísticas, rodadas, racha, histórico
-  config.ejs     — alterar nome + exibir convite
-  admin.ejs, admin-jogos.ejs, admin-usuarios.ejs, admin-extras.ejs
+  config.ejs     — alterar nome
+  classificacao.ejs — grupos e classificação
+  admin.ejs, admin-jogos.ejs, admin-usuarios.ejs, admin-extras.ejs, admin-pontuacao-fases.ejs
   esqueci-senha.ejs, redefinir-senha.ejs
   404.ejs, 500.ejs
 
@@ -141,6 +143,10 @@ raiz/
 - Pontuação automática ao admin marcar jogo como finalizado; botão de recalcular disponível
 - Admin pode recalcular pontos, resetar palpites (individual/massa), resetar senha, promover/rebaixar, excluir usuários
 - Cadastro aberto — qualquer pessoa pode criar conta livremente
+- Admin pode conceder pontos bônus a participantes tardios (não ultrapassa último colocado)
+- Pontuação por fase configurável pelo admin em `/admin/pontuacao-fases`
+- Aproveitamento percentual exibido no ranking e perfil do usuário
+- Resultados dos extras no ranking só aparecem após admin definir em `/admin/extras`
 - Desempate no ranking: quem tem mais palpites com pontos > 0
 - Trust proxy: `app.set('trust proxy', 1)` para sessão funcionar atrás do proxy HTTPS do Render
 - Sessão: cookie-based, secure em produção, sameSite lax, 30 dias

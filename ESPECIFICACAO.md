@@ -150,6 +150,17 @@ O banco opera de forma transparente com **SQLite** (desenvolvimento local) ou **
 
 Armazena configurações do sistema, como o prazo limite dos palpites extras (ex.: `extras_deadline`).
 
+### `fase_pontuacao`
+
+| Coluna | Tipo | Descrição |
+|---|---|---|
+| `fase` | TEXT PRIMARY KEY | `grupo`, `r32`, `r16`, `qf`, `sf`, `terceiro`, `final` |
+| `pts_exato` | INTEGER DEFAULT 20 | Pontos por placar exato |
+| `pts_empate` | INTEGER DEFAULT 14 | Pontos por acertar empate (qualquer placar) |
+| `pts_resultado_gol` | INTEGER DEFAULT 14 | Pontos por resultado + 1 gol certo |
+| `pts_resultado` | INTEGER DEFAULT 8 | Pontos por resultado correto sem gols |
+| `pts_gol` | INTEGER DEFAULT 3 | Pontos por 1 gol certo mas resultado errado |
+
 ### `pontos_bonus`
 
 | Coluna | Tipo | Descrição |
@@ -337,18 +348,30 @@ Armazena configurações do sistema, como o prazo limite dos palpites extras (ex
 
 ### 6.1 Pontuação dos Palpites (função `calcularPontos` em `routes/admin.js`)
 
-A lógica segue a ordem de precedência abaixo (a primeira condição verdadeira determina os pontos):
+A lógica segue a ordem de precedência abaixo (a primeira condição verdadeira determina os pontos). Os valores exatos para cada condição são lidos da tabela `fase_pontuacao` de acordo com a fase do jogo, e configuráveis pelo admin em `/admin/pontuacao-fases`:
 
-| # | Condição | Pontos |
+| # | Condição | Pontos (padrão — grupos) |
 |---|---|---|
-| 1 | `gols_casa === palpite_casa && gols_visitante === palpite_visitante` | **20** (placar exato) |
-| 2 | Resultado real é empate E palpite é empate (qualquer placar de empate) | **14** |
-| 3 | Resultado correto (vitória/derrota) E acertou o gol de pelo menos um dos times | **14** |
-| 4 | Resultado correto (vitória/derrota) E errou os gols de ambos os times | **8** |
-| 5 | Resultado errado (inverteu vencedor) E acertou o gol de pelo menos um dos times | **3** |
+| 1 | `gols_casa === palpite_casa && gols_visitante === palpite_visitante` | `pts_exato` (**20**) |
+| 2 | Resultado real é empate E palpite é empate (qualquer placar de empate) | `pts_empate` (**14**) |
+| 3 | Resultado correto (vitória/derrota) E acertou o gol de pelo menos um dos times | `pts_resultado_gol` (**14**) |
+| 4 | Resultado correto (vitória/derrota) E errou os gols de ambos os times | `pts_resultado` (**8**) |
+| 5 | Resultado errado (inverteu vencedor) E acertou o gol de pelo menos um dos times | `pts_gol` (**3**) |
 | 6 | Nenhuma das anteriores (errou resultado e gols) | **0** |
 
 Os pontos são armazenados na coluna `pontos_obtidos` da tabela `palpites` e recalculados sempre que o admin salva ou atualiza o resultado de um jogo.
+
+Os valores padrão por fase são:
+
+| Fase | pts_exato | pts_empate | pts_resultado_gol | pts_resultado | pts_gol |
+|---|---|---|---|---|---|
+| Grupos | 20 | 14 | 14 | 8 | 3 |
+| 32 avos | 25 | 18 | 18 | 10 | 4 |
+| 16 avos | 30 | 20 | 20 | 12 | 5 |
+| Quartas | 40 | 28 | 28 | 16 | 6 |
+| Semi | 50 | 35 | 35 | 20 | 8 |
+| 3º lugar | 30 | 20 | 20 | 12 | 5 |
+| Final | 80 | 50 | 50 | 30 | 10 |
 
 ### 6.2 Pontuação dos Palpites Extras
 
@@ -376,7 +399,7 @@ A pontuação é fixa por categoria, conforme tabela na seção 5.4. Os pontos s
 
 9. **Token de recuperação** — Expira em 1 hora; uso único. Sem SMTP, link é exibido na tela.
 
-10. **Código de convite obrigatório** — Necessário no cadastro. Cada usuário recebe o seu automaticamente na criação.
+10. **Cadastro aberto** — Qualquer pessoa pode criar conta, sem necessidade de código de convite.
 
 11. **Login flexível** — Aceita email, username ou nome (display name) no campo de login.
 
@@ -390,7 +413,13 @@ A pontuação é fixa por categoria, conforme tabela na seção 5.4. Os pontos s
 
 16. **Pontos bônus** — O admin pode conceder pontos bônus a participantes que entrarem após o início da copa, para compensar as rodadas perdidas. Os bônus são armazenados na tabela `pontos_bonus` com motivo e somados ao total no ranking, dashboard e resumo. Podem ser removidos individualmente pelo admin.
 
-16. **Extras deadline configurável** — O prazo para palpites extras é armazenado na tabela `config` (chave `extras_deadline`) e verificado no servidor.
+17. **Extras deadline configurável** — O prazo para palpites extras é armazenado na tabela `config` (chave `extras_deadline`) e verificado no servidor.
+
+18. **Pontuação por fase configurável** — O admin pode definir a pontuação de cada fase em `/admin/pontuacao-fases`. A função `calcularPontos` lê os valores da tabela `fase_pontuacao`.
+
+19. **Aproveitamento percentual** — O ranking e o perfil do usuário exibem o aproveitamento (pontos do participante / total de pontos disputados × 100).
+
+20. **Resultados dos extras no ranking** — Os pontos dos palpites extras só aparecem no ranking após o admin definir os resultados em `/admin/extras`.
 
 ---
 
@@ -485,15 +514,16 @@ bolao/
 │
 ├── routes/
 │   ├── auth.js                       # Cadastro, login, logout
-│   ├── dashboard.js                  # Página inicial pós-login com estatísticas
+│   ├── dashboard.js                  # Painel com estatísticas, pontuação por fase, top 5
 │   ├── palpites.js                   # Palpites da fase de grupos (salvamento individual)
 │   ├── extras.js                     # Palpites extras (campeão, vice, fases)
 │   ├── resumo.js                     # Estatísticas detalhadas, racha, histórico
-│   ├── config.js                     # Configurações do perfil (nome, código de convite)
+│   ├── config.js                     # Configurações do perfil (nome)
+│   ├── classificacao.js             # Classificação dos 12 grupos
 │   ├── jogos.js                      # Listagem pública de jogos
 │   ├── ranking.js                    # Ranking geral
 │   ├── senha.js                      # Recuperação de senha
-│   └── admin.js                      # Painel admin: resultados, usuários, recalcular, config
+│   └── admin.js                      # Painel admin: resultados, recalcular, usuários, bônus, pontuação por fase, extras, config
 │
 ├── middleware/
 │   └── auth.js                       # Middlewares: verificarAutenticado, verificarAdmin, jaLogado
@@ -511,6 +541,8 @@ bolao/
 │   ├── palpites-extras.ejs           # Palpites extras
 │   ├── palpites-usuario.ejs          # Detalhamento dos palpites de um participante
 │   ├── jogos.ejs                     # Tabela de jogos pública
+│   ├── jogos-palpites.ejs            # Palpites públicos de um jogo (3 níveis)
+│   ├── classificacao.ejs             # Grupos e classificação
 │   ├── ranking.ejs                   # Ranking geral
 │   ├── resumo.ejs                    # Estatísticas detalhadas
 │   ├── config.ejs                    # Configurações do perfil
@@ -518,6 +550,7 @@ bolao/
 │   ├── admin-jogos.ejs               # Admin: editar resultados
 │   ├── admin-usuarios.ejs            # Admin: gerenciar participantes
 │   ├── admin-extras.ejs              # Admin: definir resultados extras
+│   ├── admin-pontuacao-fases.ejs    # Admin: configurar pontuação por fase
 │   ├── esqueci-senha.ejs             # Formulário "esqueci minha senha"
 │   ├── redefinir-senha.ejs           # Formulário de redefinição de senha
 │   ├── 404.ejs                       # Página de erro 404
