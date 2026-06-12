@@ -75,9 +75,19 @@ router.get('/', verificarAutenticado, async (req, res) => {
           ORDER BY j.rodada, p.jogo_id
         `, [rachaId]);
 
-        // Total de pontos
-        const pontosEu = palpitesEu.reduce((s, p) => s + (p.pontos_obtidos || 0), 0);
-        const pontosEle = palpitesEle.reduce((s, p) => s + (p.pontos_obtidos || 0), 0);
+        // Busca bônus e extras de ambos
+        const [bonusEu, extrasEu, bonusEle, extrasEle] = await Promise.all([
+          get('SELECT COALESCE(SUM(pontos),0) AS total FROM pontos_bonus WHERE usuario_id = ?', [userId]),
+          get('SELECT COALESCE(SUM(r.pontos),0) AS total FROM palpites_extras pe JOIN resultados_extras r ON r.categoria = pe.categoria AND r.selecao_id = pe.selecao_id WHERE pe.usuario_id = ?', [userId]),
+          get('SELECT COALESCE(SUM(pontos),0) AS total FROM pontos_bonus WHERE usuario_id = ?', [rachaId]),
+          get('SELECT COALESCE(SUM(r.pontos),0) AS total FROM palpites_extras pe JOIN resultados_extras r ON r.categoria = pe.categoria AND r.selecao_id = pe.selecao_id WHERE pe.usuario_id = ?', [rachaId])
+        ]);
+        const totalBonusEu = (bonusEu?.total || 0) + (extrasEu?.total || 0);
+        const totalBonusEle = (bonusEle?.total || 0) + (extrasEle?.total || 0);
+
+        // Total de pontos (inclui bônus e extras)
+        const pontosEu = palpitesEu.reduce((s, p) => s + (p.pontos_obtidos || 0), 0) + totalBonusEu;
+        const pontosEle = palpitesEle.reduce((s, p) => s + (p.pontos_obtidos || 0), 0) + totalBonusEle;
 
         // Comparação jogo a jogo
         const mapaEle = {};
@@ -96,6 +106,8 @@ router.get('/', verificarAutenticado, async (req, res) => {
           usuario: rachaUser,
           pontosEu,
           pontosEle,
+          bonusEu: totalBonusEu,
+          bonusEle: totalBonusEle,
           vitorias,
           empates,
           derrotas
