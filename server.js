@@ -20,6 +20,7 @@ const sessionStore = new DbSessionStore();
 const dashboardRoutes = require('./routes/dashboard');
 const resumoRoutes = require('./routes/resumo');
 const classificacaoRoutes = require('./routes/classificacao');
+const { all } = require('./database/db');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -96,11 +97,16 @@ app.use((req, res, next) => {
 });
 
 // Rotas
-app.get('/', (req, res) => {
+app.get('/', async (req, res) => {
   if (req.session && req.session.usuario) {
     return res.redirect('/dashboard');
   }
-  res.render('home', { title: 'Bolão da Copa 2026' });
+  try {
+    const pontuacaoFases = await all('SELECT * FROM fase_pontuacao ORDER BY CASE fase WHEN \'grupo\' THEN 1 WHEN \'r32\' THEN 2 WHEN \'r16\' THEN 3 WHEN \'qf\' THEN 4 WHEN \'sf\' THEN 5 WHEN \'terceiro\' THEN 6 WHEN \'final\' THEN 7 END');
+    res.render('home', { title: 'Bolão da Copa 2026', pontuacaoFases });
+  } catch (e) {
+    res.render('home', { title: 'Bolão da Copa 2026', pontuacaoFases: [] });
+  }
 });
 
 app.use('/', authRoutes);
