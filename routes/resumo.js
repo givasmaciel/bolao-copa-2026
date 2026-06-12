@@ -103,9 +103,19 @@ router.get('/', verificarAutenticado, async (req, res) => {
       }
     }
 
+    const bonusRow = await get('SELECT COALESCE(SUM(pontos), 0) AS total FROM pontos_bonus WHERE usuario_id = ?', [userId]);
+    const extrasRowPts = await get(`
+      SELECT COALESCE(SUM(r.pontos), 0) AS total
+      FROM palpites_extras pe
+      JOIN resultados_extras r ON r.categoria = pe.categoria AND r.selecao_id = pe.selecao_id
+      WHERE pe.usuario_id = ?
+    `, [userId]);
+
     res.render('resumo', {
       title: 'Meu resumo',
       stats,
+      bonusPontos: bonusRow?.total || 0,
+      extrasPontos: extrasRowPts?.total || 0,
       aproveitamento: stats.total_palpites > 0 ? Math.round(stats.palpites_certos / stats.total_palpites * 100) : 0,
       porRodada,
       jogosFinalizados,

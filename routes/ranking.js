@@ -18,6 +18,8 @@ router.get('/', async (req, res) => {
           FROM palpites_extras pe
           JOIN resultados_extras r ON r.categoria = pe.categoria AND r.selecao_id = pe.selecao_id
           WHERE pe.usuario_id = u.id
+        ), 0) + COALESCE((
+          SELECT SUM(pontos) FROM pontos_bonus WHERE usuario_id = u.id
         ), 0) AS total_pontos,
         COALESCE(SUM(p.pontos_obtidos), 0) AS palpites_pontos,
         COALESCE((
@@ -26,6 +28,7 @@ router.get('/', async (req, res) => {
           JOIN resultados_extras r ON r.categoria = pe.categoria AND r.selecao_id = pe.selecao_id
           WHERE pe.usuario_id = u.id
         ), 0) AS extras_pontos,
+        COALESCE((SELECT SUM(pontos) FROM pontos_bonus WHERE usuario_id = u.id), 0) AS bonus_pontos,
         SUM(CASE WHEN p.pontos_obtidos > 0 THEN 1 ELSE 0 END) AS palpites_com_pontos,
         COALESCE(MAX(p.pontos_obtidos), 0) AS maior_palpite
       FROM usuarios u
@@ -130,6 +133,8 @@ router.get('/usuario/:id', async (req, res) => {
       FROM palpites WHERE usuario_id = ?
     `, [usuarioId]);
 
+    const bonusRow = await get('SELECT COALESCE(SUM(pontos), 0) AS total FROM pontos_bonus WHERE usuario_id = ?', [usuarioId]);
+
     // Busca palpites extras (só passa pro view se tiver)
     const extras = await all(
       'SELECT pe.categoria, pe.selecao_id, s.nome_pt FROM palpites_extras pe LEFT JOIN selecoes s ON s.id = pe.selecao_id WHERE pe.usuario_id = ? ORDER BY pe.categoria',
@@ -143,6 +148,7 @@ router.get('/usuario/:id', async (req, res) => {
     res.render('palpites-usuario', {
       title: `Palpites de ${usuario.nome}`,
       usuario, palpites, stats,
+      bonusPontos: bonusRow?.total || 0,
       agora: new Date(),
       extras, extrasLiberado, extrasPrazo,
       CATEGORIAS

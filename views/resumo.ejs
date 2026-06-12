@@ -6,8 +6,16 @@
 
 <div class="grid grid-4 mb-2">
   <div class="stat-card">
-    <div class="stat-valor"><%= stats.total_pontos %></div>
-    <div class="stat-label">Pontos</div>
+    <div class="stat-valor"><%= stats.total_pontos + extrasPontos + bonusPontos %></div>
+    <div class="stat-label">
+      Pontos totais
+      <% if (bonusPontos > 0) { %>
+        <span style="font-size:0.65rem;color:var(--verde)">(+<%= bonusPontos %> bônus)</span>
+      <% } %>
+      <% if (extrasPontos > 0) { %>
+        <span style="font-size:0.65rem;color:var(--cinza-escuro)">(+<%= extrasPontos %> extras)</span>
+      <% } %>
+    </div>
   </div>
   <div class="stat-card">
     <div class="stat-valor"><%= stats.total_palpites %></div>

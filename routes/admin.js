@@ -114,7 +114,13 @@ router.get('/', verificarAdmin, async (req, res) => {
     `);
 
     const resumoRanking = await all(`
-      SELECT u.nome, COALESCE(SUM(p.pontos_obtidos), 0) AS pontos
+      SELECT u.nome,
+        COALESCE(SUM(p.pontos_obtidos), 0) + COALESCE((
+          SELECT SUM(r.pontos)
+          FROM palpites_extras pe
+          JOIN resultados_extras r ON r.categoria = pe.categoria AND r.selecao_id = pe.selecao_id
+          WHERE pe.usuario_id = u.id
+        ), 0) + COALESCE((SELECT SUM(pontos) FROM pontos_bonus WHERE usuario_id = u.id), 0) AS pontos
       FROM usuarios u
       LEFT JOIN palpites p ON p.usuario_id = u.id
       WHERE u.is_admin = 0
@@ -234,10 +240,22 @@ router.post('/recalcular', verificarAdmin, async (req, res) => {
 // GET /admin/usuarios - gerenciar participantes
 router.get('/usuarios', verificarAdmin, async (req, res) => {
   try {
-    const usuarios = await all(
-      'SELECT id, nome, email, username, is_admin, criado_em FROM usuarios ORDER BY nome'
-    );
-    res.render('admin-usuarios', { title: 'Gerenciar participantes', usuarios });
+    const usuarios = await all(`
+      SELECT u.id, u.nome, u.email, u.username, u.is_admin, u.criado_em,
+        COALESCE((SELECT SUM(pontos) FROM pontos_bonus WHERE usuario_id = u.id), 0) AS total_bonus
+      FROM usuarios u ORDER BY u.nome
+    `);
+    // Busca histórico de bônus de cada usuário
+    const userIds = usuarios.map(u => u.id);
+    const todosBonuses = userIds.length > 0
+      ? await all(`SELECT id, usuario_id, pontos, motivo, criado_em FROM pontos_bonus WHERE usuario_id IN (${userIds.map(() => '?').join(',')}) ORDER BY criado_em DESC`, userIds)
+      : [];
+    const bonusMap = {};
+    for (const b of todosBonuses) {
+      if (!bonusMap[b.usuario_id]) bonusMap[b.usuario_id] = [];
+      bonusMap[b.usuario_id].push(b);
+    }
+    res.render('admin-usuarios', { title: 'Gerenciar participantes', usuarios, bonusMap });
   } catch (err) {
     console.error('Erro ao listar usuários:', err);
     req.flash('erro', 'Erro ao carregar.');
@@ -528,6 +546,41 @@ router.get('/link-login', verificarAdmin, async (req, res) => {
     req.flash('erro', 'Erro ao gerar link.');
     res.redirect('/admin');
   }
+});
+
+// POST /admin/usuarios/:id/bonus - adiciona pontos bônus
+router.post('/usuarios/:id/bonus', verificarAdmin, async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.redirect('/admin/usuarios');
+  const { pontos, motivo } = req.body;
+  const pts = parseInt(pontos, 10);
+  if (isNaN(pts) || pts <= 0) {
+    req.flash('erro', 'Informe um número de pontos válido (maior que zero).');
+    return res.redirect('/admin/usuarios');
+  }
+  try {
+    await run('INSERT INTO pontos_bonus (usuario_id, pontos, motivo) VALUES (?, ?, ?)', [id, pts, motivo || null]);
+    req.flash('sucesso', `${pts} ponto(s) bônus adicionado(s)!`);
+  } catch (err) {
+    console.error('Erro ao adicionar bônus:', err);
+    req.flash('erro', 'Erro ao adicionar bônus.');
+  }
+  res.redirect('/admin/usuarios');
+});
+
+// POST /admin/usuarios/:id/bonus/:bonusId/remover - remove um bônus específico
+router.post('/usuarios/:id/bonus/:bonusId/remover', verificarAdmin, async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  const bonusId = parseInt(req.params.bonusId, 10);
+  if (isNaN(id) || isNaN(bonusId)) return res.redirect('/admin/usuarios');
+  try {
+    await run('DELETE FROM pontos_bonus WHERE id = ? AND usuario_id = ?', [bonusId, id]);
+    req.flash('sucesso', 'Bônus removido.');
+  } catch (err) {
+    console.error('Erro ao remover bônus:', err);
+    req.flash('erro', 'Erro ao remover bônus.');
+  }
+  res.redirect('/admin/usuarios');
 });
 
 module.exports = { router, calcularPontos };

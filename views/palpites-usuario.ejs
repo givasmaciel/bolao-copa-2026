@@ -16,8 +16,13 @@
       <div class="stat-label">Com pontos</div>
     </div>
     <div class="stat-card">
-      <div class="stat-valor"><%= stats.pontos || 0 %></div>
-      <div class="stat-label">Pontos</div>
+      <div class="stat-valor"><%= (stats.pontos || 0) + bonusPontos %></div>
+      <div class="stat-label">
+        Pontos
+        <% if (bonusPontos > 0) { %>
+          <span style="font-size:0.65rem;color:var(--verde)">(+<%= bonusPontos %> bônus)</span>
+        <% } %>
+      </div>
     </div>
     <div class="stat-card">
       <div class="stat-valor">

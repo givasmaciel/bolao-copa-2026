@@ -40,6 +40,7 @@
         <th class="text-center">Acertos</th>
         <th class="text-center">Melhor</th>
         <th class="text-center">Extras</th>
+        <th class="text-center">Bônus</th>
         <th class="text-center">Pontos</th>
       </tr>
     </thead>
@@ -59,6 +60,7 @@
           <td class="text-center"><%= u.palpites_com_pontos %></td>
           <td class="text-center"><%= u.maior_palpite %> pts</td>
           <td class="text-center"><%= u.extras_pontos > 0 ? '+' + u.extras_pontos : '—' %></td>
+          <td class="text-center"><%= u.bonus_pontos > 0 ? '+' + u.bonus_pontos : '—' %></td>
           <td class="text-center pontos"><%= u.total_pontos %></td>
         </tr>
       <% }); %>

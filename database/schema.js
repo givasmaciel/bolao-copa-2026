@@ -388,6 +388,30 @@ async function criarSchema() {
     await run("UPDATE jogos SET data = ?, estadio = ?, cidade = ?, pais = ? WHERE id = ?", [data, estadio, cidade, pais, id]);
   }
 
+  // Migração 2026-06-11: tabela de pontos bônus (admin premia participantes que entraram tarde)
+  try {
+    const tabelaBonusPG = `
+      CREATE TABLE IF NOT EXISTS pontos_bonus (
+        id SERIAL PRIMARY KEY,
+        usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+        pontos INTEGER NOT NULL DEFAULT 0,
+        motivo TEXT,
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+    const tabelaBonusSQLite = `
+      CREATE TABLE IF NOT EXISTS pontos_bonus (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        usuario_id INTEGER NOT NULL,
+        pontos INTEGER NOT NULL DEFAULT 0,
+        motivo TEXT,
+        criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+      )
+    `;
+    await run(usandoPG ? tabelaBonusPG : tabelaBonusSQLite);
+  } catch (e) { /* Tabela já existe */ }
+
   console.log('✅ Schema criado/verificado');
 }
 

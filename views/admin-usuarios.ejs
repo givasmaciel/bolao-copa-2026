@@ -38,6 +38,7 @@
       <th>Usuário</th>
       <th>E-mail</th>
       <th class="text-center">Admin</th>
+      <th class="text-center">Bônus</th>
       <th class="text-center">Desde</th>
       <th class="text-center">Ações</th>
     </tr>
@@ -49,6 +50,36 @@
         <td style="font-family:monospace"><%= u.username || '—' %></td>
         <td><%= u.email %></td>
         <td class="text-center"><%= u.is_admin ? '✅' : '—' %></td>
+        <td class="text-center">
+          <%= u.total_bonus > 0 ? '+' + u.total_bonus : '0' %>
+          <details style="display:inline-block;vertical-align:middle">
+            <summary class="btn btn-sm btn-secondary" style="cursor:pointer;font-size:0.7rem;padding:2px 6px">+</summary>
+            <div style="position:absolute;background:var(--card-bg);border:1px solid var(--border);padding:8px;border-radius:8px;z-index:10;margin-top:4px;min-width:240px;right:0">
+              <form method="POST" action="/admin/usuarios/<%= u.id %>/bonus" style="display:flex;flex-direction:column;gap:4px">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <div style="display:flex;gap:4px">
+                  <input type="number" name="pontos" placeholder="Pontos" min="1" required class="form-control" style="width:80px">
+                  <input type="text" name="motivo" placeholder="Motivo" class="form-control" style="flex:1">
+                  <button type="submit" class="btn btn-sm btn-primary">Dar</button>
+                </div>
+              </form>
+              <% if (bonusMap[u.id] && bonusMap[u.id].length > 0) { %>
+                <hr style="margin:4px 0">
+                <div style="font-size:0.7rem;max-height:100px;overflow-y:auto">
+                  <% bonusMap[u.id].forEach(function(b) { %>
+                    <div style="display:flex;justify-content:space-between;gap:4px;padding:2px 0">
+                      <span>+<%= b.pontos %><%= b.motivo ? ' (' + b.motivo + ')' : '' %></span>
+                      <form method="POST" action="/admin/usuarios/<%= u.id %>/bonus/<%= b.id %>/remover" style="display:inline">
+                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                        <button type="submit" style="background:none;border:none;color:var(--erro);cursor:pointer;padding:0;font-size:0.7rem;">✕</button>
+                      </form>
+                    </div>
+                  <% }); %>
+                </div>
+              <% } %>
+            </div>
+          </details>
+        </td>
         <td class="text-center"><%= new Date(u.criado_em).toLocaleDateString('pt-BR') %></td>
         <td class="text-center" style="white-space:nowrap">
           <details style="display:inline-block;vertical-align:middle">

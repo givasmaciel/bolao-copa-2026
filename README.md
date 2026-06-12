@@ -6,7 +6,7 @@ Deploy automático no Render (free tier) via Blueprint com PostgreSQL. Localment
 ## Funcionalidades
 
 - **Login por email, username ou nome** — qualquer um dos três é aceito
-- **Cadastro com código de convite** — novo participante precisa de um `codigo_convite` válido de um participante existente
+- **Cadastro aberto** — qualquer pessoa pode criar conta sem código de convite
 - **Palpites por jogo (save individual)** — cada jogo tem seu próprio botão de salvar; trava 2 minutos antes do horário BRT de cada partida
 - **Palpites Extras** — campeão, vice, 3º, finalistas, semis, quartas, oitavas, 1/16 avos; salvamento por categoria com contador de seleções ao vivo
 - **Dashboard** (`/dashboard`) — cards de estatísticas, próximos 5 jogos, palpites pendentes, top 5 do ranking, banner de alerta com contagem regressiva em BRT, notificação de palpites extras pendentes
@@ -14,6 +14,7 @@ Deploy automático no Render (free tier) via Blueprint com PostgreSQL. Localment
 - **Visualização pública de palpites** (`/jogos/:id/palpites`) — 3 níveis de visibilidade: 🔒 oculto antes do fechamento, 👀 visível sem pontos após fechar, visível com pontos após resultado; agrupamento por pontuação; destaca o palpite do visitante
 - **Config** (`/config`) — participante altera próprio nome (sincronizado com username) e visualiza seu código de convite
 - **Admin como juiz** — não participa, não aparece no ranking, redirecionado de `/palpites`
+- **Pontos bônus** — admin pode conceder pontos extras a participantes que entraram tarde, para não perderem a motivação
 - **Rotas administrativas** — resultados dos jogos, recalcular pontos, gerenciar usuários (promover/rebaixar/excluir/resetar senha, resetar palpites individual/massa, alterar username, criar participante), admin extras, admin config
 - **Recuperação de senha** — token por email (SMTP opcional; fallback exibe link na tela)
 - **Ranking** — inclui pontos extras via subquery; desempate por mais palpites com pontos > 0; exclui admins
@@ -136,7 +137,7 @@ raiz/
 - Palpites travam 2 min antes do horário BRT de cada jogo (frontend + backend)
 - Pontuação automática ao admin marcar jogo como finalizado; botão de recalcular disponível
 - Admin pode recalcular pontos, resetar palpites (individual/massa), resetar senha, promover/rebaixar, excluir usuários
-- Cadastro exige `codigo_convite` válido de um participante existente
+- Cadastro aberto — qualquer pessoa pode criar conta livremente
 - Desempate no ranking: quem tem mais palpites com pontos > 0
 - Trust proxy: `app.set('trust proxy', 1)` para sessão funcionar atrás do proxy HTTPS do Render
 - Sessão: cookie-based, secure em produção, sameSite lax, 30 dias

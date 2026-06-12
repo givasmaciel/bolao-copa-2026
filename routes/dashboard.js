@@ -40,7 +40,7 @@ router.get('/', verificarAutenticado, async (req, res) => {
           FROM palpites_extras pe
           JOIN resultados_extras r ON r.categoria = pe.categoria AND r.selecao_id = pe.selecao_id
           WHERE pe.usuario_id = u.id
-        ), 0) AS total_pontos
+        ), 0) + COALESCE((SELECT SUM(pontos) FROM pontos_bonus WHERE usuario_id = u.id), 0) AS total_pontos
       FROM usuarios u
       LEFT JOIN palpites p ON p.usuario_id = u.id
       WHERE u.is_admin = 0
@@ -59,6 +59,17 @@ router.get('/', verificarAutenticado, async (req, res) => {
       FROM palpites p
       JOIN jogos j ON j.id = p.jogo_id
       WHERE p.usuario_id = ? AND j.finalizado = 1
+    `, [userId]);
+
+    // Pontos bônus do usuário
+    const bonusRow = await get('SELECT COALESCE(SUM(pontos), 0) AS total FROM pontos_bonus WHERE usuario_id = ?', [userId]);
+
+    // Pontos extras do usuário
+    const extrasRowPts = await get(`
+      SELECT COALESCE(SUM(r.pontos), 0) AS total
+      FROM palpites_extras pe
+      JOIN resultados_extras r ON r.categoria = pe.categoria AND r.selecao_id = pe.selecao_id
+      WHERE pe.usuario_id = ?
     `, [userId]);
 
     const totalFinalizados = await get(`
@@ -130,6 +141,8 @@ router.get('/', verificarAutenticado, async (req, res) => {
       pendentes: pendentesArr[0]?.total || 0,
       top5,
       stats: stats || { total_palpites: 0, total_pontos: 0, palpites_certos: 0, placares_exatos: 0 },
+      bonusPontos: bonusRow?.total || 0,
+      extrasPontos: extrasRowPts?.total || 0,
       totalFinalizados: totalFinalizados?.total || 0,
       recentes,
       alertaExtras,

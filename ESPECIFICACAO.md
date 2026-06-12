@@ -53,7 +53,7 @@ O banco opera de forma transparente com **SQLite** (desenvolvimento local) ou **
 | `nome` | TEXT NOT NULL | Nome de exibição do participante |
 | `email` | TEXT NOT NULL UNIQUE | E-mail (normalizado para minúsculas) |
 | `username` | TEXT UNIQUE | Apelido para login (nullable, auto-preenchido via prefixo do email) |
-| `codigo_convite` | TEXT UNIQUE | Código de convite do usuário (nullable, gerado automaticamente no cadastro) |
+
 | `senha_hash` | TEXT NOT NULL | Hash bcrypt da senha |
 | `is_admin` | INTEGER DEFAULT 0 | 1 = administrador |
 | `criado_em` | TIMESTAMP / DATETIME DEFAULT | Data de criação |
@@ -150,6 +150,16 @@ O banco opera de forma transparente com **SQLite** (desenvolvimento local) ou **
 
 Armazena configurações do sistema, como o prazo limite dos palpites extras (ex.: `extras_deadline`).
 
+### `pontos_bonus`
+
+| Coluna | Tipo | Descrição |
+|---|---|---|
+| `id` | SERIAL / INTEGER PK | ID único |
+| `usuario_id` | INTEGER FK → usuarios | Participante que recebeu o bônus |
+| `pontos` | INTEGER NOT NULL DEFAULT 0 | Quantidade de pontos bônus |
+| `motivo` | TEXT | Justificativa do bônus (ex.: "entrou na rodada 2") |
+| `criado_em` | TIMESTAMP / DATETIME DEFAULT | Data de criação |
+
 ---
 
 ## 5. Rotas — Referência Completa
@@ -159,7 +169,7 @@ Armazena configurações do sistema, como o prazo limite dos palpites extras (ex
 | Método | Rota | Descrição |
 |---|---|---|
 | GET | `/cadastro` | Exibe formulário de cadastro |
-| POST | `/cadastro` | Cria usuário (nome, email, senha, codigo_convite); auto-login após criação |
+| POST | `/cadastro` | Cria usuário (nome, email, senha); auto-login após criação |
 | GET | `/login` | Exibe formulário de login |
 | POST | `/login` | Autentica por email / username / nome + senha; inicia sessão |
 | POST | `/logout` | Destrói a sessão |
@@ -168,7 +178,7 @@ Armazena configurações do sistema, como o prazo limite dos palpites extras (ex
 - Usuários já logados são redirecionados para `/dashboard`.
 - E-mail normalizado para minúsculas antes de salvar/buscar.
 - Senha mínima de 4 caracteres.
-- `codigo_convite` (código de convite) obrigatório no cadastro; cada usuário recebe o seu automaticamente no momento da criação.
+- Cadastro aberto, sem necessidade de código de convite.
 - Após cadastro bem-sucedido, o usuário é logado automaticamente.
 
 ### 5.2 Dashboard (`routes/dashboard.js`)
@@ -251,7 +261,7 @@ Armazena configurações do sistema, como o prazo limite dos palpites extras (ex
 
 **Funcionalidades:**
 - Alterar nome de exibição (`nome`) — também sincronizado com o campo `username` para login.
-- Visualizar o próprio código de convite (`codigo_convite`) para compartilhar com novos participantes.
+
 - Exibição de mensagens flash de sucesso/erro.
 
 ### 5.7 Jogos — Listagem Pública (`routes/jogos.js`)
@@ -311,6 +321,8 @@ Armazena configurações do sistema, como o prazo limite dos palpites extras (ex
 | GET | `/admin/criar-participante` | Formulário para criar participante manualmente |
 | POST | `/admin/criar-participante` | Cria participante (ignorando sistema de convites) |
 | POST | `/admin/config` | Atualiza configurações (ex.: prazo dos extras) |
+| POST | `/admin/usuarios/:id/bonus` | Adiciona pontos bônus a um participante (com motivo) |
+| POST | `/admin/usuarios/:id/bonus/:bonusId/remover` | Remove um bônus específico |
 
 **Regras:**
 - Todas as rotas protegidas pelo middleware `verificarAdmin`.
@@ -373,6 +385,8 @@ A pontuação é fixa por categoria, conforme tabela na seção 5.4. Os pontos s
 14. **Trust proxy** — `app.set('trust proxy', 1)` é essencial para o cookie de sessão funcionar atrás do proxy HTTPS do Render.
 
 15. **Horário BRT** — Todos os horários armazenados com offset -03:00. O PostgreSQL (`TIMESTAMPTZ`) normaliza para UTC internamente.
+
+16. **Pontos bônus** — O admin pode conceder pontos bônus a participantes que entrarem após o início da copa, para compensar as rodadas perdidas. Os bônus são armazenados na tabela `pontos_bonus` com motivo e somados ao total no ranking, dashboard e resumo. Podem ser removidos individualmente pelo admin.
 
 16. **Extras deadline configurável** — O prazo para palpites extras é armazenado na tabela `config` (chave `extras_deadline`) e verificado no servidor.
 
