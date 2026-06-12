@@ -435,9 +435,11 @@ async function criarSchema() {
       )
     `;
     await run(usandoPG ? tabelaFasePG : tabelaFaseSQLite);
-    // Seed valores default se tabela vazia
+  } catch (e) { /* Tabela já existe */ }
+  // Seed valores default se tabela vazia (fora do try anterior para garantir execução)
+  try {
     const count = await get('SELECT COUNT(*) AS total FROM fase_pontuacao');
-    if (count.total === 0) {
+    if (count && count.total === 0) {
       const fases = [
         ['grupo', 20, 14, 14, 8, 3],
         ['r32', 25, 18, 18, 10, 4],
@@ -451,7 +453,9 @@ async function criarSchema() {
         await run('INSERT INTO fase_pontuacao (fase, pts_exato, pts_empate, pts_resultado_gol, pts_resultado, pts_gol) VALUES (?, ?, ?, ?, ?, ?)', f);
       }
     }
-  } catch (e) { /* Tabela já existe */ }
+  } catch (e) {
+    console.warn('Aviso: não foi possível popular fase_pontuacao:', e.message);
+  }
 
   console.log('✅ Schema criado/verificado');
 }
