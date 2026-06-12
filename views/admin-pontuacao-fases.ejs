@@ -1,0 +1,58 @@
+<%- include('partials/header', { active: 'admin' }) %>
+
+<%- include('partials/flash') %>
+
+<h1>⚙ Pontuação por Fase</h1>
+<p class="subtitulo">Defina quantos pontos cada acerto vale em cada fase do torneio. Conforme avança, fica mais difícil — os pontos aumentam.</p>
+
+<form method="POST" action="/admin/pontuacao-fases">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+  <div style="overflow-x:auto">
+    <table class="ranking-tabela" style="min-width:600px">
+      <thead>
+        <tr>
+          <th>Fase</th>
+          <th class="text-center">Placar exato</th>
+          <th class="text-center">Empate</th>
+          <th class="text-center">Resultado + 1 gol</th>
+          <th class="text-center">Só resultado</th>
+          <th class="text-center">1 gol certo</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% fases.forEach(function(f) { %>
+          <tr>
+            <td><strong><%= faseLabel[f.fase] || f.fase %></strong></td>
+            <td class="text-center"><input type="number" name="<%= f.fase %>_exato" value="<%= f.pts_exato %>" min="0" class="form-control" style="width:70px;text-align:center"></td>
+            <td class="text-center"><input type="number" name="<%= f.fase %>_empate" value="<%= f.pts_empate %>" min="0" class="form-control" style="width:70px;text-align:center"></td>
+            <td class="text-center"><input type="number" name="<%= f.fase %>_resultado_gol" value="<%= f.pts_resultado_gol %>" min="0" class="form-control" style="width:70px;text-align:center"></td>
+            <td class="text-center"><input type="number" name="<%= f.fase %>_resultado" value="<%= f.pts_resultado %>" min="0" class="form-control" style="width:70px;text-align:center"></td>
+            <td class="text-center"><input type="number" name="<%= f.fase %>_gol" value="<%= f.pts_gol %>" min="0" class="form-control" style="width:70px;text-align:center"></td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="text-center mt-3">
+    <button type="submit" class="btn btn-primary btn-lg">💾 Salvar pontuação</button>
+  </div>
+</form>
+
+<div class="card mt-3">
+  <h3>Como funciona</h3>
+  <ul style="font-size:0.9rem">
+    <li><strong>Placar exato</strong> — acertou o placar certinho</li>
+    <li><strong>Empate</strong> — jogo terminou empatado e você palpou empate (qualquer placar)</li>
+    <li><strong>Resultado + 1 gol</strong> — acertou quem ganhou/perdeu e acertou o gol de pelo menos um time</li>
+    <li><strong>Só resultado</strong> — acertou quem ganhou mas errou os gols dos dois times</li>
+    <li><strong>1 gol certo</strong> — errou quem ganhou mas acertou o gol de um time</li>
+  </ul>
+</div>
+
+<p class="texto-aux mt-2">
+  <a href="/admin">← Voltar ao painel</a>
+</p>
+
+<%- include('partials/footer') %>

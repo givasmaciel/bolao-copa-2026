@@ -21,14 +21,17 @@ Deploy automático no Render (free tier) via Blueprint com PostgreSQL. Localment
 
 ## Pontuação — Jogos
 
-| Acerto | Pontos |
-|---|---|
-| Placar exato | **20** |
-| Resultado certo + 1 gol de um time | **14** |
-| Empate (qualquer placar) | **14** |
-| Só resultado (vitória/derrota) | **8** |
-| Errou resultado + acertou 1 gol | **3** |
-| Errou tudo | **0** |
+Os pontos aumentam conforme a fase avança (configurável pelo admin em `/admin/pontuacao-fases`).
+
+| Fase | Placar exato | Empate | Resultado + 1 gol | Só resultado | 1 gol certo |
+|---|---|---|---|---|---|
+| Grupos | 20 | 14 | 14 | 8 | 3 |
+| 32 avos | 25 | 18 | 18 | 10 | 4 |
+| 16 avos | 30 | 20 | 20 | 12 | 5 |
+| Quartas | 40 | 28 | 28 | 16 | 6 |
+| Semi | 50 | 35 | 35 | 20 | 8 |
+| 3º lugar | 30 | 20 | 20 | 12 | 5 |
+| Final | 80 | 50 | 50 | 30 | 10 |
 
 ## Pontuação — Extras
 

@@ -321,6 +321,8 @@ Armazena configurações do sistema, como o prazo limite dos palpites extras (ex
 | GET | `/admin/criar-participante` | Formulário para criar participante manualmente |
 | POST | `/admin/criar-participante` | Cria participante (ignorando sistema de convites) |
 | POST | `/admin/config` | Atualiza configurações (ex.: prazo dos extras) |
+| GET | `/admin/pontuacao-fases` | Exibe formulário de configuração de pontos por fase |
+| POST | `/admin/pontuacao-fases` | Salva pontuação personalizada por fase |
 | POST | `/admin/usuarios/:id/bonus` | Adiciona pontos bônus a um participante (com motivo) |
 | POST | `/admin/usuarios/:id/bonus/:bonusId/remover` | Remove um bônus específico |
 

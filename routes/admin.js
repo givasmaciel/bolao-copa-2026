@@ -47,22 +47,29 @@ router.get('/diagnostic', async (req, res) => {
   }
 });
 
-// Sistema de pontuação
-// - Placar exato: 20 pts
-// - Empate (placar exato ou não): 14 pts
-// - Resultado certo + gols de 1 time: 14 pts
-// - Só resultado exceto empate (V/D): 8 pts
-// - Errou resultado mas acertou gol de 1 time: 3 pts
-// - Errou tudo: 0 pts
-function calcularPontos(golsCasa, golsVisitante, palpiteCasa, palpiteVisitante) {
+// Busca configuração de pontuação para uma fase
+async function getPontosFase(fase) {
+  const row = await get('SELECT * FROM fase_pontuacao WHERE fase = ?', [fase]);
+  if (row) return row;
+  return { pts_exato: 20, pts_empate: 14, pts_resultado_gol: 14, pts_resultado: 8, pts_gol: 3 };
+}
+
+// Sistema de pontuação configurável por fase
+function calcularPontos(golsCasa, golsVisitante, palpiteCasa, palpiteVisitante, pts) {
   if (golsCasa === null || golsVisitante === null ||
       golsCasa === undefined || golsVisitante === undefined) return 0;
   if (palpiteCasa === null || palpiteVisitante === null ||
       palpiteCasa === undefined || palpiteVisitante === undefined) return 0;
 
+  const exato = pts?.pts_exato ?? 20;
+  const empate = pts?.pts_empate ?? 14;
+  const resultadoGol = pts?.pts_resultado_gol ?? 14;
+  const resultado = pts?.pts_resultado ?? 8;
+  const gol = pts?.pts_gol ?? 3;
+
   // Placar exato
   if (golsCasa === palpiteCasa && golsVisitante === palpiteVisitante) {
-    return 20;
+    return exato;
   }
 
   // Determina resultado real e do palpite
@@ -75,19 +82,19 @@ function calcularPontos(golsCasa, golsVisitante, palpiteCasa, palpiteVisitante) 
   else if (palpiteCasa < palpiteVisitante) { resPalpite = 'V'; }
   else { resPalpite = 'E'; }
 
-  // Empate (qualquer placar) vale 14 pts
-  if (resReal === 'E' && resPalpite === 'E') return 14;
+  // Empate (qualquer placar)
+  if (resReal === 'E' && resPalpite === 'E') return empate;
 
   const acertouGolCasa = golsCasa === palpiteCasa;
   const acertouGolVisitante = golsVisitante === palpiteVisitante;
   const acertouGolTime = acertouGolCasa || acertouGolVisitante;
 
   if (resReal === resPalpite) {
-    if (acertouGolTime) return 14;
-    return 8;
+    if (acertouGolTime) return resultadoGol;
+    return resultado;
   }
 
-  if (acertouGolTime) return 3;
+  if (acertouGolTime) return gol;
   return 0;
 }
 
@@ -190,12 +197,13 @@ router.post('/jogos/:id', verificarAdmin, async (req, res) => {
 
     // Recalcula pontos dos palpites desse jogo
     if (fin === 1 && gc !== null && gv !== null) {
+      const ptsConfig = await getPontosFase(jogo.fase);
       const palpites = await all(
         'SELECT id, palpite_gols_casa, palpite_gols_visitante FROM palpites WHERE jogo_id = ?',
         [jogoId]
       );
       for (const p of palpites) {
-        const pontos = calcularPontos(gc, gv, p.palpite_gols_casa, p.palpite_gols_visitante);
+        const pontos = calcularPontos(gc, gv, p.palpite_gols_casa, p.palpite_gols_visitante, ptsConfig);
         await run('UPDATE palpites SET pontos_obtidos = ? WHERE id = ?', [pontos, p.id]);
       }
     } else {
@@ -215,15 +223,21 @@ router.post('/jogos/:id', verificarAdmin, async (req, res) => {
 // POST /admin/recalcular - recalcula todos os pontos
 router.post('/recalcular', verificarAdmin, async (req, res) => {
   try {
-    const jogos = await all('SELECT id, gols_casa, gols_visitante FROM jogos WHERE finalizado = 1');
+    const [jogos, todasFases] = await Promise.all([
+      all('SELECT id, fase, gols_casa, gols_visitante FROM jogos WHERE finalizado = 1'),
+      all('SELECT * FROM fase_pontuacao')
+    ]);
+    const ptsCache = {};
+    for (const f of todasFases) ptsCache[f.fase] = f;
     let total = 0;
     for (const j of jogos) {
+      const ptsConfig = ptsCache[j.fase] || { pts_exato: 20, pts_empate: 14, pts_resultado_gol: 14, pts_resultado: 8, pts_gol: 3 };
       const palpites = await all(
         'SELECT id, palpite_gols_casa, palpite_gols_visitante FROM palpites WHERE jogo_id = ?',
         [j.id]
       );
       for (const p of palpites) {
-        const pontos = calcularPontos(j.gols_casa, j.gols_visitante, p.palpite_gols_casa, p.palpite_gols_visitante);
+        const pontos = calcularPontos(j.gols_casa, j.gols_visitante, p.palpite_gols_casa, p.palpite_gols_visitante, ptsConfig);
         await run('UPDATE palpites SET pontos_obtidos = ? WHERE id = ?', [pontos, p.id]);
         total++;
       }
@@ -531,6 +545,44 @@ router.post('/mata-mata/:id/editar', verificarAdmin, async (req, res) => {
   res.redirect('/admin/mata-mata');
 });
 
+// GET /admin/pontuacao-fases - configura pontuação por fase
+router.get('/pontuacao-fases', verificarAdmin, async (req, res) => {
+  try {
+    const fases = await all('SELECT * FROM fase_pontuacao ORDER BY CASE fase WHEN \'grupo\' THEN 1 WHEN \'r32\' THEN 2 WHEN \'r16\' THEN 3 WHEN \'qf\' THEN 4 WHEN \'sf\' THEN 5 WHEN \'terceiro\' THEN 6 WHEN \'final\' THEN 7 END');
+    const faseLabel = { grupo: 'Fase de Grupos', r32: '32 avos de Final', r16: '16 avos de Final', qf: 'Quartas de Final', sf: 'Semifinal', terceiro: 'Disputa de 3º lugar', final: 'Final' };
+    res.render('admin-pontuacao-fases', { title: 'Pontuação por Fase', fases, faseLabel });
+  } catch (err) {
+    console.error('Erro:', err);
+    req.flash('erro', 'Erro ao carregar.');
+    res.redirect('/admin');
+  }
+});
+
+// POST /admin/pontuacao-fases - salva configuração
+router.post('/pontuacao-fases', verificarAdmin, async (req, res) => {
+  try {
+    const fases = ['grupo', 'r32', 'r16', 'qf', 'sf', 'terceiro', 'final'];
+    for (const fase of fases) {
+      const exato = parseInt(req.body[fase + '_exato'], 10);
+      const empate = parseInt(req.body[fase + '_empate'], 10);
+      const resultadoGol = parseInt(req.body[fase + '_resultado_gol'], 10);
+      const resultado = parseInt(req.body[fase + '_resultado'], 10);
+      const gol = parseInt(req.body[fase + '_gol'], 10);
+      if ([exato, empate, resultadoGol, resultado, gol].some(isNaN)) continue;
+      await run(
+        'UPDATE fase_pontuacao SET pts_exato = ?, pts_empate = ?, pts_resultado_gol = ?, pts_resultado = ?, pts_gol = ? WHERE fase = ?',
+        [exato, empate, resultadoGol, resultado, gol, fase]
+      );
+    }
+    req.flash('sucesso', 'Pontuação das fases atualizada!');
+    res.redirect('/admin/pontuacao-fases');
+  } catch (err) {
+    console.error('Erro:', err);
+    req.flash('erro', 'Erro ao salvar.');
+    res.redirect('/admin/pontuacao-fases');
+  }
+});
+
 // GET /admin/link-login - gera link de login automático
 router.get('/link-login', verificarAdmin, async (req, res) => {
   try {
@@ -583,4 +635,4 @@ router.post('/usuarios/:id/bonus/:bonusId/remover', verificarAdmin, async (req, 
   res.redirect('/admin/usuarios');
 });
 
-module.exports = { router, calcularPontos };
+module.exports = { router, calcularPontos, getPontosFase };

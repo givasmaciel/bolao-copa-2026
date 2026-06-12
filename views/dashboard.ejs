@@ -94,13 +94,32 @@
   <summary style="cursor:pointer;font-weight:600;font-size:0.85rem;color:var(--cinza-escuro)">📋 Pontuação e regras</summary>
 
   <h4 style="margin:12px 0 4px">🏅 Pontuação dos jogos</h4>
-  <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;font-size:0.8rem">
-    <span style="background:#FFD700;color:#7a6200;padding:4px 10px;border-radius:6px;font-weight:600">20 pts — Placar exato</span>
-    <span style="background:#C0C0C0;color:#444;padding:4px 10px;border-radius:6px">14 pts — Resultado + 1 gol</span>
-    <span style="background:#CD7F32;color:#fff;padding:4px 10px;border-radius:6px">14 pts — Empate (qualquer placar)</span>
-    <span style="background:#6c757d;color:#fff;padding:4px 10px;border-radius:6px">8 pts — Só resultado</span>
-    <span style="background:#adb5bd;color:#fff;padding:4px 10px;border-radius:6px">3 pts — Errou resultado mas acertou 1 gol</span>
-    <span style="background:#dee2e6;color:#495057;padding:4px 10px;border-radius:6px">0 pts — Errou tudo</span>
+  <p class="texto-aux" style="font-size:0.8rem">Os pontos aumentam conforme a fase avança — jogos de mata-mata são mais difíceis de acertar!</p>
+  <div style="overflow-x:auto">
+  <table class="ranking-tabela" style="font-size:0.8rem;min-width:500px">
+    <thead>
+      <tr>
+        <th>Fase</th>
+        <th class="text-center">Placar exato</th>
+        <th class="text-center">Empate</th>
+        <th class="text-center">Resultado + 1 gol</th>
+        <th class="text-center">Só resultado</th>
+        <th class="text-center">1 gol certo</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% pontuacaoFases.forEach(function(f) { %>
+        <tr>
+          <td><strong><%= faseLabel[f.fase] || f.fase %></strong></td>
+          <td class="text-center"><span class="pontos-badge"><%= f.pts_exato %></span></td>
+          <td class="text-center"><span class="pontos-badge"><%= f.pts_empate %></span></td>
+          <td class="text-center"><span class="pontos-badge"><%= f.pts_resultado_gol %></span></td>
+          <td class="text-center"><span class="pontos-badge"><%= f.pts_resultado %></span></td>
+          <td class="text-center"><span class="pontos-badge"><%= f.pts_gol %></span></td>
+        </tr>
+      <% }); %>
+    </tbody>
+  </table>
   </div>
 
   <h4 style="margin:16px 0 4px">🏆 Palpites Extras</h4>

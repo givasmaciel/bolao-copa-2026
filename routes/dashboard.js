@@ -134,6 +134,9 @@ router.get('/', verificarAutenticado, async (req, res) => {
       };
     }
 
+    const pontuacaoFases = await all('SELECT * FROM fase_pontuacao ORDER BY CASE fase WHEN \'grupo\' THEN 1 WHEN \'r32\' THEN 2 WHEN \'r16\' THEN 3 WHEN \'qf\' THEN 4 WHEN \'sf\' THEN 5 WHEN \'terceiro\' THEN 6 WHEN \'final\' THEN 7 END');
+    const faseLabel = { grupo: 'Fase de Grupos', r32: '32 avos de Final', r16: '16 avos de Final', qf: 'Quartas de Final', sf: 'Semifinal', terceiro: 'Disputa de 3º lugar', final: 'Final' };
+
     res.render('dashboard', {
       title: 'Painel',
       proximosJogos,
@@ -146,7 +149,9 @@ router.get('/', verificarAutenticado, async (req, res) => {
       totalFinalizados: totalFinalizados?.total || 0,
       recentes,
       alertaExtras,
-      extrasDataLimite
+      extrasDataLimite,
+      pontuacaoFases,
+      faseLabel
     });
   } catch (err) {
     console.error('Erro no dashboard:', err);

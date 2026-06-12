@@ -412,6 +412,47 @@ async function criarSchema() {
     await run(usandoPG ? tabelaBonusPG : tabelaBonusSQLite);
   } catch (e) { /* Tabela já existe */ }
 
+  // Migração 2026-06-11: tabela de pontuação por fase (mata-mata vale mais)
+  try {
+    const tabelaFasePG = `
+      CREATE TABLE IF NOT EXISTS fase_pontuacao (
+        fase TEXT PRIMARY KEY,
+        pts_exato INTEGER NOT NULL DEFAULT 20,
+        pts_empate INTEGER NOT NULL DEFAULT 14,
+        pts_resultado_gol INTEGER NOT NULL DEFAULT 14,
+        pts_resultado INTEGER NOT NULL DEFAULT 8,
+        pts_gol INTEGER NOT NULL DEFAULT 3
+      )
+    `;
+    const tabelaFaseSQLite = `
+      CREATE TABLE IF NOT EXISTS fase_pontuacao (
+        fase TEXT PRIMARY KEY,
+        pts_exato INTEGER NOT NULL DEFAULT 20,
+        pts_empate INTEGER NOT NULL DEFAULT 14,
+        pts_resultado_gol INTEGER NOT NULL DEFAULT 14,
+        pts_resultado INTEGER NOT NULL DEFAULT 8,
+        pts_gol INTEGER NOT NULL DEFAULT 3
+      )
+    `;
+    await run(usandoPG ? tabelaFasePG : tabelaFaseSQLite);
+    // Seed valores default se tabela vazia
+    const count = await get('SELECT COUNT(*) AS total FROM fase_pontuacao');
+    if (count.total === 0) {
+      const fases = [
+        ['grupo', 20, 14, 14, 8, 3],
+        ['r32', 25, 18, 18, 10, 4],
+        ['r16', 30, 20, 20, 12, 5],
+        ['qf', 40, 28, 28, 16, 6],
+        ['sf', 50, 35, 35, 20, 8],
+        ['terceiro', 30, 20, 20, 12, 5],
+        ['final', 80, 50, 50, 30, 10]
+      ];
+      for (const f of fases) {
+        await run('INSERT INTO fase_pontuacao (fase, pts_exato, pts_empate, pts_resultado_gol, pts_resultado, pts_gol) VALUES (?, ?, ?, ?, ?, ?)', f);
+      }
+    }
+  } catch (e) { /* Tabela já existe */ }
+
   console.log('✅ Schema criado/verificado');
 }
 
