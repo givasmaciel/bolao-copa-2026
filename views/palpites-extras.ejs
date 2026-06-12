@@ -102,10 +102,19 @@
 <% } %>
 
 <% if (!prazoPassou) { %>
+<% 
+  const maxTotal = categorias.reduce(function(s, c) { return s + c.max; }, 0);
+  const totalSalvo = Object.values(palpites).reduce(function(s, arr) { return s + (arr ? arr.length : 0); }, 0);
+%>
+<div id="extras-sticky-counter" style="position:sticky;top:0;z-index:10;background:var(--azul);color:#fff;padding:8px 16px;border-radius:8px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;font-size:0.9rem">
+  <span>📊 Total: <strong id="total-selecoes"><%= totalSalvo %></strong> / <%= maxTotal %> seleções</span>
+  <span id="categorias-completas"><%= Object.values(palpites).filter(function(a) { return a && a.length > 0; }).length %></span> / <%= categorias.length %> categorias preenchidas
+</div>
+
 <form id="form-extras" method="POST" action="/palpites-extras">
   <input type="hidden" name="_csrf" value="<%= csrfToken %>">
 
-  <div style="display:flex;flex-direction:column;gap:16px">
+  <div class="grid grid-2">
     <% categorias.forEach(function(cat) {
       const selecionados = (palpites[cat.id] || []).length;
       const completo = selecionados >= cat.max;
@@ -131,11 +140,17 @@
       </div>
 
       <% if (multiCats.has(cat.id)) { %>
-        <div style="max-height:280px;overflow-y:auto;border:1px solid var(--cinza);border-radius:8px;padding:6px" class="selecoes-lista" data-categoria="<%= cat.id %>" data-max="<%= cat.max %>">
+        <div class="texto-aux mb-1" style="display:flex;gap:6px;font-size:0.8rem">
+          <input type="text" class="form-control" placeholder="🔍 Buscar time..." style="flex:1;padding:4px 8px;font-size:0.8rem" data-search="<%= cat.id %>">
+          <button type="button" class="btn btn-sm btn-secondary" data-select-all="<%= cat.id %>">✅ Todos</button>
+          <button type="button" class="btn btn-sm btn-secondary" data-clear-all="<%= cat.id %>">✕ Limpar</button>
+        </div>
+        <div style="max-height:260px;overflow-y:auto;border:1px solid var(--cinza);border-radius:8px;padding:6px" class="selecoes-lista" data-categoria="<%= cat.id %>" data-max="<%= cat.max %>">
           <% todasSelecoes.forEach(function(s) { %>
             <% const checked = palpites[cat.id] && palpites[cat.id].includes(s.id); %>
-            <label style="display:flex;align-items:center;gap:8px;padding:4px 6px;border-radius:4px;cursor:pointer;<%= checked ? 'background:var(--cinza-claro);font-weight:600' : '' %>">
+            <label class="sel-label" data-categoria="<%= cat.id %>" style="display:flex;align-items:center;gap:6px;padding:3px 6px;border-radius:4px;cursor:pointer;<%= checked ? 'background:var(--cinza-claro);font-weight:600' : '' %>">
               <input type="checkbox" name="<%= cat.id %>" value="<%= s.id %>" <%= checked ? 'checked' : '' %>>
+              <% if (s.bandeira_url) { %><img src="<%= s.bandeira_url %>" alt="" style="width:18px;height:12px;object-fit:cover;border-radius:2px"><% } %>
               <%= s.nome_pt %>
             </label>
           <% }); %>
@@ -164,21 +179,99 @@
 </form>
 
 <script>
-document.querySelectorAll('.selecoes-lista').forEach(function(container) {
-  var max = parseInt(container.dataset.max);
-  var checkboxes = container.querySelectorAll('input[type="checkbox"]');
-  var counter = document.getElementById('count-' + container.dataset.categoria);
-  checkboxes.forEach(function(cb) {
+(function() {
+  var multiCatIds = <%= JSON.stringify([...multiCats]) %>;
+
+  function atualizarTotal() {
+    var total = 0;
+    var catsPreenchidas = 0;
+    document.querySelectorAll('.selecoes-lista').forEach(function(container) {
+      var checked = container.querySelectorAll('input[type="checkbox"]:checked').length;
+      total += checked;
+      if (checked > 0) catsPreenchidas++;
+      var catId = container.dataset.categoria;
+      var counter = document.getElementById('count-' + catId);
+      if (counter) counter.textContent = checked;
+      var max = parseInt(container.dataset.max);
+      var card = container.closest('.card');
+      if (card) {
+        var completo = checked >= max;
+        card.style.borderLeftColor = completo ? 'var(--verde)' : (checked > 0 ? 'var(--amarelo)' : 'var(--cinza)');
+        var badge = card.querySelector('strong, span');
+        if (badge && badge.id === '') {
+          // ignore
+        }
+      }
+    });
+    var el = document.getElementById('total-selecoes');
+    if (el) el.textContent = total;
+    var catsEl = document.getElementById('categorias-completas');
+    if (catsEl) catsEl.textContent = catsPreenchidas;
+  }
+
+  // search/filter
+  document.querySelectorAll('input[data-search]').forEach(function(input) {
+    input.addEventListener('keyup', function() {
+      var catId = this.dataset.search;
+      var termo = this.value.toLowerCase();
+      document.querySelectorAll('.sel-label[data-categoria="' + catId + '"]').forEach(function(label) {
+        var text = label.textContent.toLowerCase();
+        label.style.display = text.indexOf(termo) !== -1 ? 'flex' : 'none';
+      });
+    });
+  });
+
+  // select all
+  document.querySelectorAll('[data-select-all]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var catId = this.dataset.selectAll;
+      var container = document.querySelector('.selecoes-lista[data-categoria="' + catId + '"]');
+      if (!container) return;
+      var max = parseInt(container.dataset.max);
+      var visiveis = container.querySelectorAll('.sel-label[style*="display: flex"], .sel-label:not([style*="display: none"])');
+      var count = 0;
+      visiveis.forEach(function(label) {
+        if (count >= max) return;
+        var cb = label.querySelector('input[type="checkbox"]');
+        if (cb && !cb.checked) { cb.checked = true; count++; }
+      });
+      atualizarTotal();
+    });
+  });
+
+  // clear all
+  document.querySelectorAll('[data-clear-all]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var catId = this.dataset.clearAll;
+      var container = document.querySelector('.selecoes-lista[data-categoria="' + catId + '"]');
+      if (!container) return;
+      container.querySelectorAll('input[type="checkbox"]:checked').forEach(function(cb) { cb.checked = false; });
+      atualizarTotal();
+    });
+  });
+
+  // limit checkboxes to max per category
+  document.querySelectorAll('.selecoes-lista input[type="checkbox"]').forEach(function(cb) {
     cb.addEventListener('change', function() {
+      var container = this.closest('.selecoes-lista');
+      var max = parseInt(container.dataset.max);
       var checked = container.querySelectorAll('input[type="checkbox"]:checked').length;
       if (this.checked && checked > max) {
         this.checked = false;
-        checked--;
       }
-      if (counter) counter.textContent = checked;
+      atualizarTotal();
     });
   });
-});
+
+  // select change for dropdowns (update total)
+  document.querySelectorAll('select[name]').forEach(function(sel) {
+    sel.addEventListener('change', function() {
+      // dropdowns don't affect total count in a meaningful way, but refresh anyway
+    });
+  });
+
+  atualizarTotal();
+})();
 </script>
 <% } %>
 
