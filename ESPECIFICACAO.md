@@ -189,7 +189,7 @@ Armazena configurações do sistema, como o prazo limite dos palpites extras (ex
 - Usuários já logados são redirecionados para `/dashboard`.
 - E-mail normalizado para minúsculas antes de salvar/buscar.
 - Senha mínima de 4 caracteres.
-- Cadastro aberto, sem necessidade de código de convite.
+- Cadastro aberto, sem necessidade de código de convite (bloqueado após o fechamento dos palpites extras, verificado pela chave `extras_deadline` na tabela `config`).
 - Após cadastro bem-sucedido, o usuário é logado automaticamente.
 
 ### 5.2 Dashboard (`routes/dashboard.js`)
@@ -199,11 +199,13 @@ Armazena configurações do sistema, como o prazo limite dos palpites extras (ex
 | GET | `/dashboard` | Página principal pós-login com resumo estatístico |
 
 **Conteúdo:**
-- Cards com: total de pontos, jogos finalizados, palpites pendentes, posição no ranking.
+- Cards com: total de pontos (incluindo bônus e extras com tags), jogos finalizados, palpites pendentes.
+- Tabela de pontuação por fase (dinâmica do banco).
+- Regras gerais com item sobre encerramento de cadastro após prazo dos extras.
 - Próximos 5 jogos com contagem regressiva (BRT).
 - Top 5 do ranking.
 - Banner de alerta com contagem regressiva para o próximo jogo.
-- Nome, posição e pontos do usuário logado.
+- Notificação de palpites extras pendentes.
 
 ### 5.3 Palpites dos Jogos (`routes/palpites.js`)
 
@@ -293,11 +295,18 @@ Armazena configurações do sistema, como o prazo limite dos palpites extras (ex
 |---|---|---|
 | GET | `/ranking` | Ranking geral com pontuação total |
 
+**Conteúdo:**
+- Tabela principal: posição, participante, palpites, acertos, melhor palpite, pontos extras, bônus (com tooltip mostrando motivo ao passar o mouse), aproveitamento percentual, total de pontos.
+- Tabela por rodada: pontos acumulados em cada rodada + coluna "Extra" (soma de extras e bônus) antes do total.
+- Disclaimer explicando a regra de bônus (último colocado -1) e que cadastro encerra após o prazo dos extras.
+- Se houver resultados de extras definidos, seção "Resultados dos Palpites Extras" com acertadores por seleção.
+
 **Cálculo:**
-- `total_pontos = SUM(palpites.pontos_obtidos) + SUM(pontos dos palpites_extras via subquery)`.
+- `total_pontos = SUM(palpites.pontos_obtidos) + SUM(pontos dos palpites_extras via subquery) + SUM(pontos_bonus)`.
 - Exclui administradores (`is_admin = 0`).
 - Critério de desempate: maior número de palpites com `pontos_obtidos > 0`; persistindo empate, ordem alfabética por nome.
 - Posição calculada no servidor: muda apenas quando o total de pontos difere do participante anterior.
+- Aproveitamento = (pontos do participante / totalDisputado) × 100, onde totalDisputado = soma dos pts_exato dos jogos finalizados + soma dos pontos dos resultados_extras.
 
 ### 5.9 Recuperação de Senha (`routes/senha.js`)
 
@@ -336,6 +345,7 @@ Armazena configurações do sistema, como o prazo limite dos palpites extras (ex
 | POST | `/admin/pontuacao-fases` | Salva pontuação personalizada por fase |
 | POST | `/admin/usuarios/:id/bonus` | Adiciona pontos bônus a um participante (com motivo) |
 | POST | `/admin/usuarios/:id/bonus/:bonusId/remover` | Remove um bônus específico |
+| POST | `/admin/usuarios/:id/bonus/:bonusId/editar` | Edita pontos e motivo de um bônus específico |
 
 **Regras:**
 - Todas as rotas protegidas pelo middleware `verificarAdmin`.
