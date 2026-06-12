@@ -90,6 +90,7 @@
           <% rodadas.forEach(function(r) { %>
             <th class="text-center"><%= labels[r] %></th>
           <% }); %>
+          <th class="text-center">Extra</th>
           <th class="text-center">Total</th>
         </tr>
       </thead>
@@ -101,6 +102,7 @@
             <% rodadas.forEach(function(r) { %>
               <td class="text-center"><%= (rodadaMap[u.id] && rodadaMap[u.id][r]) || '—' %></td>
             <% }); %>
+            <td class="text-center" style="color:var(--cinza-escuro)"><%= (u.extras_pontos || 0) + (u.bonus_pontos || 0) > 0 ? '+' + ((u.extras_pontos || 0) + (u.bonus_pontos || 0)) : '—' %></td>
             <td class="text-center pontos"><%= u.total_pontos %></td>
           </tr>
         <% }); %>
