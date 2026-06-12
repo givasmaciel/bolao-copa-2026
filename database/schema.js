@@ -439,7 +439,7 @@ async function criarSchema() {
   // Seed valores default se tabela vazia (fora do try anterior para garantir execução)
   try {
     const count = await get('SELECT COUNT(*) AS total FROM fase_pontuacao');
-    if (count && count.total === 0) {
+    if (count && Number(count.total) === 0) {
       const fases = [
         ['grupo', 20, 14, 14, 8, 3],
         ['r32', 25, 18, 18, 10, 4],
