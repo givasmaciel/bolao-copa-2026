@@ -117,12 +117,15 @@
           <span class="pontos-badge" style="margin-left:8px"><%= cat.pts %> pts</span>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
+          <% if (cat.max > 1) { %>
+            <span class="texto-aux" style="font-size:0.8rem">
+              <span id="count-<%= cat.id %>"><%= selecionados %></span> / <%= cat.max %>
+            </span>
+          <% } %>
           <% if (completo) { %>
-            <strong style="color:var(--verde);font-size:0.85rem">🟢 Completo (<%= selecionados %>/<%= cat.max %>)</strong>
+            <strong style="color:var(--verde);font-size:0.85rem">🟢 Completo</strong>
           <% } else if (selecionados > 0) { %>
-            <strong style="color:var(--amarelo);font-size:0.85rem">🟡 <%= selecionados %>/<%= cat.max %></strong>
-          <% } else { %>
-            <span style="color:var(--cinza);font-size:0.85rem">⬜ 0/<%= cat.max %></span>
+            <strong style="color:var(--amarelo);font-size:0.85rem">🟡 Parcial</strong>
           <% } %>
         </div>
       </div>
@@ -147,11 +150,15 @@
           <% }); %>
         </select>
       <% } %>
+
+      <div class="text-center mt-3">
+        <button type="submit" formaction="/palpites-extras/<%= cat.id %>" class="btn btn-primary">💾 Salvar <%= cat.nome %></button>
+      </div>
     </div>
     <% }); %>
   </div>
 
-  <div class="text-center mt-3" style="margin:20px 0 30px">
+  <div class="text-center" style="margin:20px 0 30px">
     <button type="submit" class="btn btn-primary btn-lg">💾 Salvar todos os palpites extras</button>
   </div>
 </form>
@@ -160,12 +167,15 @@
 document.querySelectorAll('.selecoes-lista').forEach(function(container) {
   var max = parseInt(container.dataset.max);
   var checkboxes = container.querySelectorAll('input[type="checkbox"]');
+  var counter = document.getElementById('count-' + container.dataset.categoria);
   checkboxes.forEach(function(cb) {
     cb.addEventListener('change', function() {
       var checked = container.querySelectorAll('input[type="checkbox"]:checked').length;
       if (this.checked && checked > max) {
         this.checked = false;
+        checked--;
       }
+      if (counter) counter.textContent = checked;
     });
   });
 });
