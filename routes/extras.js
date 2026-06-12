@@ -166,8 +166,8 @@ router.post('/:categoria', verificarAutenticado, async (req, res) => {
 
   const erros = [];
   if (MULTI_CATS.has(cat.id)) {
-    const selecoes = req.body.selecoes;
-    const ids = selecoes ? (Array.isArray(selecoes) ? selecoes : [selecoes]) : [];
+    const vals = req.body[cat.id];
+    const ids = vals ? (Array.isArray(vals) ? vals : [vals]) : [];
     if (ids.length > cat.max) {
       erros.push(`${cat.nome}: máximo ${cat.max} seleções.`);
     }
@@ -181,8 +181,8 @@ router.post('/:categoria', verificarAutenticado, async (req, res) => {
     await run('DELETE FROM palpites_extras WHERE usuario_id = ? AND categoria = ?', [usuarioId, cat.id]);
 
     if (MULTI_CATS.has(cat.id)) {
-      const selecoes = req.body.selecoes;
-      const ids = Array.isArray(selecoes) ? selecoes : [selecoes];
+      const vals = req.body[cat.id];
+      const ids = vals ? (Array.isArray(vals) ? vals : [vals]) : [];
       for (const sId of ids) {
         await run(
           'INSERT INTO palpites_extras (usuario_id, categoria, selecao_id) VALUES (?, ?, ?)',
@@ -190,11 +190,13 @@ router.post('/:categoria', verificarAutenticado, async (req, res) => {
         );
       }
     } else {
-      const sId = req.body.selecao;
-      await run(
-        'INSERT INTO palpites_extras (usuario_id, categoria, selecao_id) VALUES (?, ?, ?)',
-        [usuarioId, cat.id, parseInt(sId, 10)]
-      );
+      const sId = req.body[cat.id];
+      if (sId) {
+        await run(
+          'INSERT INTO palpites_extras (usuario_id, categoria, selecao_id) VALUES (?, ?, ?)',
+          [usuarioId, cat.id, parseInt(sId, 10)]
+        );
+      }
     }
 
     req.flash('sucesso', `${cat.nome} salvo com sucesso!`);
