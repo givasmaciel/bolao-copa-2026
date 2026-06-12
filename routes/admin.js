@@ -635,4 +635,25 @@ router.post('/usuarios/:id/bonus/:bonusId/remover', verificarAdmin, async (req, 
   res.redirect('/admin/usuarios');
 });
 
+// POST /admin/usuarios/:id/bonus/:bonusId/editar - edita pontos e motivo de um bônus
+router.post('/usuarios/:id/bonus/:bonusId/editar', verificarAdmin, async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  const bonusId = parseInt(req.params.bonusId, 10);
+  if (isNaN(id) || isNaN(bonusId)) return res.redirect('/admin/usuarios');
+  const { pontos, motivo } = req.body;
+  const pts = parseInt(pontos, 10);
+  if (isNaN(pts) || pts <= 0) {
+    req.flash('erro', 'Informe um número de pontos válido (maior que zero).');
+    return res.redirect('/admin/usuarios');
+  }
+  try {
+    await run('UPDATE pontos_bonus SET pontos = ?, motivo = ? WHERE id = ? AND usuario_id = ?', [pts, motivo || null, bonusId, id]);
+    req.flash('sucesso', 'Bônus atualizado!');
+  } catch (err) {
+    console.error('Erro ao editar bônus:', err);
+    req.flash('erro', 'Erro ao editar bônus.');
+  }
+  res.redirect('/admin/usuarios');
+});
+
 module.exports = { router, calcularPontos, getPontosFase };

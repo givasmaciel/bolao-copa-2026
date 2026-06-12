@@ -69,10 +69,23 @@
                   <% bonusMap[u.id].forEach(function(b) { %>
                     <div style="display:flex;justify-content:space-between;gap:4px;padding:2px 0">
                       <span>+<%= b.pontos %><%= b.motivo ? ' (' + b.motivo + ')' : '' %></span>
-                      <form method="POST" action="/admin/usuarios/<%= u.id %>/bonus/<%= b.id %>/remover" style="display:inline">
-                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                        <button type="submit" style="background:none;border:none;color:var(--erro);cursor:pointer;padding:0;font-size:0.7rem;">✕</button>
-                      </form>
+                      <div style="display:flex;gap:4px">
+                        <details style="display:inline-block">
+                          <summary style="background:none;border:none;color:var(--azul);cursor:pointer;padding:0;font-size:0.7rem;">✎</summary>
+                          <div style="position:absolute;background:var(--card-bg);border:1px solid var(--border);padding:8px;border-radius:8px;z-index:11;margin-top:4px;right:0">
+                            <form method="POST" action="/admin/usuarios/<%= u.id %>/bonus/<%= b.id %>/editar" style="display:flex;flex-direction:column;gap:4px;min-width:200px">
+                              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                              <input type="number" name="pontos" value="<%= b.pontos %>" min="1" required class="form-control" placeholder="Pontos">
+                              <input type="text" name="motivo" value="<%= b.motivo || '' %>" class="form-control" placeholder="Motivo">
+                              <button type="submit" class="btn btn-sm btn-primary">Salvar</button>
+                            </form>
+                          </div>
+                        </details>
+                        <form method="POST" action="/admin/usuarios/<%= u.id %>/bonus/<%= b.id %>/remover" style="display:inline">
+                          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                          <button type="submit" style="background:none;border:none;color:var(--erro);cursor:pointer;padding:0;font-size:0.7rem;">✕</button>
+                        </form>
+                      </div>
                     </div>
                   <% }); %>
                 </div>
