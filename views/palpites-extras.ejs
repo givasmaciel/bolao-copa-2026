@@ -108,7 +108,17 @@
 %>
 <div id="extras-sticky-counter" style="position:sticky;top:0;z-index:10;background:var(--azul);color:#fff;padding:8px 16px;border-radius:8px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;font-size:0.9rem">
   <span>📊 Total: <strong id="total-selecoes"><%= totalSalvo %></strong> / <%= maxTotal %> seleções</span>
-  <span id="categorias-completas"><%= Object.values(palpites).filter(function(a) { return a && a.length > 0; }).length %></span> / <%= categorias.length %> categorias preenchidas
+  <span>
+    <span id="categorias-completas"><%= Object.values(palpites).filter(function(a) { return a && a.length > 0; }).length %></span> / <%= categorias.length %> categorias
+    &middot; <span id="preview-pontos">
+      <%=
+        categorias.reduce(function(s, c) {
+          const qtd = (palpites[c.id] || []).length;
+          return s + qtd * c.pts;
+        }, 0)
+      %>
+    </span> pts máx
+  </span>
 </div>
 
 <form id="form-extras" method="POST" action="/palpites-extras">
@@ -118,9 +128,10 @@
     <% categorias.forEach(function(cat) {
       const selecionados = (palpites[cat.id] || []).length;
       const completo = selecionados >= cat.max;
+      const pct = cat.max > 0 ? Math.round(selecionados / cat.max * 100) : 0;
     %>
     <div class="card" style="border-left:4px solid <%= completo ? 'var(--verde)' : (selecionados > 0 ? 'var(--amarelo)' : 'var(--cinza)') %>">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;flex-wrap:wrap;gap:6px">
         <div>
           <h3 style="margin:0;display:inline"><%= cat.nome %></h3>
           <span class="pontos-badge" style="margin-left:8px"><%= cat.pts %> pts</span>
@@ -139,6 +150,12 @@
         </div>
       </div>
 
+      <% if (cat.max > 1) { %>
+      <div style="height:6px;background:#e2e8f0;border-radius:3px;margin-bottom:8px;overflow:hidden">
+        <div id="bar-<%= cat.id %>" style="height:100%;width:<%= pct %>%;background:var(--verde);border-radius:3px;transition:width .2s"></div>
+      </div>
+      <% } %>
+
       <% if (multiCats.has(cat.id)) { %>
         <div class="texto-aux mb-1" style="display:flex;gap:6px;font-size:0.8rem">
           <input type="text" class="form-control" placeholder="🔍 Buscar time..." style="flex:1;padding:4px 8px;font-size:0.8rem" data-search="<%= cat.id %>">
@@ -148,10 +165,11 @@
         <div style="max-height:260px;overflow-y:auto;border:1px solid var(--cinza);border-radius:8px;padding:6px" class="selecoes-lista" data-categoria="<%= cat.id %>" data-max="<%= cat.max %>">
           <% todasSelecoes.forEach(function(s) { %>
             <% const checked = palpites[cat.id] && palpites[cat.id].includes(s.id); %>
-            <label class="sel-label" data-categoria="<%= cat.id %>" style="display:flex;align-items:center;gap:6px;padding:3px 6px;border-radius:4px;cursor:pointer;<%= checked ? 'background:var(--cinza-claro);font-weight:600' : '' %>">
+            <label class="sel-label" data-categoria="<%= cat.id %>" title="<%= s.sigla %>" style="display:flex;align-items:center;gap:6px;padding:3px 6px;border-radius:4px;cursor:pointer;<%= checked ? 'background:var(--cinza-claro);font-weight:600' : '' %>">
               <input type="checkbox" name="<%= cat.id %>" value="<%= s.id %>" <%= checked ? 'checked' : '' %>>
               <% if (s.bandeira_url) { %><img src="<%= s.bandeira_url %>" alt="" style="width:18px;height:12px;object-fit:cover;border-radius:2px"><% } %>
               <%= s.nome_pt %>
+              <span style="font-size:0.65rem;color:var(--cinza-escuro);opacity:0.5;margin-left:auto"><%= s.sigla %></span>
             </label>
           <% }); %>
         </div>
@@ -180,7 +198,59 @@
 
 <script>
 (function() {
-  var multiCatIds = <%= JSON.stringify([...multiCats]) %>;
+  // captura estado inicial para detectar alteracoes
+  var estadoInicial = {};
+  document.querySelectorAll('input[type="checkbox"][name]').forEach(function(cb) {
+    var key = cb.name + '-' + cb.value;
+    estadoInicial[key] = cb.checked;
+  });
+  document.querySelectorAll('select[name]').forEach(function(sel) {
+    estadoInicial[sel.name] = sel.value;
+  });
+
+  var categorias = <%= JSON.stringify(categorias) %>;
+  var catMap = {};
+  categorias.forEach(function(c) { catMap[c.id] = c; });
+
+  function calcularPontos() {
+    var total = 0;
+    categorias.forEach(function(cat) {
+      if (cat.max > 1) {
+        var container = document.querySelector('.selecoes-lista[data-categoria="' + cat.id + '"]');
+        if (container) {
+          var qtd = container.querySelectorAll('input[type="checkbox"]:checked').length;
+          total += qtd * cat.pts;
+        }
+      } else {
+        var sel = document.querySelector('select[name="' + cat.id + '"]');
+        if (sel && sel.value) total += cat.pts;
+      }
+    });
+    return total;
+  }
+
+  function verificarNaoSalvo() {
+    var alterado = false;
+    document.querySelectorAll('input[type="checkbox"][name]').forEach(function(cb) {
+      var key = cb.name + '-' + cb.value;
+      if (estadoInicial[key] !== cb.checked) alterado = true;
+    });
+    document.querySelectorAll('select[name]').forEach(function(sel) {
+      if (estadoInicial[sel.name] !== sel.value) alterado = true;
+    });
+    var cards = document.querySelectorAll('.card');
+    cards.forEach(function(card) {
+      var form = card.closest('#form-extras') || card.querySelector('form');
+      if (!form && !card.closest('#form-extras')) return;
+      if (alterado) {
+        card.style.borderStyle = 'dashed';
+        card.style.borderWidth = '2px';
+        card.style.borderColor = 'var(--amarelo)';
+      } else {
+        card.style.borderStyle = 'solid';
+      }
+    });
+  }
 
   function atualizarTotal() {
     var total = 0;
@@ -196,10 +266,15 @@
       var card = container.closest('.card');
       if (card) {
         var completo = checked >= max;
-        card.style.borderLeftColor = completo ? 'var(--verde)' : (checked > 0 ? 'var(--amarelo)' : 'var(--cinza)');
-        var badge = card.querySelector('strong, span');
-        if (badge && badge.id === '') {
-          // ignore
+        var cor = completo ? 'var(--verde)' : (checked > 0 ? 'var(--amarelo)' : 'var(--cinza)');
+        card.style.borderLeftColor = cor;
+        card.style.borderLeftStyle = 'solid';
+        // barra
+        var bar = document.getElementById('bar-' + catId);
+        if (bar) {
+          var pct = Math.round(checked / max * 100);
+          bar.style.width = pct + '%';
+          bar.style.background = completo ? 'var(--verde)' : (checked > 0 ? 'var(--amarelo)' : '#e2e8f0');
         }
       }
     });
@@ -207,6 +282,9 @@
     if (el) el.textContent = total;
     var catsEl = document.getElementById('categorias-completas');
     if (catsEl) catsEl.textContent = catsPreenchidas;
+    var ptsEl = document.getElementById('preview-pontos');
+    if (ptsEl) ptsEl.textContent = calcularPontos();
+    verificarNaoSalvo();
   }
 
   // search/filter
@@ -228,7 +306,10 @@
       var container = document.querySelector('.selecoes-lista[data-categoria="' + catId + '"]');
       if (!container) return;
       var max = parseInt(container.dataset.max);
-      var visiveis = container.querySelectorAll('.sel-label[style*="display: flex"], .sel-label:not([style*="display: none"])');
+      var visiveis = [];
+      container.querySelectorAll('.sel-label').forEach(function(lb) {
+        if (lb.style.display !== 'none') visiveis.push(lb);
+      });
       var count = 0;
       visiveis.forEach(function(label) {
         if (count >= max) return;
@@ -263,11 +344,14 @@
     });
   });
 
-  // select change for dropdowns (update total)
+  // select change for dropdowns
   document.querySelectorAll('select[name]').forEach(function(sel) {
-    sel.addEventListener('change', function() {
-      // dropdowns don't affect total count in a meaningful way, but refresh anyway
-    });
+    sel.addEventListener('change', atualizarTotal);
+  });
+
+  // initial state mark as clean (solid border)
+  document.querySelectorAll('.card').forEach(function(card) {
+    card.style.borderStyle = 'solid';
   });
 
   atualizarTotal();
