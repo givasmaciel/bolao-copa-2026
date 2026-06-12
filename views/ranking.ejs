@@ -99,4 +99,42 @@
   </div>
 </div>
 
+<% if (extrasResultados && extrasResultados.length > 0) { %>
+<div class="card mt-3">
+  <h2>🏆 Resultados dos Palpites Extras</h2>
+  <p class="texto-aux">Seleções vencedoras definidas pelo administrador e participantes que acertaram cada categoria.</p>
+
+  <% CATEGORIAS.forEach(function(cat) {
+    const items = extrasPorCategoria[cat.id];
+    if (!items || items.length === 0) return;
+  %>
+    <div style="margin-top:16px">
+      <h3 style="margin:0 0 8px;display:flex;align-items:center;gap:8px">
+        <%= cat.nome %>
+        <span class="pontos-badge"><%= cat.pts %> pts</span>
+      </h3>
+      <% items.forEach(function(item) { %>
+        <div style="background:var(--cinza-claro);border-radius:8px;padding:8px 12px;margin-bottom:6px">
+          <div style="display:flex;align-items:center;gap:8px;font-weight:600;font-size:0.9rem">
+            <span style="background:var(--verde);color:#fff;padding:2px 8px;border-radius:10px;font-size:0.75rem"><%= item.sigla %></span>
+            <%= item.nome_pt %>
+          </div>
+          <% if (item.acertaram.length > 0) { %>
+            <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">
+              <% item.acertaram.forEach(function(a) { %>
+                <a href="/ranking/usuario/<%= a.usuario_id %>" style="display:inline-block;background:var(--azul);color:#fff;padding:2px 10px;border-radius:10px;font-size:0.8rem;text-decoration:none">
+                  <%= a.nome %>
+                </a>
+              <% }); %>
+            </div>
+          <% } else { %>
+            <p class="texto-aux" style="font-size:0.8rem;margin:4px 0 0">Ninguém acertou esta seleção.</p>
+          <% } %>
+        </div>
+      <% }); %>
+    </div>
+  <% }); %>
+</div>
+<% } %>
+
 <%- include('partials/footer') %>

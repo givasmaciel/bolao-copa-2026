@@ -90,7 +90,43 @@ router.get('/', async (req, res) => {
       labels[f.rodada] = typeof gen === 'function' ? gen(f.rodada) : gen;
     });
 
-    res.render('ranking', { title: 'Ranking do Bolão', ranking, totais, rodadaMap, rodadas, labels });
+    // Resultados dos palpites extras
+    const extrasResultados = await all(`
+      SELECT r.categoria, r.selecao_id, r.pontos, s.nome_pt, s.sigla
+      FROM resultados_extras r
+      JOIN selecoes s ON s.id = r.selecao_id
+      ORDER BY r.categoria
+    `);
+    const extrasAcertos = await all(`
+      SELECT r.categoria, r.selecao_id, pe.usuario_id, u.nome
+      FROM resultados_extras r
+      JOIN palpites_extras pe ON pe.categoria = r.categoria AND pe.selecao_id = r.selecao_id
+      JOIN usuarios u ON u.id = pe.usuario_id
+      WHERE u.is_admin = 0
+      ORDER BY r.categoria, r.selecao_id, u.nome
+    `);
+    // Monta mapa: resultado_id -> [usuarios]
+    const extrasAcertosMap = {};
+    for (const a of extrasAcertos) {
+      const key = a.categoria + '_' + a.selecao_id;
+      if (!extrasAcertosMap[key]) extrasAcertosMap[key] = [];
+      extrasAcertosMap[key].push(a);
+    }
+    // Monta estrutura por categoria para facilitar a view
+    const extrasPorCategoria = {};
+    for (const r of extrasResultados) {
+      if (!extrasPorCategoria[r.categoria]) extrasPorCategoria[r.categoria] = [];
+      const key = r.categoria + '_' + r.selecao_id;
+      extrasPorCategoria[r.categoria].push({
+        selecao_id: r.selecao_id,
+        nome_pt: r.nome_pt,
+        sigla: r.sigla,
+        pontos: r.pontos,
+        acertaram: extrasAcertosMap[key] || []
+      });
+    }
+
+    res.render('ranking', { title: 'Ranking do Bolão', ranking, totais, rodadaMap, rodadas, labels, extrasResultados, extrasPorCategoria, CATEGORIAS });
   } catch (err) {
     console.error('Erro ao listar ranking:', err);
     req.flash('erro', 'Erro ao carregar ranking.');
