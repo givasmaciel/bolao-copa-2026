@@ -399,7 +399,7 @@ A pontuação é fixa por categoria, conforme tabela na seção 5.4. Os pontos s
 
 9. **Token de recuperação** — Expira em 1 hora; uso único. Sem SMTP, link é exibido na tela.
 
-10. **Cadastro aberto** — Qualquer pessoa pode criar conta, sem necessidade de código de convite.
+10. **Cadastro aberto** — Qualquer pessoa pode criar conta, sem necessidade de código de convite. O cadastro é bloqueado automaticamente após o fechamento dos palpites extras.
 
 11. **Login flexível** — Aceita email, username ou nome (display name) no campo de login.
 

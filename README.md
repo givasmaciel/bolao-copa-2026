@@ -96,7 +96,7 @@ database/
   criar-admin.js — script manual de criação de admin
 
 routes/
-  auth.js        — cadastro aberto, login (email/username/nome), logout
+  auth.js        — cadastro aberto (bloqueado após prazo dos extras), login (email/username/nome), logout
   palpites.js    — palpites por jogo, trava 2 min antes, exclusão de admin
   extras.js      — palpites extras independentes, save individual e em lote, revelação pós-prazo
   dashboard.js   — cards, próximos jogos, top 5, banner com contagem regressiva, pontuação por fase
@@ -142,7 +142,7 @@ raiz/
 - Palpites travam 2 min antes do horário BRT de cada jogo (frontend + backend)
 - Pontuação automática ao admin marcar jogo como finalizado; botão de recalcular disponível
 - Admin pode recalcular pontos, resetar palpites (individual/massa), resetar senha, promover/rebaixar, excluir usuários
-- Cadastro aberto — qualquer pessoa pode criar conta livremente
+- Cadastro aberto — qualquer pessoa pode criar conta livremente (até o fechamento dos palpites extras)
 - Admin pode conceder pontos bônus a participantes tardios (não ultrapassa último colocado)
 - Pontuação por fase configurável pelo admin em `/admin/pontuacao-fases`
 - Aproveitamento percentual exibido no ranking e perfil do usuário

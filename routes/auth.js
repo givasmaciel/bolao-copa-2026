@@ -33,6 +33,16 @@ router.post('/cadastro', jaLogado, async (req, res) => {
   }
 
   try {
+    // Verifica se o cadastro ainda está aberto (prazo dos extras)
+    const deadlineRow = await get("SELECT valor FROM config WHERE chave = 'extras_deadline'");
+    if (deadlineRow && deadlineRow.valor) {
+      const deadline = new Date(deadlineRow.valor);
+      if (!isNaN(deadline.getTime()) && new Date() > deadline) {
+        req.flash('erro', 'O cadastro foi encerrado após o fechamento dos palpites extras.');
+        return res.render('cadastro', { title: 'Criar conta', dados: req.body });
+      }
+    }
+
     const emailLimpo = email.toLowerCase().trim();
     const existe = await get('SELECT id FROM usuarios WHERE email = ?', [emailLimpo]);
     if (existe) {
