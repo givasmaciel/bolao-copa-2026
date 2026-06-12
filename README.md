@@ -143,7 +143,7 @@ raiz/
 - Pontuação automática ao admin marcar jogo como finalizado; botão de recalcular disponível
 - Admin pode recalcular pontos, resetar palpites (individual/massa), resetar senha, promover/rebaixar, excluir usuários
 - Cadastro aberto — qualquer pessoa pode criar conta livremente (até o fechamento dos palpites extras)
-- Admin pode conceder pontos bônus a participantes tardios (não ultrapassa a pontuação do último colocado da rodada compensada)
+- Admin pode conceder pontos bônus a participantes tardios (último colocado -1 da rodada de ingresso; cadastro encerra após fechamento dos extras)
 - Pontuação por fase configurável pelo admin em `/admin/pontuacao-fases`
 - Aproveitamento percentual exibido no ranking e perfil do usuário
 - Resultados dos extras no ranking só aparecem após admin definir em `/admin/extras`
