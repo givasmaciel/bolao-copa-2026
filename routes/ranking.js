@@ -141,7 +141,15 @@ router.get('/', async (req, res) => {
       u.aproveitamento = totalDisputado > 0 ? Math.round((u.total_pontos / totalDisputado) * 100) : 0;
     }
 
-    res.render('ranking', { title: 'Ranking do Bolão', ranking, totais, rodadaMap, rodadas, labels, extrasResultados, extrasPorCategoria, CATEGORIAS, totalDisputado });
+    // Busca detalhes dos bônus (motivo) para tooltip
+    const bonusDetalhes = await all('SELECT usuario_id, pontos, motivo FROM pontos_bonus ORDER BY usuario_id, criado_em');
+    const bonusMap = {};
+    for (const b of bonusDetalhes) {
+      if (!bonusMap[b.usuario_id]) bonusMap[b.usuario_id] = [];
+      bonusMap[b.usuario_id].push(b);
+    }
+
+    res.render('ranking', { title: 'Ranking do Bolão', ranking, totais, rodadaMap, rodadas, labels, extrasResultados, extrasPorCategoria, CATEGORIAS, totalDisputado, bonusMap });
   } catch (err) {
     console.error('Erro ao listar ranking:', err);
     req.flash('erro', 'Erro ao carregar ranking.');

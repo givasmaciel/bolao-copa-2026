@@ -44,7 +44,7 @@
         <th class="text-center">Acertos</th>
         <th class="text-center">Melhor</th>
         <th class="text-center">Extras</th>
-        <th class="text-center">Bônus</th>
+        <th class="text-center">Bônus <span style="font-size:0.7rem;cursor:help;color:var(--cinza-escuro)" title="Motivo do bônus visível ao passar o mouse sobre o valor">ⓘ</span></th>
         <th class="text-center">Aproveit.</th>
         <th class="text-center">Pontos</th>
       </tr>
@@ -65,7 +65,11 @@
           <td class="text-center"><%= u.palpites_com_pontos %></td>
           <td class="text-center"><%= u.maior_palpite %> pts</td>
           <td class="text-center"><%= u.extras_pontos > 0 ? '+' + u.extras_pontos : '—' %></td>
-          <td class="text-center"><%= u.bonus_pontos > 0 ? '+' + u.bonus_pontos : '—' %></td>
+          <td class="text-center" style="cursor:help;<% if (u.bonus_pontos > 0) { %>text-decoration:underline dotted;text-underline-offset:3px<% } %>"
+            <% if (u.bonus_pontos > 0 && bonusMap && bonusMap[u.id]) { %>
+              title="<%= bonusMap[u.id].map(function(b) { return (b.motivo || 'sem motivo') + ': +' + b.pontos + ' pts'; }).join('; ') %>"
+            <% } %>
+          ><%= u.bonus_pontos > 0 ? '+' + u.bonus_pontos : '—' %></td>
           <td class="text-center"><%= u.aproveitamento %>%</td>
           <td class="text-center pontos"><%= u.total_pontos %></td>
         </tr>
