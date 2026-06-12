@@ -411,7 +411,7 @@ A pontuação é fixa por categoria, conforme tabela na seção 5.4. Os pontos s
 
 15. **Horário BRT** — Todos os horários armazenados com offset -03:00. O PostgreSQL (`TIMESTAMPTZ`) normaliza para UTC internamente.
 
-16. **Pontos bônus** — O admin pode conceder pontos bônus a participantes que entrarem após o início da copa, para compensar as rodadas perdidas. O bônus não ultrapassa a pontuação do último colocado da rodada a que se refere. Os bônus são armazenados na tabela `pontos_bonus` com motivo e somados ao total no ranking, dashboard e resumo. Podem ser removidos individualmente pelo admin.
+16. **Pontos bônus** — O admin pode conceder pontos bônus a participantes que entrarem após o início da copa, para compensar as rodadas perdidas. O bônus não ultrapassa o valor do último colocado -1 da rodada a que se refere. Os bônus são armazenados na tabela `pontos_bonus` com motivo e somados ao total no ranking, dashboard e resumo. Podem ser removidos individualmente pelo admin.
 
 17. **Extras deadline configurável** — O prazo para palpites extras é armazenado na tabela `config` (chave `extras_deadline`) e verificado no servidor.
 
