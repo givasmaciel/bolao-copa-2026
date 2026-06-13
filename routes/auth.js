@@ -15,6 +15,14 @@ const authLimiter = rateLimit({
   legacyHeaders: false
 });
 
+const tokenLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: { ok: false, erro: 'Muitas tentativas. Aguarde 15 minutos.' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
 // GET /cadastro
 router.get('/cadastro', jaLogado, (req, res) => {
   res.render('cadastro', {
@@ -30,6 +38,10 @@ router.post('/cadastro', jaLogado, authLimiter, async (req, res) => {
   // Validações
   if (!nome || !email || !senha) {
     req.flash('erro', 'Preencha todos os campos.');
+    return res.render('cadastro', { title: 'Criar conta', dados: req.body });
+  }
+  if (nome.length > 100 || email.length > 255 || senha.length > 100) {
+    req.flash('erro', 'Valor muito longo.');
     return res.render('cadastro', { title: 'Criar conta', dados: req.body });
   }
   if (senha.length < 4) {
@@ -105,6 +117,10 @@ router.post('/login', jaLogado, authLimiter, async (req, res) => {
     req.flash('erro', 'Informe e-mail e senha.');
     return res.render('login', { title: 'Entrar' });
   }
+  if (email.length > 255 || senha.length > 100) {
+    req.flash('erro', 'Valor muito longo.');
+    return res.render('login', { title: 'Entrar' });
+  }
 
   console.log('[LOGIN] req.secure:', req.secure, '| headers x-forwarded-proto:', req.headers['x-forwarded-proto'], '| NODE_ENV:', process.env.NODE_ENV);
 
@@ -163,7 +179,7 @@ router.post('/logout', (req, res) => {
 });
 
 // GET /login/:token - login automático via token
-router.get('/login/:token', async (req, res) => {
+router.get('/login/:token', tokenLimiter, async (req, res) => {
   try {
     const token = req.params.token;
     // Gera o hash do token para comparar com o armazenado

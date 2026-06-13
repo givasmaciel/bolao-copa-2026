@@ -17,36 +17,54 @@ router.post('/salvar-rodada', verificarAutenticado, async (req, res) => {
     return res.status(400).json({ ok: false, erro: 'Dados inválidos.' });
   }
 
+  const jogoIds = Object.keys(jogos).map(id => parseInt(id, 10)).filter(id => !isNaN(id));
+  if (jogoIds.length === 0) {
+    return res.status(400).json({ ok: false, erro: 'Nenhum jogo válido.' });
+  }
+
+  const places = jogoIds.map(() => '?').join(',');
+  const jogosDB = await all(
+    `SELECT id, data, finalizado, palpite_limite FROM jogos WHERE id IN (${places}) AND fase = 'grupo' AND rodada = ?`,
+    [...jogoIds, rodada]
+  );
+
+  const jogosValidos = jogosDB.filter(j => {
+    const agora = new Date();
+    const dataJogo = new Date(j.data);
+    const limite = j.palpite_limite ? new Date(j.palpite_limite) : null;
+    const margem = limite || new Date(dataJogo.getTime() - PALPITE_MARGEM_MS);
+    return !(agora >= margem || j.finalizado === 1);
+  });
+
+  if (jogosValidos.length === 0) {
+    req.flash('aviso', 'Nenhum jogo aberto para salvar.');
+    return res.json({ ok: true });
+  }
+
+  const idsValidos = jogosValidos.map(j => j.id);
+  const existentes = await all(
+    `SELECT jogo_id, id FROM palpites WHERE usuario_id = ? AND jogo_id IN (${idsValidos.map(() => '?').join(',')})`,
+    [usuarioId, ...idsValidos]
+  );
+  const existeMap = {};
+  for (const e of existentes) existeMap[e.jogo_id] = e.id;
+
   let salvos = 0;
-  for (const [jogoIdStr, placar] of Object.entries(jogos)) {
-    const jogoId = parseInt(jogoIdStr, 10);
+  for (const jogo of jogosValidos) {
+    const placar = jogos[String(jogo.id)];
     const casa = parseInt(placar.casa, 10);
     const visitante = parseInt(placar.visitante, 10);
-    if (isNaN(jogoId) || isNaN(casa) || isNaN(visitante)) continue;
-    if (casa < 0 || casa > 99 || visitante < 0 || visitante > 99) continue;
+    if (isNaN(casa) || isNaN(visitante) || casa < 0 || casa > 99 || visitante < 0 || visitante > 99) continue;
 
-    const jogo = await get(
-      "SELECT id, data, finalizado, palpite_limite FROM jogos WHERE id = ? AND fase = 'grupo' AND rodada = ?",
-      [jogoId, rodada]
-    );
-    if (!jogo) continue;
-
-    const agora = new Date();
-    const dataJogo = new Date(jogo.data);
-    const limite = jogo.palpite_limite ? new Date(jogo.palpite_limite) : null;
-    const margem = limite || new Date(dataJogo.getTime() - PALPITE_MARGEM_MS);
-    if (agora >= margem || jogo.finalizado === 1) continue;
-
-    const existe = await get('SELECT id FROM palpites WHERE usuario_id = ? AND jogo_id = ?', [usuarioId, jogoId]);
-    if (existe) {
+    if (existeMap[jogo.id]) {
       await run(
         'UPDATE palpites SET palpite_gols_casa = ?, palpite_gols_visitante = ?, atualizado_em = CURRENT_TIMESTAMP WHERE id = ?',
-        [casa, visitante, existe.id]
+        [casa, visitante, existeMap[jogo.id]]
       );
     } else {
       await run(
         'INSERT INTO palpites (usuario_id, jogo_id, palpite_gols_casa, palpite_gols_visitante) VALUES (?, ?, ?, ?)',
-        [usuarioId, jogoId, casa, visitante]
+        [usuarioId, jogo.id, casa, visitante]
       );
     }
     salvos++;

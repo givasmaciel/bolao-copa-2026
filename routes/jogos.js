@@ -76,7 +76,7 @@ router.get('/:id/palpites', verificarAutenticado, async (req, res) => {
     const dataJogo = new Date(row.data);
     const limite = row.palpite_limite ? new Date(row.palpite_limite) : null;
     const margem = limite || new Date(dataJogo.getTime() - PALPITE_MARGEM_MS);
-
+    const bloqueado = agora >= margem || row.finalizado === 1;
 
     let palpites = [];
     let agrupado = {};

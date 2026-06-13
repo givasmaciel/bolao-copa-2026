@@ -2,7 +2,6 @@ require('dotenv').config();
 const path = require('path');
 const express = require('express');
 const session = require('express-session');
-const cookieParser = require('cookie-parser');
 const flash = require('connect-flash');
 const methodOverride = require('method-override');
 
@@ -20,7 +19,7 @@ const sessionStore = new DbSessionStore();
 const dashboardRoutes = require('./routes/dashboard');
 const resumoRoutes = require('./routes/resumo');
 const classificacaoRoutes = require('./routes/classificacao');
-const { all } = require('./database/db');
+const { all, get } = require('./database/db');
 const { PALPITE_MARGEM_MS } = require('./services/palpite-config');
 
 const app = express();
@@ -36,7 +35,6 @@ app.set('trust proxy', 1);
 // Middlewares
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(methodOverride('_method'));
 
@@ -105,6 +103,20 @@ app.use((req, res, next) => {
   res.locals.aviso = req.flash('aviso');
   res.locals.usuario = req.session.usuario || null;
   res.locals.PALPITE_MARGEM_MS = PALPITE_MARGEM_MS;
+  next();
+});
+
+// Garante que foto do usuário esteja sempre na sessão
+app.use(async (req, res, next) => {
+  if (req.session?.usuario?.id && !req.session.usuario.foto) {
+    try {
+      const row = await get('SELECT foto FROM usuarios WHERE id = ?', [req.session.usuario.id]);
+      if (row?.foto) {
+        req.session.usuario.foto = row.foto;
+        res.locals.usuario = req.session.usuario;
+      }
+    } catch (e) { /* fallback silencioso */ }
+  }
   next();
 });
 

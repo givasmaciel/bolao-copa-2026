@@ -9,7 +9,8 @@ const router = express.Router();
 
 // GET /admin/diagnostic - verifica estado do banco (acesso sem login, use chave)
 router.get('/diagnostic', async (req, res) => {
-  if (req.query.chave !== (process.env.DIAGNOSTIC_KEY || 'verificar123')) {
+  if (!process.env.DIAGNOSTIC_KEY) return res.status(404).send('Diagnóstico desabilitado');
+  if (req.query.chave !== process.env.DIAGNOSTIC_KEY) {
     return res.status(403).send('Acesso negado');
   }
   try {
@@ -229,13 +230,24 @@ router.post('/recalcular', verificarAdmin, async (req, res) => {
     ]);
     const ptsCache = {};
     for (const f of todasFases) ptsCache[f.fase] = f;
+    const ids = jogos.map(j => j.id);
+    if (ids.length === 0) {
+      req.flash('aviso', 'Nenhum jogo finalizado para recalcular.');
+      return res.redirect('/admin');
+    }
+    const todosPalpites = await all(
+      `SELECT id, jogo_id, palpite_gols_casa, palpite_gols_visitante FROM palpites WHERE jogo_id IN (${ids.map(() => '?').join(',')})`,
+      ids
+    );
+    const palpitesPorJogo = {};
+    for (const p of todosPalpites) {
+      if (!palpitesPorJogo[p.jogo_id]) palpitesPorJogo[p.jogo_id] = [];
+      palpitesPorJogo[p.jogo_id].push(p);
+    }
     let total = 0;
     for (const j of jogos) {
       const ptsConfig = ptsCache[j.fase] || { pts_exato: 20, pts_empate: 14, pts_resultado_gol: 14, pts_resultado: 8, pts_gol: 3 };
-      const palpites = await all(
-        'SELECT id, palpite_gols_casa, palpite_gols_visitante FROM palpites WHERE jogo_id = ?',
-        [j.id]
-      );
+      const palpites = palpitesPorJogo[j.id] || [];
       for (const p of palpites) {
         const pontos = calcularPontos(j.gols_casa, j.gols_visitante, p.palpite_gols_casa, p.palpite_gols_visitante, ptsConfig);
         await run('UPDATE palpites SET pontos_obtidos = ? WHERE id = ?', [pontos, p.id]);
@@ -366,6 +378,10 @@ router.post('/usuarios/criar', verificarAdmin, async (req, res) => {
   const { nome, email, senha, username } = req.body;
   if (!nome || !email || !senha) {
     req.flash('erro', 'Preencha os campos obrigatórios (nome, e-mail, senha).');
+    return res.redirect('/admin/usuarios');
+  }
+  if (nome.length > 100 || email.length > 255 || senha.length > 100) {
+    req.flash('erro', 'Valor muito longo.');
     return res.redirect('/admin/usuarios');
   }
   if (senha.length < 4) {

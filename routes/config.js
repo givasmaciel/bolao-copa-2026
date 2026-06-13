@@ -56,6 +56,10 @@ router.post('/nome', verificarAutenticado, async (req, res) => {
     req.flash('erro', 'Informe um nome.');
     return res.redirect('/config');
   }
+  if (nome.length > 100) {
+    req.flash('erro', 'Nome muito longo.');
+    return res.redirect('/config');
+  }
 
   const nomeLimpo = nome.trim();
   const loginLimpo = nomeLimpo.toLowerCase();

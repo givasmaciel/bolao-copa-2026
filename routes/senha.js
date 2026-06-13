@@ -46,6 +46,10 @@ router.post('/esqueci-senha', senhaLimiter, async (req, res) => {
     req.flash('erro', 'Informe seu e-mail.');
     return res.redirect('/esqueci-senha');
   }
+  if (email.length > 255) {
+    req.flash('erro', 'E-mail muito longo.');
+    return res.redirect('/esqueci-senha');
+  }
 
   try {
     const usuario = await get('SELECT id, nome, email FROM usuarios WHERE email = ?', [email.toLowerCase().trim()]);

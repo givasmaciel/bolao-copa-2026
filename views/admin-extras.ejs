@@ -11,7 +11,7 @@
     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
     <div class="form-group" style="margin:0">
       <label>Data e hora limite (formato: <code>YYYY-MM-DDTHH:MM</code>)</label>
-      <input type="text" name="data_limite" class="form-control" style="width:220px"
+      <input type="datetime-local" name="data_limite" class="form-control" style="width:220px"
         value="<%= dataLimite.toLocaleString('sv-SE', { timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short' }).replace(' ', 'T').slice(0, 16) %>" required>
     </div>
     <button type="submit" class="btn btn-sm btn-primary">💾 Salvar prazo</button>
