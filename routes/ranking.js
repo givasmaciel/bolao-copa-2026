@@ -182,7 +182,7 @@ router.get('/usuario/:id', async (req, res) => {
       LEFT JOIN selecoes sc ON j.selecao_casa_id = sc.id
       LEFT JOIN selecoes sv ON j.selecao_visitante_id = sv.id
       WHERE p.usuario_id = ?
-      ORDER BY j.rodada, j.id
+      ORDER BY j.rodada, j.data, j.id
     `, [usuarioId]);
 
     const stats = await get(`

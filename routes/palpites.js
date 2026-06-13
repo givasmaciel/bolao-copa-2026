@@ -78,7 +78,7 @@ router.get('/', verificarAutenticado, async (req, res) => {
       LEFT JOIN selecoes sv ON j.selecao_visitante_id = sv.id
       LEFT JOIN palpites p ON p.jogo_id = j.id AND p.usuario_id = ?
       WHERE j.fase = 'grupo'
-      ORDER BY j.rodada, j.id
+      ORDER BY j.rodada, j.data, j.id
     `, [req.session.usuario.id]);
 
     // Separa em abertos, fechados e finalizados
