@@ -2,7 +2,8 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
-const sharp = require('sharp');
+let sharp;
+try { sharp = require('sharp'); } catch (e) { sharp = null; }
 const { run, get } = require('../database/db');
 const { verificarAutenticado } = require('../middleware/auth');
 
@@ -98,15 +99,22 @@ router.post('/foto', verificarAutenticado, (req, res) => {
 
     try {
       const usuarioId = req.session.usuario.id;
-      const nomeArquivo = `usuario-${usuarioId}.webp`;
-      const caminhoFinal = path.join(uploadsDir, nomeArquivo);
-
       limparFotoAntiga(usuarioId);
 
-      await sharp(req.file.buffer)
-        .resize(200, 200, { fit: 'cover', position: 'centre' })
-        .webp({ quality: 85 })
-        .toFile(caminhoFinal);
+      let nomeArquivo;
+      if (sharp) {
+        nomeArquivo = `usuario-${usuarioId}.webp`;
+        const caminhoFinal = path.join(uploadsDir, nomeArquivo);
+        await sharp(req.file.buffer)
+          .resize(200, 200, { fit: 'cover', position: 'centre' })
+          .webp({ quality: 85 })
+          .toFile(caminhoFinal);
+      } else {
+        const ext = path.extname(req.file.originalname).toLowerCase() || '.jpg';
+        nomeArquivo = `usuario-${usuarioId}${ext}`;
+        const caminhoFinal = path.join(uploadsDir, nomeArquivo);
+        fs.writeFileSync(caminhoFinal, req.file.buffer);
+      }
 
       const fotoPath = '/uploads/' + nomeArquivo;
       await run('UPDATE usuarios SET foto = ? WHERE id = ?', [fotoPath, usuarioId]);
