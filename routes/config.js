@@ -96,13 +96,6 @@ router.post('/foto', verificarAutenticado, (req, res) => {
       return res.redirect('/config');
     }
 
-    // CSRF: o middleware global pula multipart, validamos aqui após o multer parsear
-    const csrfToken = req.body?._csrf;
-    if (!csrfToken || csrfToken !== req.session.csrfToken) {
-      req.flash('erro', 'Sessão expirada. Recarregue a página e tente novamente.');
-      return res.redirect('/config');
-    }
-
     try {
       const usuarioId = req.session.usuario.id;
       const nomeArquivo = `usuario-${usuarioId}.webp`;

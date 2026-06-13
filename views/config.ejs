@@ -30,8 +30,7 @@
       <% } %>
     </div>
     <div>
-      <form method="POST" action="/config/foto" enctype="multipart/form-data" style="display:flex;gap:8px;align-items:end;flex-wrap:wrap">
-        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <form method="POST" action="/config/foto?_csrf=<%= csrfToken %>" enctype="multipart/form-data" style="display:flex;gap:8px;align-items:end;flex-wrap:wrap">
         <div class="form-group" style="margin:0;flex:1;min-width:200px">
           <label for="foto">Selecionar imagem</label>
           <input type="file" id="foto" name="foto" class="form-control" accept="image/jpeg,image/png,image/gif,image/webp" required style="padding:8px" onchange="previewFoto(event)">

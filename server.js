@@ -66,8 +66,16 @@ app.use((req, res, next) => {
 // Middleware de validação CSRF para métodos que alteram estado
 function csrfProtection(req, res, next) {
   if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) return next();
-  // Uploads multipart são parsing pelo multer depois, então o body ainda está vazio aqui
-  if (req.headers['content-type'] && req.headers['content-type'].includes('multipart/form-data')) return next();
+  // Uploads multipart: CSRF vem como query param na URL (req.query._csrf)
+  if (req.headers['content-type'] && req.headers['content-type'].includes('multipart/form-data')) {
+    const token = req.query?._csrf || req.headers?.['x-csrf-token'];
+    if (!token || token !== req.session.csrfToken) {
+      if (req.accepts('json')) return res.status(403).json({ ok: false, erro: 'CSRF inválido. Recarregue a página e tente novamente.' });
+      req.flash('erro', 'Sessão expirada. Recarregue a página e tente novamente.');
+      return res.redirect('back');
+    }
+    return next();
+  }
   let token = req.body?._csrf || req.query?._csrf || req.headers?.['x-csrf-token'];
   if (Array.isArray(token)) token = token[0];
   if (!token || token !== req.session.csrfToken) {
