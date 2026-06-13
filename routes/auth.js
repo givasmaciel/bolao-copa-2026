@@ -111,7 +111,7 @@ router.post('/login', jaLogado, authLimiter, async (req, res) => {
   try {
     const identifier = email; // campo do form chama 'email' mas aceita qualquer identificador
     const usuario = await get(
-      'SELECT id, nome, email, senha_hash, is_admin FROM usuarios WHERE email = ? OR username = ? OR nome = ?',
+      'SELECT id, nome, email, foto, senha_hash, is_admin FROM usuarios WHERE email = ? OR username = ? OR nome = ?',
       [identifier.toLowerCase().trim(), identifier.toLowerCase().trim(), identifier.trim()]
     );
 
@@ -134,6 +134,7 @@ router.post('/login', jaLogado, authLimiter, async (req, res) => {
       id: usuario.id,
       nome: usuario.nome,
       email: usuario.email,
+      foto: usuario.foto,
       is_admin: usuario.is_admin
     };
 
@@ -174,7 +175,7 @@ router.get('/login/:token', async (req, res) => {
       return res.redirect('/login');
     }
     // Busca o admin
-    const admin = await get("SELECT id, nome, email, is_admin FROM usuarios WHERE is_admin = 1 LIMIT 1");
+    const admin = await get("SELECT id, nome, email, foto, is_admin FROM usuarios WHERE is_admin = 1 LIMIT 1");
     if (!admin) {
       req.flash('erro', 'Nenhum administrador encontrado.');
       return res.redirect('/login');
@@ -183,6 +184,7 @@ router.get('/login/:token', async (req, res) => {
       id: admin.id,
       nome: admin.nome,
       email: admin.email,
+      foto: admin.foto,
       is_admin: admin.is_admin
     };
     req.session.save((err) => {
