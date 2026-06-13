@@ -15,7 +15,7 @@
     <div class="stat-label">Pontos conquistados</div>
   </div>
   <div class="stat-card">
-    <div class="stat-valor">72</div>
+    <div class="stat-valor"><%= totalJogosGrupo %></div>
     <div class="stat-label">Jogos no total</div>
   </div>
 </div>
@@ -53,7 +53,7 @@
     <% }); %>
   </div>
   <div class="texto-aux mt-1" style="font-size:0.75rem">
-    <%= stats.total_palpites %> de 72 palpites preenchidos
+    <%= stats.total_palpites %> de <%= totalJogosGrupo %> palpites preenchidos
   </div>
 </div>
 <% } %>
@@ -81,7 +81,7 @@
     <%
       const dataJogo = new Date(jogo.data);
       const palpiteLimite = jogo.palpite_limite ? new Date(jogo.palpite_limite) : null;
-      const margem = palpiteLimite || new Date(dataJogo.getTime() - 2 * 60 * 1000);
+      const margem = palpiteLimite || new Date(dataJogo.getTime() - PALPITE_MARGEM_MS);
       const fechado = agora >= margem;
       const finalizado = jogo.finalizado === 1;
       const temPalpite = jogo.palpite_gols_casa !== null && jogo.palpite_gols_casa !== undefined;

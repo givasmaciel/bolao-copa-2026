@@ -1,6 +1,7 @@
 const express = require('express');
 const { run, get, all } = require('../database/db');
 const { verificarAutenticado } = require('../middleware/auth');
+const { PALPITE_MARGEM_MS } = require('../services/palpite-config');
 
 const router = express.Router();
 
@@ -33,7 +34,7 @@ router.post('/salvar-rodada', verificarAutenticado, async (req, res) => {
     const agora = new Date();
     const dataJogo = new Date(jogo.data);
     const limite = jogo.palpite_limite ? new Date(jogo.palpite_limite) : null;
-    const margem = limite || new Date(dataJogo.getTime() - 2 * 60 * 1000);
+    const margem = limite || new Date(dataJogo.getTime() - PALPITE_MARGEM_MS);
     if (agora >= margem || jogo.finalizado === 1) continue;
 
     const existe = await get('SELECT id FROM palpites WHERE usuario_id = ? AND jogo_id = ?', [usuarioId, jogoId]);
@@ -89,18 +90,22 @@ router.get('/', verificarAutenticado, async (req, res) => {
     }
 
     // Estatísticas do usuário
-    const stats = await get(`
-      SELECT
-        COUNT(p.id) AS total_palpites,
-        COALESCE(SUM(p.pontos_obtidos), 0) AS total_pontos
-      FROM palpites p
-      WHERE p.usuario_id = ?
-    `, [req.session.usuario.id]);
+    const [stats, totalGrupoRow] = await Promise.all([
+      get(`
+        SELECT
+          COUNT(p.id) AS total_palpites,
+          COALESCE(SUM(p.pontos_obtidos), 0) AS total_pontos
+        FROM palpites p
+        WHERE p.usuario_id = ?
+      `, [req.session.usuario.id]),
+      get("SELECT COUNT(*) AS total FROM jogos WHERE fase = 'grupo'")
+    ]);
 
     res.render('palpites', {
       title: 'Meus palpites',
       rodadas: porRodada,
-      stats: stats || { total_palpites: 0, total_pontos: 0 }
+      stats: stats || { total_palpites: 0, total_pontos: 0 },
+      totalJogosGrupo: totalGrupoRow?.total || 0
     });
   } catch (err) {
     console.error('Erro ao listar palpites:', err);
@@ -147,7 +152,7 @@ router.post('/:jogoId', verificarAutenticado, async (req, res) => {
     const agora = new Date();
     const dataJogo = new Date(jogo.data);
     const limite = jogo.palpite_limite ? new Date(jogo.palpite_limite) : null;
-    const margem = limite || new Date(dataJogo.getTime() - 2 * 60 * 1000);
+    const margem = limite || new Date(dataJogo.getTime() - PALPITE_MARGEM_MS);
     if (agora >= margem || jogo.finalizado === 1) {
       req.flash('erro', 'Este jogo já fechou para palpites.');
       return res.redirect('/palpites');
@@ -205,7 +210,7 @@ router.get('/jogo/:id', verificarAutenticado, async (req, res) => {
     const agora = new Date();
     const dataJogo = new Date(jogo.data);
     const limite = jogo.palpite_limite ? new Date(jogo.palpite_limite) : null;
-    const margem = limite || new Date(dataJogo.getTime() - 2 * 60 * 1000);
+    const margem = limite || new Date(dataJogo.getTime() - PALPITE_MARGEM_MS);
     if (agora < margem && !jogo.finalizado) {
       req.flash('erro', 'Este jogo ainda está aberto para palpites.');
       return res.redirect('/palpites');

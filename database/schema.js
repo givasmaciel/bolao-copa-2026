@@ -466,6 +466,24 @@ async function criarSchema() {
     console.warn('Aviso: não foi possível popular fase_pontuacao:', e.message);
   }
 
+  // Índices para performance
+  try {
+    const indices = [
+      'CREATE INDEX IF NOT EXISTS idx_palpites_usuario_id ON palpites(usuario_id)',
+      'CREATE INDEX IF NOT EXISTS idx_palpites_jogo_id ON palpites(jogo_id)',
+      'CREATE INDEX IF NOT EXISTS idx_jogos_fase ON jogos(fase)',
+      'CREATE INDEX IF NOT EXISTS idx_jogos_finalizado ON jogos(finalizado)',
+      'CREATE INDEX IF NOT EXISTS idx_jogos_data ON jogos(data)',
+      'CREATE INDEX IF NOT EXISTS idx_jogos_grupo_id ON jogos(grupo_id)',
+      'CREATE INDEX IF NOT EXISTS idx_selecoes_grupo_id ON selecoes(grupo_id)',
+      'CREATE INDEX IF NOT EXISTS idx_palpites_extras_usuario_id ON palpites_extras(usuario_id)',
+      'CREATE INDEX IF NOT EXISTS idx_pontos_bonus_usuario_id ON pontos_bonus(usuario_id)',
+    ];
+    for (const sql of indices) {
+      try { await run(sql); } catch (e) { /* ignorar se já existe ou SQLite não suporta IF NOT EXISTS em index */ }
+    }
+  } catch (e) { /* índices já existem */ }
+
   console.log('✅ Schema criado/verificado');
 }
 

@@ -5,7 +5,7 @@
 <section class="hero">
   <h1>⚽ Bolão da Copa</h1>
   <p style="font-size:0.9rem;color:var(--cinza-escuro);margin-bottom:8px">FIFA 2026 • EUA/MEX/CAN</p>
-  <p>Chute o resultado dos 104 jogos, dispute com a galera e veja quem é o melhor palpiteiro!</p>
+  <p>Chute o resultado dos <%= totalJogos %> jogos, dispute com a galera e veja quem é o melhor palpiteiro!</p>
   <div class="hero-actions">
     <% if (!usuario) { %>
       <a href="/cadastro" class="btn btn-amarelo btn-lg">Criar minha conta</a>
@@ -32,7 +32,7 @@
     <div class="stat-label">Grupos (A-L)</div>
   </div>
   <div class="stat-card">
-    <div class="stat-valor">104</div>
+    <div class="stat-valor"><%= totalJogos %></div>
     <div class="stat-label">Jogos no total</div>
   </div>
   <div class="stat-card">
@@ -43,7 +43,7 @@
 
 <div class="card">
   <h2>Como funciona o bolão</h2>
-  <p>É simples: você dá o <strong>placar exato</strong> de cada um dos 104 jogos. Os pontos aumentam conforme a fase avança — jogos de mata-mata valem mais!</p>
+  <p>É simples: você dá o <strong>placar exato</strong> de cada um dos <%= totalJogos %> jogos. Os pontos aumentam conforme a fase avança — jogos de mata-mata valem mais!</p>
 
   <% if (pontuacaoFases && pontuacaoFases.length > 0) { %>
   <% const faseLabel = { grupo: 'Fase de Grupos', r32: '32 avos de Final', r16: '16 avos de Final', qf: 'Quartas de Final', sf: 'Semifinal', terceiro: 'Disputa de 3º lugar', final: 'Final' }; %>

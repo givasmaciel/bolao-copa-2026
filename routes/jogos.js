@@ -1,6 +1,7 @@
 const express = require('express');
 const { all, get } = require('../database/db');
 const { verificarAutenticado } = require('../middleware/auth');
+const { PALPITE_MARGEM_MS } = require('../services/palpite-config');
 
 const router = express.Router();
 
@@ -35,7 +36,8 @@ router.get('/', async (req, res) => {
       if (fases[jogo.fase]) fases[jogo.fase].jogos.push(jogo);
     }
 
-    res.render('jogos', { title: 'Jogos da Copa 2026', fases });
+    const totalJogos = jogos.length;
+    res.render('jogos', { title: 'Jogos da Copa 2026', fases, totalJogos });
   } catch (err) {
     console.error('Erro ao listar jogos:', err);
     req.flash('erro', 'Erro ao carregar jogos.');
@@ -73,8 +75,8 @@ router.get('/:id/palpites', verificarAutenticado, async (req, res) => {
     const agora = new Date();
     const dataJogo = new Date(row.data);
     const limite = row.palpite_limite ? new Date(row.palpite_limite) : null;
-    const margem = limite || new Date(dataJogo.getTime() - 2 * 60 * 1000);
-    const bloqueado = agora >= margem || row.finalizado === 1;
+    const margem = limite || new Date(dataJogo.getTime() - PALPITE_MARGEM_MS);
+
 
     let palpites = [];
     let agrupado = {};

@@ -21,6 +21,7 @@ const dashboardRoutes = require('./routes/dashboard');
 const resumoRoutes = require('./routes/resumo');
 const classificacaoRoutes = require('./routes/classificacao');
 const { all } = require('./database/db');
+const { PALPITE_MARGEM_MS } = require('./services/palpite-config');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -87,12 +88,13 @@ function csrfProtection(req, res, next) {
 }
 app.use(csrfProtection);
 
-// Disponibiliza flash messages e usuário para as views
+// Disponibiliza flash messages, usuário e constantes para as views
 app.use((req, res, next) => {
   res.locals.sucesso = req.flash('sucesso');
   res.locals.erro = req.flash('erro');
   res.locals.aviso = req.flash('aviso');
   res.locals.usuario = req.session.usuario || null;
+  res.locals.PALPITE_MARGEM_MS = PALPITE_MARGEM_MS;
   next();
 });
 
@@ -102,10 +104,13 @@ app.get('/', async (req, res) => {
     return res.redirect('/dashboard');
   }
   try {
-    const pontuacaoFases = await all('SELECT * FROM fase_pontuacao ORDER BY CASE fase WHEN \'grupo\' THEN 1 WHEN \'r32\' THEN 2 WHEN \'r16\' THEN 3 WHEN \'qf\' THEN 4 WHEN \'sf\' THEN 5 WHEN \'terceiro\' THEN 6 WHEN \'final\' THEN 7 END');
-    res.render('home', { title: 'Bolão da Copa 2026', pontuacaoFases });
+    const [pontuacaoFases, totalJogosRow] = await Promise.all([
+      all('SELECT * FROM fase_pontuacao ORDER BY CASE fase WHEN \'grupo\' THEN 1 WHEN \'r32\' THEN 2 WHEN \'r16\' THEN 3 WHEN \'qf\' THEN 4 WHEN \'sf\' THEN 5 WHEN \'terceiro\' THEN 6 WHEN \'final\' THEN 7 END'),
+      get('SELECT COUNT(*) AS total FROM jogos')
+    ]);
+    res.render('home', { title: 'Bolão da Copa 2026', pontuacaoFases, totalJogos: totalJogosRow?.total || 0 });
   } catch (e) {
-    res.render('home', { title: 'Bolão da Copa 2026', pontuacaoFases: [] });
+    res.render('home', { title: 'Bolão da Copa 2026', pontuacaoFases: [], totalJogos: 0 });
   }
 });
 
@@ -140,7 +145,7 @@ app.get('/api/proximo-jogo', async (req, res) => {
     const agora = new Date();
     const dataJogo = new Date(jogo.data);
     const limite = jogo.palpite_limite ? new Date(jogo.palpite_limite) : null;
-    const margem = limite || new Date(dataJogo.getTime() - 2 * 60 * 1000);
+    const margem = limite || new Date(dataJogo.getTime() - PALPITE_MARGEM_MS);
     res.json({
       ok: true,
       casa: jogo.casa_pt,

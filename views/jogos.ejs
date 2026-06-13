@@ -3,7 +3,7 @@
 <%- include('partials/flash') %>
 
 <h1>📅 Tabela de jogos da Copa 2026</h1>
-<p class="subtitulo">Acompanhe todos os 104 jogos do torneio. Conforme os jogos forem acontecendo, os placares e os pontos do bolão são atualizados.</p>
+<p class="subtitulo">Acompanhe todos os <%= totalJogos %> jogos do torneio. Conforme os jogos forem acontecendo, os placares e os pontos do bolão são atualizados.</p>
 
 <% Object.keys(fases).forEach(function(fase) { const f = fases[fase]; if (!f.jogos || f.jogos.length === 0) return; %>
   <h2><%= f.nome %></h2>

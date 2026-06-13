@@ -1,6 +1,7 @@
 const express = require('express');
 const { run, get, all } = require('../database/db');
 const { verificarAutenticado } = require('../middleware/auth');
+const { PALPITE_MARGEM_MS } = require('../services/palpite-config');
 
 const router = express.Router();
 
@@ -109,7 +110,7 @@ router.get('/', verificarAutenticado, async (req, res) => {
       const agora = new Date();
       const dataJogo = new Date(j.data);
       const palpiteLimite = j.palpite_limite ? new Date(j.palpite_limite) : null;
-      const margem = palpiteLimite || new Date(dataJogo.getTime() - 2 * 60 * 1000);
+      const margem = palpiteLimite || new Date(dataJogo.getTime() - PALPITE_MARGEM_MS);
       const diffMs = dataJogo.getTime() - agora.getTime();
       const diffMin = Math.round(diffMs / 60000);
       const jahFechou = agora >= margem;

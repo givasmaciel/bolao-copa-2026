@@ -57,7 +57,7 @@
     <%
       const dataJogo = new Date(p.data);
       const palpiteLimite = p.palpite_limite ? new Date(p.palpite_limite) : null;
-      const margem = palpiteLimite || new Date(dataJogo.getTime() - 2 * 60 * 1000);
+      const margem = palpiteLimite || new Date(dataJogo.getTime() - PALPITE_MARGEM_MS);
       const fechado = agora >= margem || p.finalizado === 1;
     %>
     <% if (p.rodada !== rodadaAtual) { %>
