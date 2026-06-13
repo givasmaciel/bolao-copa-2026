@@ -57,7 +57,7 @@ router.get('/', verificarAutenticado, async (req, res) => {
     let racha = null;
     const rachaId = parseInt(req.query.com, 10);
     if (rachaId && !isNaN(rachaId)) {
-      const rachaUser = await get('SELECT id, nome FROM usuarios WHERE id = ?', [rachaId]);
+      const rachaUser = await get('SELECT id, nome, foto FROM usuarios WHERE id = ?', [rachaId]);
       if (rachaUser) {
         const palpitesEu = await all(`
           SELECT p.jogo_id, p.pontos_obtidos, j.rodada

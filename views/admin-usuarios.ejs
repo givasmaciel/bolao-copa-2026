@@ -46,7 +46,16 @@
   <tbody>
     <% usuarios.forEach(function(u) { %>
       <tr>
-        <td><%= u.nome %></td>
+        <td>
+          <div style="display:flex;align-items:center;gap:8px">
+            <% if (u.foto) { %>
+              <img src="<%= u.foto %>" alt="" class="avatar-sm">
+            <% } else { %>
+              <span style="font-size:1rem">👤</span>
+            <% } %>
+            <%= u.nome %>
+          </div>
+        </td>
         <td style="font-family:monospace"><%= u.username || '—' %></td>
         <td><%= u.email %></td>
         <td class="text-center"><%= u.is_admin ? '✅' : '—' %></td>

@@ -11,6 +11,7 @@ router.get('/', async (req, res) => {
       SELECT
         u.id,
         u.nome,
+        u.foto,
         u.criado_em,
         COUNT(p.id) AS total_palpites,
         COALESCE(SUM(p.pontos_obtidos), 0) + COALESCE((
@@ -163,7 +164,7 @@ router.get('/usuario/:id', async (req, res) => {
   if (isNaN(usuarioId)) return res.redirect('/ranking');
 
   try {
-    const usuario = await get('SELECT id, nome, criado_em FROM usuarios WHERE id = ?', [usuarioId]);
+    const usuario = await get('SELECT id, nome, foto, criado_em FROM usuarios WHERE id = ?', [usuarioId]);
     if (!usuario) {
       req.flash('erro', 'Usuário não encontrado.');
       return res.redirect('/ranking');

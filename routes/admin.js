@@ -255,7 +255,7 @@ router.post('/recalcular', verificarAdmin, async (req, res) => {
 router.get('/usuarios', verificarAdmin, async (req, res) => {
   try {
     const usuarios = await all(`
-      SELECT u.id, u.nome, u.email, u.username, u.is_admin, u.criado_em,
+      SELECT u.id, u.nome, u.email, u.username, u.foto, u.is_admin, u.criado_em,
         COALESCE((SELECT SUM(pontos) FROM pontos_bonus WHERE usuario_id = u.id), 0) AS total_bonus
       FROM usuarios u ORDER BY u.nome
     `);

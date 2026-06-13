@@ -32,7 +32,12 @@
               <li><a href="/admin" class="<%= typeof active !== 'undefined' && active === 'admin' ? 'active' : '' %>">⚙ Admin</a></li>
             <% } %>
             <li class="user-pill">
-              👤 <%= usuario.nome %>
+              <% if (usuario.foto) { %>
+                <img src="<%= usuario.foto %>" alt="" style="width:24px;height:24px;border-radius:50%;object-fit:cover">
+              <% } else { %>
+                <span style="font-size:1.1rem">👤</span>
+              <% } %>
+              <%= usuario.nome %>
               <form method="POST" action="/logout" style="display:inline">
                 <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                 <button type="submit">Sair</button>

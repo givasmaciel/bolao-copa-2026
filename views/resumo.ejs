@@ -136,7 +136,14 @@
         <% if (racha.bonusEu > 0) { %><div style="font-size:0.65rem;opacity:0.8">(+<%= racha.bonusEu %> bônus/extras)</div><% } %>
       </div>
       <div style="flex:1;min-width:140px;text-align:center;padding:16px;background:var(--cinza);border-radius:8px">
-        <div style="font-size:0.8rem;color:var(--cinza-escuro)"><%= racha.usuario.nome %></div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:6px;font-size:0.8rem;color:var(--cinza-escuro)">
+          <% if (racha.usuario.foto) { %>
+            <img src="<%= racha.usuario.foto %>" alt="" style="width:24px;height:24px;border-radius:50%;object-fit:cover">
+          <% } else { %>
+            <span>👤</span>
+          <% } %>
+          <%= racha.usuario.nome %>
+        </div>
         <div style="font-size:1.8rem;font-weight:800"><%= racha.pontosEle %></div>
         <% if (racha.bonusEle > 0) { %><div style="font-size:0.65rem;color:var(--cinza-escuro)">(+<%= racha.bonusEle %> bônus/extras)</div><% } %>
       </div>

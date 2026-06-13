@@ -265,6 +265,15 @@ async function criarSchema() {
     console.warn('Aviso: não foi possível preencher usernames automaticamente:', e.message);
   }
 
+  // Migração: coluna foto para avatar do usuário
+  try {
+    if (usandoPG) {
+      await run("ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS foto TEXT");
+    } else {
+      await run("ALTER TABLE usuarios ADD COLUMN foto TEXT");
+    }
+  } catch (e) { /* Coluna já existe */ }
+
   // Migração 2026-06-10: coluna palpite_limite (admin pode alterar prazo de cada jogo)
   try {
     if (usandoPG) {

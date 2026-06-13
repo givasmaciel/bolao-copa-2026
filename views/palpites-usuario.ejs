@@ -2,8 +2,17 @@
 
 <%- include('partials/flash') %>
 
-<h1>👤 <%= usuario.nome %></h1>
-<p class="subtitulo">Membro desde <%= new Date(usuario.criado_em).toLocaleDateString('pt-BR') %></p>
+<div style="display:flex;align-items:center;gap:16px;margin-bottom:8px">
+  <% if (usuario.foto) { %>
+    <img src="<%= usuario.foto %>" alt="" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:3px solid var(--verde)">
+  <% } else { %>
+    <div style="width:64px;height:64px;border-radius:50%;background:var(--cinza);display:flex;align-items:center;justify-content:center;font-size:2rem;border:3px solid var(--cinza-escuro);flex-shrink:0">👤</div>
+  <% } %>
+  <div>
+    <h1 style="margin:0"><%= usuario.nome %></h1>
+    <p class="subtitulo" style="margin:0">Membro desde <%= new Date(usuario.criado_em).toLocaleDateString('pt-BR') %></p>
+  </div>
+</div>
 
 <% if (stats) { %>
   <div class="grid grid-4 mb-2">

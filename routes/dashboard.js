@@ -34,7 +34,7 @@ router.get('/', verificarAutenticado, async (req, res) => {
     // Top 5 do ranking
     const top5 = await all(`
       SELECT
-        u.id, u.nome,
+        u.id, u.nome, u.foto,
         COALESCE(SUM(p.pontos_obtidos), 0) + COALESCE((
           SELECT SUM(r.pontos)
           FROM palpites_extras pe

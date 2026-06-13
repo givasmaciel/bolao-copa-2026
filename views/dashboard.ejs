@@ -192,7 +192,16 @@
           <% top5.forEach(function(u, idx) { %>
             <tr class="<%= u.id === usuario.id ? 'highlight' : '' %>">
               <td><%= idx + 1 %></td>
-              <td><%= u.nome %><%= u.id === usuario.id ? ' (você)' : '' %></td>
+              <td>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <% if (u.foto) { %>
+                    <img src="<%= u.foto %>" alt="" class="avatar-sm">
+                  <% } else { %>
+                    <span style="font-size:0.9rem">👤</span>
+                  <% } %>
+                  <%= u.nome %><%= u.id === usuario.id ? ' (você)' : '' %>
+                </div>
+              </td>
               <td class="text-center"><strong><%= u.total_pontos %></strong></td>
             </tr>
           <% }); %>
