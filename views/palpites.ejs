@@ -126,7 +126,7 @@
             <a href="/palpites/jogo/<%= jogo.id %>" class="btn btn-sm btn-secondary" style="font-size:0.7rem;padding:3px 8px">📋 Ver palpites</a>
           </div>
         <% } else { %>
-          <form method="POST" action="/palpites/<%= jogo.id %>" class="jogo-form">
+          <form method="POST" action="/palpites/<%= jogo.id %>" class="jogo-form" onsubmit="return salvarIndividual(event, this)">
             <input type="hidden" name="_csrf" value="<%= csrfToken %>">
             <div class="jogo-placar">
               <input
@@ -147,7 +147,7 @@
                 required
               >
             </div>
-            <button type="submit" class="btn btn-sm btn-primary mt-1">💾 Salvar</button>
+            <button type="submit" class="btn btn-sm btn-primary mt-1 salvar-btn">💾 Salvar</button>
           </form>
           <div class="jogo-data"><%= new Date(jogo.data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'America/Sao_Paulo' }) %></div>
           <div class="jogo-estadio">📍 <%= jogo.estadio %>, <%= jogo.cidade %></div>
@@ -241,6 +241,22 @@ function palpitarRodada(rd) {
 
 function fecharPreencher(rd) {
   document.getElementById('rodada-' + rd + '-preencher').style.display = 'none';
+}
+
+function salvarIndividual(ev, form) {
+  ev.preventDefault();
+  const btn = form.querySelector('.salvar-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Salvando...';
+  fetch(form.action, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRF-Token': CSRF_TOKEN },
+    body: new URLSearchParams(new FormData(form))
+  }).then(function(r) {
+    if (r.redirected) { location.href = r.url; return; }
+    location.reload();
+  }).catch(function() { location.reload(); });
+  return false;
 }
 
 function preencherRodada(ev, rd) {

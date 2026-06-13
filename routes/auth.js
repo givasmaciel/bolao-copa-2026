@@ -1,10 +1,19 @@
 const express = require('express');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
+const rateLimit = require('express-rate-limit');
 const { run, get } = require('../database/db');
 const { jaLogado } = require('../middleware/auth');
 
 const router = express.Router();
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { ok: false, erro: 'Muitas tentativas. Aguarde 15 minutos.' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
 
 // GET /cadastro
 router.get('/cadastro', jaLogado, (req, res) => {
@@ -15,7 +24,7 @@ router.get('/cadastro', jaLogado, (req, res) => {
 });
 
 // POST /cadastro
-router.post('/cadastro', jaLogado, async (req, res) => {
+router.post('/cadastro', jaLogado, authLimiter, async (req, res) => {
   const { nome, email, senha, confirmar } = req.body;
 
   // Validações
@@ -89,7 +98,7 @@ router.get('/login', jaLogado, (req, res) => {
 });
 
 // POST /login
-router.post('/login', jaLogado, async (req, res) => {
+router.post('/login', jaLogado, authLimiter, async (req, res) => {
   const { email, senha } = req.body;
 
   if (!email || !senha) {

@@ -2,7 +2,16 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
+const rateLimit = require('express-rate-limit');
 const { run, get } = require('../database/db');
+
+const senhaLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: { ok: false, erro: 'Muitas tentativas. Aguarde 15 minutos.' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
 
 const usandoPG = !!process.env.DATABASE_URL;
 const AGORA = usandoPG ? 'NOW()' : "datetime('now')";
@@ -31,7 +40,7 @@ router.get('/esqueci-senha', (req, res) => {
 });
 
 // POST /esqueci-senha
-router.post('/esqueci-senha', async (req, res) => {
+router.post('/esqueci-senha', senhaLimiter, async (req, res) => {
   const { email } = req.body;
   if (!email) {
     req.flash('erro', 'Informe seu e-mail.');
@@ -117,7 +126,7 @@ router.get('/redefinir-senha/:token', async (req, res) => {
 });
 
 // POST /redefinir-senha/:token
-router.post('/redefinir-senha/:token', async (req, res) => {
+router.post('/redefinir-senha/:token', senhaLimiter, async (req, res) => {
   const { token } = req.params;
   const { senha, confirmar } = req.body;
 
