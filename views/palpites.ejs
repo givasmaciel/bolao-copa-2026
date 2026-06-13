@@ -23,70 +23,25 @@
 <% const agora = new Date(); %>
 
 <% 
+  function contarJogos(objeto) {
+    let total = 0;
+    for (const k in objeto) total += objeto[k].length;
+    return total;
+  }
+  const temAbertos = contarJogos(abertos) > 0;
+  const temFechados = contarJogos(fechados) > 0;
+  const temFinalizados = contarJogos(finalizados) > 0;
   const temSalvos = stats.total_palpites > 0;
+
+  function renderJogo(jogo, rodada) {
+    const dataJogo = new Date(jogo.data);
+    const palpiteLimite = jogo.palpite_limite ? new Date(jogo.palpite_limite) : null;
+    const margem = palpiteLimite || new Date(dataJogo.getTime() - PALPITE_MARGEM_MS);
+    const fechado = agora >= margem;
+    const finalizado = jogo.finalizado === 1;
+    const temPalpite = jogo.palpite_gols_casa !== null && jogo.palpite_gols_casa !== undefined;
+    const pontos = jogo.pontos_obtidos || 0;
 %>
-<% if (temSalvos) { %>
-<div class="card" style="border-left:4px solid var(--verde);margin-bottom:20px">
-  <div class="flex-between" style="cursor:pointer" onclick="this.nextElementSibling.classList.toggle('hidden');this.querySelector('.toggle-icon').textContent = this.nextElementSibling.classList.contains('hidden') ? '▶' : '▼'">
-    <h3 style="margin:0">✅ Seus palpites salvos</h3>
-    <span class="toggle-icon" style="font-size:0.8rem;color:var(--cinza-escuro)">▼</span>
-  </div>
-  <div style="margin-top:12px">
-    <% Object.keys(rodadas).sort(function(a,b) { return parseInt(a) - parseInt(b); }).forEach(function(rodada) { %>
-      <% 
-        const jogosRodada = rodadas[rodada].filter(function(j) { return j.palpite_gols_casa !== null && j.palpite_gols_casa !== undefined; });
-        if (jogosRodada.length === 0) return;
-      %>
-      <div style="margin-bottom:12px">
-        <strong style="font-size:0.85rem;color:var(--azul)">Rodada <%= rodada %></strong>
-        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">
-          <% jogosRodada.forEach(function(j) { %>
-            <span style="display:inline-flex;align-items:center;gap:4px;background:var(--cinza-claro);padding:4px 10px;border-radius:6px;font-size:0.8rem;border:1px solid var(--cinza)">
-              <%= j.casa_pt %> <strong><%= j.palpite_gols_casa %>×<%= j.palpite_gols_visitante %></strong> <%= j.visitante_pt %>
-              <% if (j.finalizado === 1) { %>
-                <span style="color:var(--verde);font-weight:700">(<%= j.pontos_obtidos || 0 %>pts)</span>
-              <% } %>
-            </span>
-          <% }); %>
-        </div>
-      </div>
-    <% }); %>
-  </div>
-  <div class="texto-aux mt-1" style="font-size:0.75rem">
-    <%= stats.total_palpites %> de <%= totalJogosGrupo %> palpites preenchidos
-  </div>
-</div>
-<% } %>
-
-
-
-<% Object.keys(rodadas).sort(function(a,b) { return parseInt(a) - parseInt(b); }).forEach(function(rodada) { %>
-  <div class="flex" style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-    <h2 class="jogo-rodada-titulo" style="margin:0">Rodada <%= rodada %></h2>
-    <button class="btn btn-sm btn-secondary" onclick="palpitarRodada(<%= rodada %>)" style="font-size:0.8rem">⚡ Preencher todos</button>
-    <button class="btn btn-sm btn-primary" onclick="salvarRodada(<%= rodada %>, this)" style="font-size:0.8rem">💾 Salvar todos</button>
-  </div>
-  <div id="rodada-<%= rodada %>-preencher" style="display:none;margin-bottom:8px;background:var(--bg-card);padding:8px;border-radius:8px">
-    <form onsubmit="return preencherRodada(event, <%= rodada %>)" class="flex gap-1" style="align-items:center;flex-wrap:wrap">
-      <span style="font-size:0.85rem">Preencher todos com:</span>
-      <input type="number" id="rd-casa-<%= rodada %>" min="0" max="99" placeholder="0" style="width:50px;padding:4px" required>
-      <span class="x">×</span>
-      <input type="number" id="rd-visit-<%= rodada %>" min="0" max="99" placeholder="0" style="width:50px;padding:4px" required>
-      <button type="submit" class="btn btn-sm btn-primary">Aplicar</button>
-      <button type="button" class="btn btn-sm btn-secondary" onclick="fecharPreencher(<%= rodada %>)">✕</button>
-    </form>
-  </div>
-  <div class="rodada-jogos" data-rodada="<%= rodada %>">
-  <% rodadas[rodada].forEach(function(jogo) { %>
-    <%
-      const dataJogo = new Date(jogo.data);
-      const palpiteLimite = jogo.palpite_limite ? new Date(jogo.palpite_limite) : null;
-      const margem = palpiteLimite || new Date(dataJogo.getTime() - PALPITE_MARGEM_MS);
-      const fechado = agora >= margem;
-      const finalizado = jogo.finalizado === 1;
-      const temPalpite = jogo.palpite_gols_casa !== null && jogo.palpite_gols_casa !== undefined;
-      const pontos = jogo.pontos_obtidos || 0;
-    %>
     <% if (palpiteLimite) { %>
       <div style="font-size:0.72rem;color:#c0392b;text-align:center;margin-bottom:4px">
         Prazo: <%= palpiteLimite.toLocaleString('pt-BR', { dateStyle:'short', timeStyle:'short', timeZone:'America/Sao_Paulo' }) %>
@@ -161,9 +116,112 @@
         <img src="<%= jogo.visitante_bandeira %>" alt="<%= jogo.visitante_pt %>">
       </div>
     </div>
+<% } %>
+
+<% if (temSalvos) { %>
+<div class="card" style="border-left:4px solid var(--verde);margin-bottom:20px">
+  <div class="flex-between" style="cursor:pointer" onclick="this.nextElementSibling.classList.toggle('hidden');this.querySelector('.toggle-icon').textContent = this.nextElementSibling.classList.contains('hidden') ? '▶' : '▼'">
+    <h3 style="margin:0">✅ Seus palpites salvos</h3>
+    <span class="toggle-icon" style="font-size:0.8rem;color:var(--cinza-escuro)">▼</span>
+  </div>
+  <div style="margin-top:12px">
+    <% [abertos, fechados, finalizados].forEach(function(cat) {
+      Object.keys(cat).sort(function(a,b) { return parseInt(a) - parseInt(b); }).forEach(function(rodada) {
+        const jogosRodada = cat[rodada].filter(function(j) { return j.palpite_gols_casa !== null && j.palpite_gols_casa !== undefined; });
+        if (jogosRodada.length === 0) return;
+    %>
+      <div style="margin-bottom:12px">
+        <strong style="font-size:0.85rem;color:var(--azul)">Rodada <%= rodada %></strong>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">
+          <% jogosRodada.forEach(function(j) { %>
+            <span style="display:inline-flex;align-items:center;gap:4px;background:var(--cinza-claro);padding:4px 10px;border-radius:6px;font-size:0.8rem;border:1px solid var(--cinza)">
+              <%= j.casa_pt %> <strong><%= j.palpite_gols_casa %>×<%= j.palpite_gols_visitante %></strong> <%= j.visitante_pt %>
+              <% if (j.finalizado === 1) { %>
+                <span style="color:var(--verde);font-weight:700">(<%= j.pontos_obtidos || 0 %>pts)</span>
+              <% } %>
+            </span>
+          <% }); %>
+        </div>
+      </div>
+    <% }); }); %>
+  </div>
+  <div class="texto-aux mt-1" style="font-size:0.75rem">
+    <%= stats.total_palpites %> de <%= totalJogosGrupo %> palpites preenchidos
+  </div>
+</div>
+<% } %>
+
+<!-- Seção: Jogos Abertos (palpite disponível) -->
+<% if (temAbertos) { %>
+<div class="section-group" data-tipo="abertos">
+  <% Object.keys(abertos).sort(function(a,b) { return parseInt(a) - parseInt(b); }).forEach(function(rodada) { %>
+    <div class="flex" style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <h2 class="jogo-rodada-titulo" style="margin:0">Rodada <%= rodada %></h2>
+      <button class="btn btn-sm btn-secondary" onclick="palpitarRodada(<%= rodada %>)" style="font-size:0.8rem">⚡ Preencher todos</button>
+      <button class="btn btn-sm btn-primary" onclick="salvarRodada(<%= rodada %>, this)" style="font-size:0.8rem">💾 Salvar todos</button>
+    </div>
+    <div id="rodada-<%= rodada %>-preencher" style="display:none;margin-bottom:8px;background:var(--bg-card);padding:8px;border-radius:8px">
+      <form onsubmit="return preencherRodada(event, <%= rodada %>)" class="flex gap-1" style="align-items:center;flex-wrap:wrap">
+        <span style="font-size:0.85rem">Preencher todos com:</span>
+        <input type="number" id="rd-casa-<%= rodada %>" min="0" max="99" placeholder="0" style="width:50px;padding:4px" required>
+        <span class="x">×</span>
+        <input type="number" id="rd-visit-<%= rodada %>" min="0" max="99" placeholder="0" style="width:50px;padding:4px" required>
+        <button type="submit" class="btn btn-sm btn-primary">Aplicar</button>
+        <button type="button" class="btn btn-sm btn-secondary" onclick="fecharPreencher(<%= rodada %>)">✕</button>
+      </form>
+    </div>
+    <div class="rodada-jogos" data-rodada="<%= rodada %>">
+    <% abertos[rodada].forEach(function(jogo) { %>
+      <%- renderJogo(jogo, rodada) %>
+    <% }); %>
+    </div>
+  <% }); %>
+</div>
+<% } %>
+
+<!-- Seção: Jogos Fechados (já iniciaram, sem palpite) -->
+<% if (temFechados) { %>
+<div class="section-group" data-tipo="fechados">
+  <div class="flex-between" style="cursor:pointer;margin-top:24px;padding:8px 0" onclick="this.nextElementSibling.classList.toggle('hidden');this.querySelector('.toggle-icon').textContent = this.nextElementSibling.classList.contains('hidden') ? '▶' : '▼'">
+    <h2 class="jogo-rodada-titulo" style="margin:0;color:var(--cinza-escuro);font-size:1rem">🔒 Jogos fechados (<%= contarJogos(fechados) %>)</h2>
+    <span class="toggle-icon" style="font-size:0.8rem;color:var(--cinza-escuro)">▼</span>
+  </div>
+  <div>
+  <% Object.keys(fechados).sort(function(a,b) { return parseInt(a) - parseInt(b); }).forEach(function(rodada) { %>
+    <div style="margin-top:12px">
+      <h3 style="font-size:0.9rem;color:var(--cinza-escuro);margin:0 0 8px 0">Rodada <%= rodada %></h3>
+      <div class="rodada-jogos">
+      <% fechados[rodada].forEach(function(jogo) { %>
+        <%- renderJogo(jogo, rodada) %>
+      <% }); %>
+      </div>
+    </div>
   <% }); %>
   </div>
-<% }); %>
+</div>
+<% } %>
+
+<!-- Seção: Jogos Finalizados -->
+<% if (temFinalizados) { %>
+<div class="section-group" data-tipo="finalizados">
+  <div class="flex-between" style="cursor:pointer;margin-top:24px;padding:8px 0" onclick="this.nextElementSibling.classList.toggle('hidden');this.querySelector('.toggle-icon').textContent = this.nextElementSibling.classList.contains('hidden') ? '▶' : '▼'">
+    <h2 class="jogo-rodada-titulo" style="margin:0;color:var(--cinza-escuro);font-size:1rem">🏁 Jogos finalizados (<%= contarJogos(finalizados) %>)</h2>
+    <span class="toggle-icon" style="font-size:0.8rem;color:var(--cinza-escuro)">▼</span>
+  </div>
+  <div>
+  <% Object.keys(finalizados).sort(function(a,b) { return parseInt(a) - parseInt(b); }).forEach(function(rodada) { %>
+    <div style="margin-top:12px">
+      <h3 style="font-size:0.9rem;color:var(--cinza-escuro);margin:0 0 8px 0">Rodada <%= rodada %></h3>
+      <div class="rodada-jogos">
+      <% finalizados[rodada].forEach(function(jogo) { %>
+        <%- renderJogo(jogo, rodada) %>
+      <% }); %>
+      </div>
+    </div>
+  <% }); %>
+  </div>
+</div>
+<% } %>
 
 <script>
 const CSRF_TOKEN = '<%= csrfToken %>';

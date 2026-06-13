@@ -81,12 +81,29 @@ router.get('/', verificarAutenticado, async (req, res) => {
       ORDER BY j.rodada, j.id
     `, [req.session.usuario.id]);
 
-    // Agrupa por rodada
-    const porRodada = {};
+    // Separa em abertos, fechados e finalizados
+    const agora = new Date();
+    const abertos = {};
+    const fechados = {};
+    const finalizados = {};
+
     for (const jogo of jogos) {
       const r = jogo.rodada;
-      if (!porRodada[r]) porRodada[r] = [];
-      porRodada[r].push(jogo);
+      if (jogo.finalizado === 1) {
+        if (!finalizados[r]) finalizados[r] = [];
+        finalizados[r].push(jogo);
+        continue;
+      }
+      const dataJogo = new Date(jogo.data);
+      const limite = jogo.palpite_limite ? new Date(jogo.palpite_limite) : null;
+      const margem = limite || new Date(dataJogo.getTime() - PALPITE_MARGEM_MS);
+      if (agora >= margem) {
+        if (!fechados[r]) fechados[r] = [];
+        fechados[r].push(jogo);
+      } else {
+        if (!abertos[r]) abertos[r] = [];
+        abertos[r].push(jogo);
+      }
     }
 
     // Estatísticas do usuário
@@ -103,7 +120,9 @@ router.get('/', verificarAutenticado, async (req, res) => {
 
     res.render('palpites', {
       title: 'Meus palpites',
-      rodadas: porRodada,
+      abertos,
+      fechados,
+      finalizados,
       stats: stats || { total_palpites: 0, total_pontos: 0 },
       totalJogosGrupo: totalGrupoRow?.total || 0
     });
