@@ -1,33 +1,37 @@
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
 const multer = require('multer');
+const sharp = require('sharp');
 const { run, get } = require('../database/db');
 const { verificarAutenticado } = require('../middleware/auth');
 
 const router = express.Router();
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '..', 'public', 'uploads'));
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    cb(null, `usuario-${req.session.usuario.id}${ext}`);
-  }
-});
-
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 2 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    const allowed = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
-    const ext = path.extname(file.originalname).toLowerCase();
-    if (!allowed.includes(ext)) {
+    const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowed.includes(file.mimetype)) {
       return cb(new Error('Formato inválido. Use JPG, PNG, GIF ou WebP.'));
     }
     cb(null, true);
   }
 });
+
+const uploadsDir = path.join(__dirname, '..', 'public', 'uploads');
+
+function limparFotoAntiga(usuarioId) {
+  try {
+    const files = fs.readdirSync(uploadsDir);
+    for (const f of files) {
+      if (f.startsWith(`usuario-${usuarioId}.`)) {
+        fs.unlinkSync(path.join(uploadsDir, f));
+      }
+    }
+  } catch (e) { /* diretório vazio ou inexistente */ }
+}
 
 // GET /config - página de configurações da conta
 router.get('/', verificarAutenticado, async (req, res) => {
@@ -72,7 +76,7 @@ router.post('/nome', verificarAutenticado, async (req, res) => {
   }
 });
 
-// POST /config/foto - faz upload da foto de perfil
+// POST /config/foto - faz upload e redimensiona a foto de perfil
 router.post('/foto', verificarAutenticado, (req, res) => {
   upload.single('foto')(req, res, async (err) => {
     if (err) {
@@ -90,8 +94,19 @@ router.post('/foto', verificarAutenticado, (req, res) => {
     }
 
     try {
-      const fotoPath = '/uploads/' + req.file.filename;
-      await run('UPDATE usuarios SET foto = ? WHERE id = ?', [fotoPath, req.session.usuario.id]);
+      const usuarioId = req.session.usuario.id;
+      const nomeArquivo = `usuario-${usuarioId}.webp`;
+      const caminhoFinal = path.join(uploadsDir, nomeArquivo);
+
+      limparFotoAntiga(usuarioId);
+
+      await sharp(req.file.buffer)
+        .resize(200, 200, { fit: 'cover', position: 'centre' })
+        .webp({ quality: 85 })
+        .toFile(caminhoFinal);
+
+      const fotoPath = '/uploads/' + nomeArquivo;
+      await run('UPDATE usuarios SET foto = ? WHERE id = ?', [fotoPath, usuarioId]);
       req.session.usuario.foto = fotoPath;
       req.flash('sucesso', 'Foto atualizada com sucesso!');
     } catch (dbErr) {
@@ -105,12 +120,7 @@ router.post('/foto', verificarAutenticado, (req, res) => {
 // POST /config/foto/remover - remove a foto de perfil
 router.post('/foto/remover', verificarAutenticado, async (req, res) => {
   try {
-    const usuario = await get('SELECT foto FROM usuarios WHERE id = ?', [req.session.usuario.id]);
-    if (usuario && usuario.foto) {
-      const fs = require('fs');
-      const filePath = path.join(__dirname, '..', 'public', usuario.foto);
-      try { fs.unlinkSync(filePath); } catch (e) { /* arquivo não existe */ }
-    }
+    limparFotoAntiga(req.session.usuario.id);
     await run('UPDATE usuarios SET foto = NULL WHERE id = ?', [req.session.usuario.id]);
     delete req.session.usuario.foto;
     req.flash('sucesso', 'Foto removida.');

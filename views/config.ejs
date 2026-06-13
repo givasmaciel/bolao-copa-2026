@@ -23,9 +23,10 @@
   <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">
     <div style="text-align:center">
       <% if (usuario.foto) { %>
-        <img src="<%= usuario.foto %>" alt="Foto de perfil" style="width:100px;height:100px;border-radius:50%;object-fit:cover;border:3px solid var(--verde)">
+        <img id="preview-foto" src="<%= usuario.foto %>" alt="Foto de perfil" style="width:100px;height:100px;border-radius:50%;object-fit:cover;border:3px solid var(--verde)">
       <% } else { %>
-        <div style="width:100px;height:100px;border-radius:50%;background:var(--cinza);display:flex;align-items:center;justify-content:center;font-size:2.5rem;border:3px solid var(--cinza-escuro)">👤</div>
+        <div id="preview-placeholder" style="width:100px;height:100px;border-radius:50%;background:var(--cinza);display:flex;align-items:center;justify-content:center;font-size:2.5rem;border:3px solid var(--cinza-escuro)">👤</div>
+        <img id="preview-foto" src="" alt="Preview" style="width:100px;height:100px;border-radius:50%;object-fit:cover;border:3px solid var(--verde);display:none">
       <% } %>
     </div>
     <div>
@@ -33,11 +34,11 @@
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <div class="form-group" style="margin:0;flex:1;min-width:200px">
           <label for="foto">Selecionar imagem</label>
-          <input type="file" id="foto" name="foto" class="form-control" accept="image/jpeg,image/png,image/gif,image/webp" required style="padding:8px">
+          <input type="file" id="foto" name="foto" class="form-control" accept="image/jpeg,image/png,image/gif,image/webp" required style="padding:8px" onchange="previewFoto(event)">
         </div>
         <button type="submit" class="btn btn-primary">📷 Enviar</button>
       </form>
-      <p class="texto-aux" style="margin-top:4px">JPG, PNG, GIF ou WebP • Máximo 2MB</p>
+      <p class="texto-aux" style="margin-top:4px">JPG, PNG, GIF ou WebP • Máximo 2MB • Redimensionada para 200px</p>
       <% if (usuario.foto) { %>
         <form method="POST" action="/config/foto/remover" style="margin-top:8px">
           <input type="hidden" name="_csrf" value="<%= csrfToken %>">
@@ -45,6 +46,23 @@
         </form>
       <% } %>
     </div>
+    <script>
+    function previewFoto(event) {
+      var file = event.target.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var img = document.getElementById('preview-foto');
+        var placeholder = document.getElementById('preview-placeholder');
+        if (img) {
+          img.src = e.target.result;
+          img.style.display = 'block';
+        }
+        if (placeholder) placeholder.style.display = 'none';
+      };
+      reader.readAsDataURL(file);
+    }
+    </script>
   </div>
 </div>
 
