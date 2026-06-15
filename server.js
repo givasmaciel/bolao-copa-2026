@@ -147,6 +147,37 @@ app.use('/dashboard', dashboardRoutes);
 app.use('/resumo', resumoRoutes);
 app.use('/classificacao', classificacaoRoutes);
 
+// GET /foto/:id — serve a foto do usuário com fallback SVG (iniciais) se o arquivo sumiu (deploy Render)
+app.get('/foto/:id', async (req, res) => {
+  try {
+    const usuario = await get('SELECT nome, foto FROM usuarios WHERE id = ?', [req.params.id]);
+    if (!usuario) return res.status(404).type('svg').send('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect fill="#ccc" width="200" height="200"/><text x="100" y="115" text-anchor="middle" font-size="60" fill="#666" font-family="sans-serif">?</text></svg>');
+
+    const fs = require('fs');
+    const uploadsDir = path.join(__dirname, 'public', 'uploads');
+
+    if (usuario.foto) {
+      const files = fs.readdirSync(uploadsDir).filter(f => f.startsWith(`usuario-${req.params.id}.`));
+      if (files.length > 0) {
+        const filePath = path.join(uploadsDir, files[0]);
+        const ext = path.extname(files[0]).toLowerCase();
+        const mime = { '.webp': 'image/webp', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.gif': 'image/gif' };
+        res.type(mime[ext] || 'application/octet-stream');
+        return res.sendFile(filePath);
+      }
+    }
+
+    const nome = usuario.nome || '?';
+    const palavras = nome.trim().split(/\s+/);
+    const iniciais = palavras.length >= 2 ? (palavras[0][0] + palavras[palavras.length - 1][0]).toUpperCase() : nome.substring(0, 2).toUpperCase();
+    const cor = ['var(--verde)','#2563eb','#dc2626','#ca8a04','#7c3aed','#0891b2','#be185d'][Number(req.params.id) % 7];
+    res.type('svg');
+    res.send(`<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect fill="${cor}" width="200" height="200"/><text x="100" y="120" text-anchor="middle" font-size="64" fill="white" font-family="sans-serif" font-weight="bold">${iniciais}</text></svg>`);
+  } catch (e) {
+    res.status(500).type('svg').send('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect fill="#ccc" width="200" height="200"/><text x="100" y="115" text-anchor="middle" font-size="60" fill="#666" font-family="sans-serif">?</text></svg>');
+  }
+});
+
 // API: próximo jogo (para countdown no header)
 app.get('/api/proximo-jogo', async (req, res) => {
   try {

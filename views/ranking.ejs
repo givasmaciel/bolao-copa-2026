@@ -60,11 +60,7 @@
           </td>
           <td>
             <div style="display:flex;align-items:center;gap:8px">
-              <% if (u.foto) { %>
-                <img src="<%= u.foto %>" alt="" class="avatar">
-              <% } else { %>
-                <span class="avatar-placeholder">👤</span>
-              <% } %>
+              <img src="/foto/<%= u.id %>" alt="" class="avatar" onerror="this.outerHTML='<span class=avatar-placeholder>👤</span>'">
               <a href="/ranking/usuario/<%= u.id %>"><%= u.nome %></a>
               <% if (typeof usuario !== 'undefined' && usuario && usuario.id === u.id) { %>
                 <span class="texto-aux" style="color:var(--verde); font-weight:600">(você)</span>

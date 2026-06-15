@@ -48,11 +48,7 @@
       <tr>
         <td>
           <div style="display:flex;align-items:center;gap:8px">
-            <% if (u.foto) { %>
-              <img src="<%= u.foto %>" alt="" class="avatar-sm">
-            <% } else { %>
-              <span style="font-size:1rem">👤</span>
-            <% } %>
+            <img src="/foto/<%= u.id %>" alt="" class="avatar-sm" onerror="this.outerHTML='<span style=font-size:1rem>👤</span>'">
             <%= u.nome %>
           </div>
         </td>

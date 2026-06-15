@@ -32,11 +32,7 @@
               <li><a href="/admin" class="<%= typeof active !== 'undefined' && active === 'admin' ? 'active' : '' %>">⚙ Admin</a></li>
             <% } %>
             <li class="user-pill">
-              <% if (usuario.foto) { %>
-                <img src="<%= usuario.foto %>?_=<%= Date.now() %>" alt="" style="width:24px;height:24px;border-radius:50%;object-fit:cover" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'"><span style="font-size:1.1rem;display:none">👤</span>
-              <% } else { %>
-                <span style="font-size:1.1rem">👤</span>
-              <% } %>
+              <img src="/foto/<%= usuario.id %>" alt="" style="width:24px;height:24px;border-radius:50%;object-fit:cover" onerror="this.outerHTML='<span style=font-size:1.1rem>👤</span>'">
               <%= usuario.nome %>
               <form method="POST" action="/logout" style="display:inline">
                 <input type="hidden" name="_csrf" value="<%= csrfToken %>">

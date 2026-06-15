@@ -194,11 +194,7 @@
               <td><%= idx + 1 %></td>
               <td>
                 <div style="display:flex;align-items:center;gap:6px">
-                  <% if (u.foto) { %>
-                    <img src="<%= u.foto %>" alt="" class="avatar-sm">
-                  <% } else { %>
-                    <span style="font-size:0.9rem">👤</span>
-                  <% } %>
+                  <img src="/foto/<%= u.id %>" alt="" class="avatar-sm" onerror="this.outerHTML='<span style=font-size:0.9rem>👤</span>'">
                   <%= u.nome %><%= u.id === usuario.id ? ' (você)' : '' %>
                 </div>
               </td>
