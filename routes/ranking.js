@@ -56,8 +56,9 @@ router.get('/', async (req, res) => {
     const totais = await get(`
       SELECT
         (SELECT COUNT(*) FROM usuarios WHERE is_admin = 0) AS total_usuarios,
-        (SELECT COUNT(*) FROM jogos WHERE fase = 'grupo') AS total_jogos,
-        (SELECT COUNT(*) FROM jogos WHERE fase = 'grupo' AND finalizado = 1) AS jogos_finalizados,
+        (SELECT COUNT(*) FROM jogos) AS total_jogos,
+        (SELECT COUNT(*) FROM jogos WHERE finalizado = 1) AS jogos_finalizados,
+        (SELECT COUNT(*) FROM jogos WHERE finalizado = 0) AS jogos_pendentes,
         (SELECT COUNT(*) FROM palpites) AS total_palpites
     `);
 
@@ -127,20 +128,95 @@ router.get('/', async (req, res) => {
       });
     }
 
-    // Calcula total de pontos disputados (soma dos pts_exato dos jogos finalizados + extras)
+    // Calcula total de pontos disputados (soma dos pts_exato dos jogos finalizados)
     const totalJogos = await get(`
       SELECT COALESCE(SUM(fp.pts_exato), 0) AS total
       FROM jogos j
       JOIN fase_pontuacao fp ON fp.fase = j.fase
       WHERE j.finalizado = 1
     `);
-    const totalExtras = await get('SELECT COALESCE(SUM(pontos), 0) AS total FROM resultados_extras');
-    const totalDisputado = (totalJogos?.total || 0) + (totalExtras?.total || 0);
+    const totalDisputado = totalJogos?.total || 0;
 
-    // Adiciona aproveitamento a cada participante
+    // Adiciona aproveitamento a cada participante (somente pontos de jogos, sem extras/bônus)
     for (const u of ranking) {
-      u.aproveitamento = totalDisputado > 0 ? Math.round((u.total_pontos / totalDisputado) * 100) : 0;
+      u.aproveitamento = totalDisputado > 0 ? Math.round(((u.palpites_pontos || 0) / totalDisputado) * 100) : 0;
     }
+
+    // ====== Estatísticas dos jogos concluídos ======
+    // Pontos distribuídos em jogos finalizados (soma dos pontos_obtidos)
+    const pontosDistribuidos = await get(`
+      SELECT COALESCE(SUM(p.pontos_obtidos), 0) AS total,
+             COUNT(p.id) AS total_palpites_finalizados,
+             COALESCE(MAX(p.pontos_obtidos), 0) AS melhor_palpite_finalizado
+      FROM palpites p
+      JOIN jogos j ON j.id = p.jogo_id
+      WHERE j.finalizado = 1
+    `);
+
+    // Distribuição por faixa de pontuação (placar exato / empate / resultado+gol / resultado / 1 gol)
+    const tiersFinalizados = await all(`
+      SELECT p.pontos_obtidos,
+             CASE
+               WHEN p.pontos_obtidos = fp.pts_exato THEN 'exato'
+               WHEN p.pontos_obtidos = fp.pts_empate THEN 'empate'
+               WHEN p.pontos_obtidos = fp.pts_resultado_gol THEN 'resultado_gol'
+               WHEN p.pontos_obtidos = fp.pts_resultado THEN 'resultado'
+               WHEN p.pontos_obtidos = fp.pts_gol THEN 'gol'
+               ELSE 'zero'
+             END AS tier
+      FROM palpites p
+      JOIN jogos j ON j.id = p.jogo_id
+      JOIN fase_pontuacao fp ON fp.fase = j.fase
+      WHERE j.finalizado = 1
+    `);
+    const tierCount = { exato: 0, empate: 0, resultado_gol: 0, resultado: 0, gol: 0, zero: 0 };
+    for (const t of tiersFinalizados) {
+      if (tierCount[t.tier] !== undefined) tierCount[t.tier]++;
+    }
+
+    // Quantos usuários distintos pontuaram em jogos finalizados
+    const usuariosComPontos = await get(`
+      SELECT COUNT(DISTINCT p.usuario_id) AS total
+      FROM palpites p
+      JOIN jogos j ON j.id = p.jogo_id
+      WHERE j.finalizado = 1 AND p.pontos_obtidos > 0
+    `);
+
+    // Lista compacta dos jogos finalizados (para mostrar no card)
+    const jogosConcluidos = await all(`
+      SELECT j.id, j.rodada, j.fase, j.gols_casa, j.gols_visitante, j.data,
+             sc.sigla AS casa_sigla, sc.nome_pt AS casa_pt, sc.bandeira_url AS casa_bandeira,
+             sv.sigla AS visitante_sigla, sv.nome_pt AS visitante_pt, sv.bandeira_url AS visitante_bandeira,
+             fp.pts_exato
+      FROM jogos j
+      LEFT JOIN selecoes sc ON j.selecao_casa_id = sc.id
+      LEFT JOIN selecoes sv ON j.selecao_visitante_id = sv.id
+      LEFT JOIN fase_pontuacao fp ON fp.fase = j.fase
+      WHERE j.finalizado = 1
+      ORDER BY j.data DESC, j.id DESC
+      LIMIT 10
+    `);
+
+    const statsConcluidos = {
+      jogosFinalizados: totais?.jogos_finalizados || 0,
+      pontosPossiveis: totalDisputado,
+      pontosDistribuidos: pontosDistribuidos?.total || 0,
+      totalPalpitesFinalizados: pontosDistribuidos?.total_palpites_finalizados || 0,
+      melhorPalpiteFinalizado: pontosDistribuidos?.melhor_palpite_finalizado || 0,
+      placaresExatos: tierCount.exato,
+      empates: tierCount.empate,
+      acertosResultado: tierCount.resultado + tierCount.resultado_gol,
+      acertosGol: tierCount.gol,
+      zeros: tierCount.zero,
+      usuariosComPontos: usuariosComPontos?.total || 0,
+      mediaPontosPorPalpite: pontosDistribuidos?.total_palpites_finalizados > 0
+        ? ((pontosDistribuidos.total / pontosDistribuidos.total_palpites_finalizados).toFixed(2))
+        : 0,
+      aproveitamentoMedio: totalDisputado > 0
+        ? Math.round((pontosDistribuidos.total / (totalDisputado * (totais.total_usuarios || 1))) * 100)
+        : 0,
+      jogosConcluidos
+    };
 
     // Busca detalhes dos bônus (motivo) para tooltip
     const bonusDetalhes = await all('SELECT usuario_id, pontos, motivo FROM pontos_bonus ORDER BY usuario_id, criado_em');
@@ -150,7 +226,12 @@ router.get('/', async (req, res) => {
       bonusMap[b.usuario_id].push(b);
     }
 
-    res.render('ranking', { title: 'Ranking do Bolão', ranking, totais, rodadaMap, rodadas, labels, extrasResultados, extrasPorCategoria, CATEGORIAS, totalDisputado, bonusMap });
+    res.render('ranking', {
+      title: 'Ranking do Bolão',
+      ranking, totais, rodadaMap, rodadas, labels,
+      extrasResultados, extrasPorCategoria, CATEGORIAS,
+      totalDisputado, bonusMap, statsConcluidos
+    });
   } catch (err) {
     console.error('Erro ao listar ranking:', err);
     req.flash('erro', 'Erro ao carregar ranking.');

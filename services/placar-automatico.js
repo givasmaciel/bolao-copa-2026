@@ -1,4 +1,5 @@
 const { run, get, all } = require('../database/db');
+const { calcularPontos } = require('./pontuacao');
 
 const API_URL = 'https://26worldcup.cn/api/v1/cup/2026/schedule';
 const API_KEY = process.env.PLANO_AUTO_API_KEY || 'ft_bolao_co_8d3ff2c4132244de97a58898dd260728694d25a3';
@@ -92,7 +93,6 @@ async function buscarPlacares() {
           [jogo.id]
         );
 
-        const { calcularPontos } = require('../routes/admin');
         for (const p of palpites) {
           const pontos = calcularPontos(golsCasa, golsVisitante, p.palpite_gols_casa, p.palpite_gols_visitante, ptsConfig);
           await run('UPDATE palpites SET pontos_obtidos = ? WHERE id = ?', [pontos, p.id]);

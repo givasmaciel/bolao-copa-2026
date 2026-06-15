@@ -122,8 +122,6 @@ router.post('/login', jaLogado, authLimiter, async (req, res) => {
     return res.render('login', { title: 'Entrar' });
   }
 
-  console.log('[LOGIN] req.secure:', req.secure, '| headers x-forwarded-proto:', req.headers['x-forwarded-proto'], '| NODE_ENV:', process.env.NODE_ENV);
-
   try {
     const identifier = email; // campo do form chama 'email' mas aceita qualquer identificador
     const usuario = await get(
@@ -132,19 +130,15 @@ router.post('/login', jaLogado, authLimiter, async (req, res) => {
     );
 
     if (!usuario) {
-      console.log('[LOGIN] usuário não encontrado:', email);
       req.flash('erro', 'E-mail ou senha inválidos.');
       return res.render('login', { title: 'Entrar' });
     }
 
     const ok = await bcrypt.compare(senha, usuario.senha_hash);
     if (!ok) {
-      console.log('[LOGIN] senha inválida para:', email);
       req.flash('erro', 'E-mail ou senha inválidos.');
       return res.render('login', { title: 'Entrar' });
     }
-
-    console.log('[LOGIN] sucesso para:', email, '| sessionID:', req.sessionID);
 
     req.session.usuario = {
       id: usuario.id,
@@ -156,11 +150,7 @@ router.post('/login', jaLogado, authLimiter, async (req, res) => {
 
     // Salva explicitamente antes do redirect
     req.session.save((err) => {
-      if (err) {
-        console.error('[LOGIN] erro ao salvar sessão:', err);
-      } else {
-        console.log('[LOGIN] sessão salva com sucesso');
-      }
+      if (err) console.error('Erro ao salvar sessão:', err);
       req.flash('sucesso', `Olá, ${usuario.nome}!`);
       res.redirect('/dashboard');
     });

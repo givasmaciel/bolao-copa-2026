@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const { run, get, all } = require('../database/db');
 const { verificarAdmin } = require('../middleware/auth');
 const { gerarMataMata, listarConfrontos, limparMataMata } = require('../services/mata-mata');
+const { calcularPontos } = require('../services/pontuacao');
 
 const router = express.Router();
 
@@ -51,52 +52,7 @@ router.get('/diagnostic', async (req, res) => {
 // Busca configuração de pontuação para uma fase
 async function getPontosFase(fase) {
   const row = await get('SELECT * FROM fase_pontuacao WHERE fase = ?', [fase]);
-  if (row) return row;
-  return { pts_exato: 20, pts_empate: 14, pts_resultado_gol: 14, pts_resultado: 8, pts_gol: 3 };
-}
-
-// Sistema de pontuação configurável por fase
-function calcularPontos(golsCasa, golsVisitante, palpiteCasa, palpiteVisitante, pts) {
-  if (golsCasa === null || golsVisitante === null ||
-      golsCasa === undefined || golsVisitante === undefined) return 0;
-  if (palpiteCasa === null || palpiteVisitante === null ||
-      palpiteCasa === undefined || palpiteVisitante === undefined) return 0;
-
-  const exato = pts?.pts_exato ?? 20;
-  const empate = pts?.pts_empate ?? 14;
-  const resultadoGol = pts?.pts_resultado_gol ?? 14;
-  const resultado = pts?.pts_resultado ?? 8;
-  const gol = pts?.pts_gol ?? 3;
-
-  // Placar exato
-  if (golsCasa === palpiteCasa && golsVisitante === palpiteVisitante) {
-    return exato;
-  }
-
-  // Determina resultado real e do palpite
-  let resReal, resPalpite;
-  if (golsCasa > golsVisitante) { resReal = 'C'; }
-  else if (golsCasa < golsVisitante) { resReal = 'V'; }
-  else { resReal = 'E'; }
-
-  if (palpiteCasa > palpiteVisitante) { resPalpite = 'C'; }
-  else if (palpiteCasa < palpiteVisitante) { resPalpite = 'V'; }
-  else { resPalpite = 'E'; }
-
-  // Empate (qualquer placar)
-  if (resReal === 'E' && resPalpite === 'E') return empate;
-
-  const acertouGolCasa = golsCasa === palpiteCasa;
-  const acertouGolVisitante = golsVisitante === palpiteVisitante;
-  const acertouGolTime = acertouGolCasa || acertouGolVisitante;
-
-  if (resReal === resPalpite) {
-    if (acertouGolTime) return resultadoGol;
-    return resultado;
-  }
-
-  if (acertouGolTime) return gol;
-  return 0;
+  return row || require('../services/pontuacao').PONTUACAO_PADRAO;
 }
 
 // GET /admin - painel principal
@@ -691,4 +647,4 @@ router.post('/placar-automatico/executar', verificarAdmin, async (req, res) => {
   res.redirect('/admin/placar-automatico');
 });
 
-module.exports = { router, calcularPontos, getPontosFase };
+module.exports = { router, getPontosFase };

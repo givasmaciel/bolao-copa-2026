@@ -9,8 +9,10 @@
     var lider = ranking[0];
     var maiorAcertos = ranking.reduce(function(a,b){ return (a.palpites_com_pontos||0) > (b.palpites_com_pontos||0) ? a : b; });
     var maiorMelhor = ranking.reduce(function(a,b){ return (a.maior_palpite||0) > (b.maior_palpite||0) ? a : b; });
-    var totalMedia = ranking.reduce(function(s,u){ return s + u.total_pontos; }, 0);
-    var mediaGeral = ranking.length > 0 ? (totalMedia / ranking.length).toFixed(1) : 0;
+    // Média usa apenas pontos de jogos (sem extras/bônus) para não distorcer
+    var totalMediaJogos = ranking.reduce(function(s,u){ return s + (u.palpites_pontos || 0); }, 0);
+    var totalPalpitesJogos = ranking.reduce(function(s,u){ return s + (u.total_palpites || 0); }, 0);
+    var mediaGeral = ranking.length > 0 ? (totalMediaJogos / ranking.length).toFixed(1) : 0;
   %>
   <div class="card mb-2" style="background:linear-gradient(135deg,#fef9c3,#fef3c7);border-left:4px solid var(--verde)">
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;text-align:center">
@@ -19,6 +21,110 @@
       <div><span style="font-size:1.2rem">🔥</span><br>Maior pontuação<br><strong><%= maiorMelhor.nome %></strong><br><%= maiorMelhor.maior_palpite %> pts em 1 jogo</div>
       <div><span style="font-size:1.2rem">📊</span><br>Média geral<br><strong><%= mediaGeral %></strong><br>pts por participante</div>
     </div>
+  </div>
+<% } %>
+
+<% if (typeof statsConcluidos !== 'undefined' && statsConcluidos.jogosFinalizados > 0) { %>
+  <div class="card mb-2" style="background:linear-gradient(135deg,#dbeafe,#e0e7ff);border-left:4px solid var(--azul)">
+    <h2 style="margin:0 0 4px;font-size:1.1rem">📊 Estatísticas dos Jogos Concluídos</h2>
+    <p class="texto-aux" style="font-size:0.8rem;margin:0 0 12px">Visão geral dos <strong><%= statsConcluidos.jogosFinalizados %></strong> jogo(s) já finalizado(s) — pontuação distribuída vs. máxima possível.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;text-align:center">
+      <div class="stat-cell" style="background:#fff;border-radius:8px;padding:10px 6px">
+        <div style="font-size:0.7rem;color:var(--cinza-escuro);text-transform:uppercase">Jogos finalizados</div>
+        <div style="font-size:1.4rem;font-weight:800;color:var(--azul)"><%= statsConcluidos.jogosFinalizados %></div>
+        <div style="font-size:0.7rem;color:var(--cinza-escuro)">de <%= totais.total_jogos %> no total</div>
+      </div>
+      <div class="stat-cell" style="background:#fff;border-radius:8px;padding:10px 6px">
+        <div style="font-size:0.7rem;color:var(--cinza-escuro);text-transform:uppercase">Pontos possíveis</div>
+        <div style="font-size:1.4rem;font-weight:800;color:var(--cinza-escuro)"><%= statsConcluidos.pontosPossiveis %></div>
+        <div style="font-size:0.7rem;color:var(--cinza-escuro)">se todos acertassem exato</div>
+      </div>
+      <div class="stat-cell" style="background:#fff;border-radius:8px;padding:10px 6px">
+        <div style="font-size:0.7rem;color:var(--cinza-escuro);text-transform:uppercase">Pontos distribuídos</div>
+        <div style="font-size:1.4rem;font-weight:800;color:var(--verde)"><%= statsConcluidos.pontosDistribuidos %></div>
+        <div style="font-size:0.7rem;color:var(--cinza-escuro)">de <%= statsConcluidos.pontosPossiveis * (totais.total_usuarios||0) %> possíveis</div>
+      </div>
+      <div class="stat-cell" style="background:#fff;border-radius:8px;padding:10px 6px">
+        <div style="font-size:0.7rem;color:var(--cinza-escuro);text-transform:uppercase">Aproveitamento médio</div>
+        <div style="font-size:1.4rem;font-weight:800;color:var(--amarelo)"><%= statsConcluidos.aproveitamentoMedio %>%</div>
+        <div style="font-size:0.7rem;color:var(--cinza-escuro)">distribuído / máximo global</div>
+      </div>
+      <div class="stat-cell" style="background:#fff;border-radius:8px;padding:10px 6px">
+        <div style="font-size:0.7rem;color:var(--cinza-escuro);text-transform:uppercase">Placares exatos</div>
+        <div style="font-size:1.4rem;font-weight:800;color:var(--verde)">🎯 <%= statsConcluidos.placaresExatos %></div>
+        <div style="font-size:0.7rem;color:var(--cinza-escuro)">de <%= statsConcluidos.totalPalpitesFinalizados %> palpites</div>
+      </div>
+      <div class="stat-cell" style="background:#fff;border-radius:8px;padding:10px 6px">
+        <div style="font-size:0.7rem;color:var(--cinza-escuro);text-transform:uppercase">Acertos de resultado</div>
+        <div style="font-size:1.4rem;font-weight:800;color:var(--azul)">✅ <%= statsConcluidos.acertosResultado %></div>
+        <div style="font-size:0.7rem;color:var(--cinza-escuro)">com ou sem 1 gol</div>
+      </div>
+      <div class="stat-cell" style="background:#fff;border-radius:8px;padding:10px 6px">
+        <div style="font-size:0.7rem;color:var(--cinza-escuro);text-transform:uppercase">Empates acertados</div>
+        <div style="font-size:1.4rem;font-weight:800;color:var(--cinza-escuro)">🤝 <%= statsConcluidos.empates %></div>
+        <div style="font-size:0.7rem;color:var(--cinza-escuro)">qualquer placar de empate</div>
+      </div>
+      <div class="stat-cell" style="background:#fff;border-radius:8px;padding:10px 6px">
+        <div style="font-size:0.7rem;color:var(--cinza-escuro);text-transform:uppercase">1 gol certo</div>
+        <div style="font-size:1.4rem;font-weight:800;color:var(--cinza-escuro)">⚽ <%= statsConcluidos.acertosGol %></div>
+        <div style="font-size:0.7rem;color:var(--cinza-escuro)">errou o resultado</div>
+      </div>
+      <div class="stat-cell" style="background:#fff;border-radius:8px;padding:10px 6px">
+        <div style="font-size:0.7rem;color:var(--cinza-escuro);text-transform:uppercase">Zero pontos</div>
+        <div style="font-size:1.4rem;font-weight:800;color:var(--vermelho)">❌ <%= statsConcluidos.zeros %></div>
+        <div style="font-size:0.7rem;color:var(--cinza-escuro)">errou tudo</div>
+      </div>
+      <div class="stat-cell" style="background:#fff;border-radius:8px;padding:10px 6px">
+        <div style="font-size:0.7rem;color:var(--cinza-escuro);text-transform:uppercase">Média pts/palpite</div>
+        <div style="font-size:1.4rem;font-weight:800;color:var(--verde)"><%= statsConcluidos.mediaPontosPorPalpite %></div>
+        <div style="font-size:0.7rem;color:var(--cinza-escuro)">em jogos finalizados</div>
+      </div>
+      <div class="stat-cell" style="background:#fff;border-radius:8px;padding:10px 6px">
+        <div style="font-size:0.7rem;color:var(--cinza-escuro);text-transform:uppercase">Melhor palpite</div>
+        <div style="font-size:1.4rem;font-weight:800;color:var(--amarelo)">🔥 <%= statsConcluidos.melhorPalpiteFinalizado %> pts</div>
+        <div style="font-size:0.7rem;color:var(--cinza-escuro)">em um único jogo</div>
+      </div>
+      <div class="stat-cell" style="background:#fff;border-radius:8px;padding:10px 6px">
+        <div style="font-size:0.7rem;color:var(--cinza-escuro);text-transform:uppercase">Usuários pontuando</div>
+        <div style="font-size:1.4rem;font-weight:800;color:var(--azul)"><%= statsConcluidos.usuariosComPontos %>/<%= totais.total_usuarios %></div>
+        <div style="font-size:0.7rem;color:var(--cinza-escuro)">fizeram ≥ 1 ponto</div>
+      </div>
+    </div>
+
+    <% if (statsConcluidos.jogosConcluidos && statsConcluidos.jogosConcluidos.length > 0) { %>
+      <div style="margin-top:14px">
+        <div class="finalizados-toggle" onclick="toggleConcluidos(this)" style="cursor:pointer;display:flex;align-items:center;gap:6px;padding:8px 12px;background:rgba(255,255,255,0.7);border-radius:6px;font-size:0.85rem;user-select:none">
+          <span class="seta">▶</span>
+          <span><strong>Ver últimos <%= statsConcluidos.jogosConcluidos.length %> jogo(s) finalizado(s)</strong></span>
+        </div>
+        <div class="concluidos-wrapper" style="display:none;margin-top:8px">
+          <% statsConcluidos.jogosConcluidos.forEach(function(j) { %>
+            <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:#fff;border-radius:6px;margin-bottom:4px;font-size:0.85rem">
+              <span style="background:var(--cinza-claro);color:var(--cinza-escuro);padding:2px 6px;border-radius:8px;font-size:0.7rem;font-weight:600">R<%= j.rodada %></span>
+              <% if (j.casa_bandeira) { %><img src="<%= j.casa_bandeira %>" alt="" style="width:20px;height:14px;object-fit:cover;border-radius:2px"><% } %>
+              <strong><%= j.casa_sigla %></strong>
+              <span style="background:var(--azul);color:#fff;padding:2px 8px;border-radius:4px;font-weight:700"><%= j.gols_casa %> × <%= j.gols_visitante %></span>
+              <strong><%= j.visitante_sigla %></strong>
+              <% if (j.visitante_bandeira) { %><img src="<%= j.visitante_bandeira %>" alt="" style="width:20px;height:14px;object-fit:cover;border-radius:2px"><% } %>
+              <span style="margin-left:auto;color:var(--cinza-escuro);font-size:0.75rem"><%= new Date(j.data).toLocaleString('pt-BR', { dateStyle:'short', timeStyle:'short', timeZone:'America/Sao_Paulo' }) %></span>
+            </div>
+          <% }); %>
+        </div>
+      </div>
+      <script>
+      function toggleConcluidos(el) {
+        const wrapper = el.nextElementSibling;
+        const seta = el.querySelector('.seta');
+        if (wrapper.style.display === 'none') {
+          wrapper.style.display = 'block';
+          seta.textContent = '▼';
+        } else {
+          wrapper.style.display = 'none';
+          seta.textContent = '▶';
+        }
+      }
+      </script>
+    <% } %>
   </div>
 <% } %>
 
@@ -48,7 +154,8 @@
       <% ranking.forEach(function(u) { %>
         <%
           var dif = u.total_pontos - lider.total_pontos;
-          var media = u.total_palpites > 0 ? (u.total_pontos / u.total_palpites).toFixed(1) : '—';
+          // Média usa apenas pontos de jogos (palpites_pontos) — exclui extras/bônus para não distorcer
+          var media = u.total_palpites > 0 ? ((u.palpites_pontos || 0) / u.total_palpites).toFixed(1) : '—';
           var barPct = lider.total_pontos > 0 ? Math.round((u.total_pontos / lider.total_pontos) * 100) : 0;
         %>
         <tr class="<%= typeof usuario !== 'undefined' && usuario && usuario.id === u.id ? 'voce' : '' %>">

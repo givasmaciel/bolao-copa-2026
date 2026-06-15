@@ -242,12 +242,12 @@ app.use((err, req, res, next) => {
     sessionStore.clearExpired();
     setInterval(() => sessionStore.clearExpired(), 60 * 60 * 1000);
 
-    // Placar automático: busca resultados a cada 30 minutos
+    // Placar automático: busca resultados a cada 16 minutos
     // Marca como finalizado e recalcula pontos automaticamente
     const { buscarPlacares } = require('./services/placar-automatico');
     buscarPlacares();
-    setInterval(() => buscarPlacares(), 30 * 60 * 1000);
-    console.log('⏰ Placar automático ativo — verifica a cada 30 minutos');
+    setInterval(() => buscarPlacares(), 16 * 60 * 1000);
+    console.log('⏰ Placar automático ativo — verifica a cada 16 minutos');
 
     app.listen(PORT, () => {
       console.log('');
