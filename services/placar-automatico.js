@@ -1,21 +1,21 @@
 const { run, get, all } = require('../database/db');
 
-const API_URL = 'https://wheniskickoff.com/data/v1/matches.json';
-const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
+const API_URL = 'https://26worldcup.cn/api/v1/cup/2026/schedule';
+const API_KEY = 'ft_bolao_co_8d3ff2c4132244de97a58898dd260728694d25a3';
 
-const API_SIGLA_PARA_DB = {
-  MEX: 'MEX', RSA: 'AFS', KOR: 'COR', CZE: 'CZE',
-  CAN: 'CAN', BIH: 'BIH', QAT: 'CAT', SUI: 'SUI',
-  USA: 'EUA', PAR: 'PAR', BRA: 'BRA', MAR: 'MAR',
-  HAI: 'HAI', SCO: 'ESC', AUS: 'AUS', TUR: 'TUR',
-  GER: 'GER', CUW: 'CUR', NED: 'HOL', JPN: 'JPN',
-  CIV: 'CMF', ECU: 'EQU', SWE: 'SUE', TUN: 'TUN',
-  ESP: 'ESP', CPV: 'CBV', BEL: 'BEL', EGY: 'EGI',
-  KSA: 'ARA', URU: 'URU', IRN: 'IRA', NZL: 'NZL',
-  FRA: 'FRA', SEN: 'SEN', IRQ: 'IRQ', NOR: 'NOR',
-  ARG: 'ARG', DZA: 'ALG', AUT: 'AUT', JOR: 'JOR',
-  POR: 'POR', COD: 'COD', ENG: 'ING', CRO: 'CRO',
-  GHA: 'GHA', PAN: 'PAN', UZB: 'UZB', COL: 'COL'
+const API_NOME_PARA_SIGLA = {
+  'Mexico': 'MEX', 'South Africa': 'AFS', 'South Korea': 'COR', 'Czechia': 'CZE',
+  'Canada': 'CAN', 'Bosnia & Herzegovina': 'BIH', 'Qatar': 'CAT', 'Switzerland': 'SUI',
+  'USA': 'EUA', 'Paraguay': 'PAR', 'Australia': 'AUS', 'Türkiye': 'TUR',
+  'Brazil': 'BRA', 'Morocco': 'MAR', 'Haiti': 'HAI', 'Scotland': 'ESC',
+  'Germany': 'GER', 'Curaçao': 'CUR', 'Ivory Coast': 'CMF', 'Ecuador': 'EQU',
+  'Netherlands': 'HOL', 'Japan': 'JPN', 'Sweden': 'SUE', 'Tunisia': 'TUN',
+  'Spain': 'ESP', 'Cape Verde Islands': 'CBV', 'Saudi Arabia': 'ARA', 'Uruguay': 'URU',
+  'France': 'FRA', 'Senegal': 'SEN', 'Iraq': 'IRQ', 'Norway': 'NOR',
+  'Argentina': 'ARG', 'Algeria': 'ALG', 'Austria': 'AUT', 'Jordan': 'JOR',
+  'Portugal': 'POR', 'Congo DR': 'COD', 'Uzbekistan': 'UZB', 'Colombia': 'COL',
+  'England': 'ING', 'Croatia': 'CRO', 'Ghana': 'GHA', 'Panama': 'PAN',
+  'Belgium': 'BEL', 'Egypt': 'EGI', 'Iran': 'IRA', 'New Zealand': 'NZL',
 };
 
 let ultimaExecucao = null;
@@ -26,15 +26,15 @@ async function buscarPlacares() {
 
   try {
     const res = await fetch(API_URL, {
-      headers: { 'User-Agent': USER_AGENT }
+      headers: { 'Api-Key': API_KEY }
     });
 
     if (!res.ok) {
       throw new Error(`HTTP ${res.status}: ${res.statusText}`);
     }
 
-    const data = await res.json();
-    const partidas = data.data || [];
+    const body = await res.json();
+    const partidas = body?.data?.matches || [];
 
     if (partidas.length === 0) {
       resultado.mensagem = 'Nenhuma partida encontrada na API.';
@@ -45,13 +45,13 @@ async function buscarPlacares() {
     let encontrouFinalizado = false;
 
     for (const partida of partidas) {
-      if (partida.status !== 'FINISHED') continue;
+      if (partida.status !== 'FT') continue;
       encontrouFinalizado = true;
-      if (partida.score_home === null || partida.score_away === null) continue;
-      if (!partida.home || !partida.away) continue;
+      if (partida.home_score === null || partida.away_score === null) continue;
+      if (!partida.home_team || !partida.away_team) continue;
 
-      const siglaCasaDB = API_SIGLA_PARA_DB[partida.home];
-      const siglaVisitanteDB = API_SIGLA_PARA_DB[partida.away];
+      const siglaCasaDB = API_NOME_PARA_SIGLA[partida.home_team];
+      const siglaVisitanteDB = API_NOME_PARA_SIGLA[partida.away_team];
 
       if (!siglaCasaDB || !siglaVisitanteDB) {
         resultado.ignorados++;
@@ -76,8 +76,8 @@ async function buscarPlacares() {
         continue;
       }
 
-      const golsCasa = partida.score_home;
-      const golsVisitante = partida.score_away;
+      const golsCasa = Number(partida.home_score);
+      const golsVisitante = Number(partida.away_score);
 
       await run(
         'UPDATE jogos SET gols_casa = ?, gols_visitante = ?, finalizado = 1 WHERE id = ?',
