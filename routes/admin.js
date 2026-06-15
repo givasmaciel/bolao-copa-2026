@@ -157,7 +157,7 @@ router.get('/jogos', verificarAdmin, async (req, res) => {
       LEFT JOIN grupos g ON j.grupo_id = g.id
       LEFT JOIN selecoes sc ON j.selecao_casa_id = sc.id
       LEFT JOIN selecoes sv ON j.selecao_visitante_id = sv.id
-      ORDER BY j.id
+      ORDER BY CASE WHEN j.gols_casa IS NOT NULL OR j.gols_visitante IS NOT NULL OR j.finalizado = 1 THEN 1 ELSE 0 END, j.data
     `);
 
     res.render('admin-jogos', { title: 'Editar resultados', jogos, query: req.query });
@@ -670,6 +670,25 @@ router.post('/usuarios/:id/bonus/:bonusId/editar', verificarAdmin, async (req, r
     req.flash('erro', 'Erro ao editar bônus.');
   }
   res.redirect('/admin/usuarios');
+});
+
+const { buscarPlacares, getStatus } = require('../services/placar-automatico');
+
+// GET /admin/placar-automatico - status do serviço
+router.get('/placar-automatico', verificarAdmin, (req, res) => {
+  res.render('admin-placar-automatico', { title: 'Placar Automático', status: getStatus() });
+});
+
+// POST /admin/placar-automatico/executar - executa manualmente
+router.post('/placar-automatico/executar', verificarAdmin, async (req, res) => {
+  req.flash('aviso', 'Buscando placares...');
+  const resultado = await buscarPlacares();
+  if (resultado.ok) {
+    req.flash('sucesso', resultado.mensagem);
+  } else {
+    req.flash('erro', resultado.mensagem);
+  }
+  res.redirect('/admin/placar-automatico');
 });
 
 module.exports = { router, calcularPontos, getPontosFase };
