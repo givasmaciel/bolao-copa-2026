@@ -5,6 +5,7 @@
 <div style="display:flex;align-items:center;gap:16px;margin-bottom:8px">
   <div style="flex-shrink:0">
     <img src="/foto/<%= usuario.id %>" alt="" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:3px solid var(--verde)" onerror="this.outerHTML='<div style=width:64px;height:64px;border-radius:50%;background:var(--cinza);display:flex;align-items:center;justify-content:center;font-size:2rem;border:3px solid var(--cinza-escuro)>👤</div>'">
+  </div>
   <div>
     <h1 style="margin:0"><%= usuario.nome %></h1>
     <p class="subtitulo" style="margin:0">Membro desde <%= new Date(usuario.criado_em).toLocaleDateString('pt-BR') %></p>
@@ -12,31 +13,18 @@
 </div>
 
 <% if (stats) { %>
-  <div class="grid grid-4 mb-2">
-    <div class="stat-card">
-      <div class="stat-valor"><%= stats.total || 0 %></div>
-      <div class="stat-label">Palpites</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-valor"><%= stats.acertos || 0 %></div>
-      <div class="stat-label">Com pontos</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-valor"><%= (stats.pontos || 0) + bonusPontos %></div>
-      <div class="stat-label">
-        Pontos
-        <% if (bonusPontos > 0) { %>
-          <span style="font-size:0.65rem;color:var(--verde)">(+<%= bonusPontos %> bônus)</span>
-        <% } %>
-      </div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-valor"><%= aproveitamento %>%</div>
-      <div class="stat-label">Aproveitamento</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-valor" style="font-size:1rem"><%= totalDisputado %></div>
-      <div class="stat-label">Pontos disputados</div>
+  <%
+    var totalPts = (stats.pontos || 0) + bonusPontos;
+    var mediaPalpite = (stats.total || 0) > 0 ? (totalPts / stats.total).toFixed(1) : '—';
+  %>
+  <div class="card mb-2" style="padding:8px 12px">
+    <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:4px;text-align:center">
+      <div><div style="font-size:1.2rem;font-weight:800"><%= stats.total || 0 %></div><div style="font-size:0.7rem;color:var(--cinza-escuro)">Palpites</div></div>
+      <div><div style="font-size:1.2rem;font-weight:800"><%= stats.acertos || 0 %></div><div style="font-size:0.7rem;color:var(--cinza-escuro)">Acertos</div></div>
+      <div><div style="font-size:1.2rem;font-weight:800"><%= totalPts %></div><div style="font-size:0.7rem;color:var(--cinza-escuro)">Pontos<% if (bonusPontos > 0) { %> <span style="color:var(--verde)">(+<%= bonusPontos %>)</span><% } %></div></div>
+      <div><div style="font-size:1.2rem;font-weight:800"><%= aproveitamento %>%</div><div style="font-size:0.7rem;color:var(--cinza-escuro)">Aproveit.</div></div>
+      <div><div style="font-size:1.2rem;font-weight:800"><%= mediaPalpite %></div><div style="font-size:0.7rem;color:var(--cinza-escuro)">Média/palpite</div></div>
+      <div><div style="font-size:1rem;font-weight:700;color:var(--cinza-escuro)"><%= totalDisputado %></div><div style="font-size:0.7rem;color:var(--cinza-escuro)">Pts disp.</div></div>
     </div>
   </div>
 <% } %>
