@@ -9,17 +9,19 @@
     var lider = ranking[0];
     var maiorAcertos = ranking.reduce(function(a,b){ return (a.palpites_com_pontos||0) > (b.palpites_com_pontos||0) ? a : b; });
     var maiorMelhor = ranking.reduce(function(a,b){ return (a.maior_palpite||0) > (b.maior_palpite||0) ? a : b; });
-    // Média usa apenas pontos de jogos (sem extras/bônus) para não distorcer
-    var totalMediaJogos = ranking.reduce(function(s,u){ return s + (u.palpites_pontos || 0); }, 0);
-    var totalPalpitesJogos = ranking.reduce(function(s,u){ return s + (u.total_palpites || 0); }, 0);
-    var mediaGeral = ranking.length > 0 ? (totalMediaJogos / ranking.length).toFixed(1) : 0;
+    // Calcula "média pts/palpite" geral (mais útil que média por participante)
+    // Garante que valores são Number e filtra NaN/undefined para evitar lixo do SQL
+    function asNum(v) { var n = Number(v); return isFinite(n) ? n : 0; }
+    var totalPontosJogos = ranking.reduce(function(s,u){ return s + asNum(u.palpites_pontos); }, 0);
+    var totalPalpites = ranking.reduce(function(s,u){ return s + asNum(u.total_palpites); }, 0);
+    var mediaGeral = totalPalpites > 0 ? (totalPontosJogos / totalPalpites).toFixed(2) : '—';
   %>
   <div class="card mb-2" style="background:linear-gradient(135deg,#fef9c3,#fef3c7);border-left:4px solid var(--verde)">
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;text-align:center">
       <div><span style="font-size:1.2rem">🏆</span><br><strong><%= lider.nome %></strong><br><span style="font-size:1.3rem;font-weight:800;color:var(--verde)"><%= lider.total_pontos %> pts</span></div>
       <div><span style="font-size:1.2rem">🎯</span><br>Mais acertos<br><strong><%= maiorAcertos.nome %></strong><br><%= maiorAcertos.palpites_com_pontos %> acertos</div>
       <div><span style="font-size:1.2rem">🔥</span><br>Maior pontuação<br><strong><%= maiorMelhor.nome %></strong><br><%= maiorMelhor.maior_palpite %> pts em 1 jogo</div>
-      <div><span style="font-size:1.2rem">📊</span><br>Média geral<br><strong><%= mediaGeral %></strong><br>pts por participante</div>
+      <div><span style="font-size:1.2rem">📊</span><br>Média geral<br><strong><%= mediaGeral %></strong><br>pts por palpite</div>
     </div>
   </div>
 <% } %>
@@ -155,8 +157,10 @@
         <%
           var dif = u.total_pontos - lider.total_pontos;
           // Média usa apenas pontos de jogos (palpites_pontos) — exclui extras/bônus para não distorcer
-          var media = u.total_palpites > 0 ? ((u.palpites_pontos || 0) / u.total_palpites).toFixed(1) : '—';
-          var barPct = lider.total_pontos > 0 ? Math.round((u.total_pontos / lider.total_pontos) * 100) : 0;
+          var ppts = asNum(u.palpites_pontos);
+          var tpalp = asNum(u.total_palpites);
+          var media = tpalp > 0 ? (ppts / tpalp).toFixed(2) : '—';
+          var barPct = asNum(lider.total_pontos) > 0 ? Math.round((asNum(u.total_pontos) / asNum(lider.total_pontos)) * 100) : 0;
         %>
         <tr class="<%= typeof usuario !== 'undefined' && usuario && usuario.id === u.id ? 'voce' : '' %>">
           <td class="pos <%= u.posicao === 1 ? 'pos-1' : (u.posicao === 2 ? 'pos-2' : (u.posicao === 3 ? 'pos-3' : '')) %>">

@@ -139,7 +139,8 @@ router.get('/', async (req, res) => {
 
     // Adiciona aproveitamento a cada participante (somente pontos de jogos, sem extras/bônus)
     for (const u of ranking) {
-      u.aproveitamento = totalDisputado > 0 ? Math.round(((u.palpites_pontos || 0) / totalDisputado) * 100) : 0;
+      const pts = Number(u.palpites_pontos) || 0;
+      u.aproveitamento = totalDisputado > 0 ? Math.max(0, Math.min(100, Math.round((pts / totalDisputado) * 100))) : 0;
     }
 
     // ====== Estatísticas dos jogos concluídos ======
