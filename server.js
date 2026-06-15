@@ -203,12 +203,12 @@ app.use((err, req, res, next) => {
     sessionStore.clearExpired();
     setInterval(() => sessionStore.clearExpired(), 60 * 60 * 1000);
 
-    // Placar automático: busca resultados a cada 5 minutos
-    // Só processa jogos finalizados há mais de 2h para evitar placares parciais
+    // Placar automático: busca resultados a cada 15 minutos
+    // Marca como finalizado e recalcula pontos automaticamente
     const { buscarPlacares } = require('./services/placar-automatico');
     buscarPlacares();
-    setInterval(() => buscarPlacares(), 5 * 60 * 1000);
-    console.log('⏰ Placar automático ativo — verifica a cada 5 minutos');
+    setInterval(() => buscarPlacares(), 15 * 60 * 1000);
+    console.log('⏰ Placar automático ativo — verifica a cada 15 minutos');
 
     app.listen(PORT, () => {
       console.log('');

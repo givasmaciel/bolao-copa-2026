@@ -42,20 +42,10 @@ async function buscarPlacares() {
       return resultado;
     }
 
-    const agora = new Date();
-    const DOIS_HORAS_MS = 2 * 60 * 60 * 1000;
-
     for (const partida of partidas) {
       if (partida.status !== 'FINISHED') continue;
       if (partida.score_home === null || partida.score_away === null) continue;
       if (!partida.home || !partida.away) continue;
-
-      // Só processa se já passou 2h do horário do jogo
-      const dataJogo = new Date(partida.datetime_utc);
-      if (agora.getTime() - dataJogo.getTime() < DOIS_HORAS_MS) {
-        resultado.ignorados++;
-        continue;
-      }
 
       const siglaCasaDB = API_SIGLA_PARA_DB[partida.home];
       const siglaVisitanteDB = API_SIGLA_PARA_DB[partida.away];

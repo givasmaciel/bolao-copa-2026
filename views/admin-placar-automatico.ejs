@@ -38,8 +38,8 @@
 <div class="card">
   <h3>Como funciona</h3>
   <ul style="line-height:1.8">
-    <li>A cada <strong>5 minutos</strong> o sistema consulta a API pública <code>wheniskickoff.com</code>.</li>
-    <li>Só processa jogos com status <code>FINISHED</code> <strong>há mais de 2 horas</strong> (evita placares parciais).</li>
+    <li>A cada <strong>15 minutos</strong> o sistema consulta a API pública <code>wheniskickoff.com</code>.</li>
+    <li>Processa jogos com status <code>FINISHED</code> assim que a API retorna o placar.</li>
     <li>Após atualizar o placar, os pontos de todos os palpites daquele jogo são recalculados.</li>
     <li>Jogos já finalizados no sistema (<code>finalizado = 1</code>) são ignorados.</li>
     <li>Não substitui a edição manual — é uma conveniência para agilizar o processo.</li>
