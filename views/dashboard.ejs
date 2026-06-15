@@ -157,7 +157,7 @@
       <% proximosJogos.forEach(function(j) { %>
         <% const dataJogo = new Date(j.data); %>
         <% const palpiteLimite = j.palpite_limite ? new Date(j.palpite_limite) : null; %>
-        <div class="jogo-card" style="grid-template-columns:1fr auto 1fr;margin-bottom:8px">
+        <div class="jogo-card" style="margin-bottom:8px">
           <div class="jogo-time">
             <img src="<%= j.casa_bandeira %>" alt=""><span><%= j.casa_pt %></span>
           </div>
