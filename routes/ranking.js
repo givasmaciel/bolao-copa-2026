@@ -14,6 +14,7 @@ router.get('/', async (req, res) => {
         u.foto,
         u.criado_em,
         COUNT(p.id) AS total_palpites,
+        SUM(CASE WHEN j.finalizado = 1 THEN 1 ELSE 0 END) AS palpites_finalizados,
         COALESCE(SUM(p.pontos_obtidos), 0) + COALESCE((
           SELECT SUM(r.pontos)
           FROM palpites_extras pe
@@ -22,7 +23,7 @@ router.get('/', async (req, res) => {
         ), 0) + COALESCE((
           SELECT SUM(pontos) FROM pontos_bonus WHERE usuario_id = u.id
         ), 0) AS total_pontos,
-        COALESCE(SUM(p.pontos_obtidos), 0) AS palpites_pontos,
+        COALESCE(SUM(CASE WHEN j.finalizado = 1 THEN p.pontos_obtidos ELSE 0 END), 0) AS palpites_pontos,
         COALESCE((
           SELECT SUM(r.pontos)
           FROM palpites_extras pe
@@ -34,6 +35,7 @@ router.get('/', async (req, res) => {
         COALESCE(MAX(p.pontos_obtidos), 0) AS maior_palpite
       FROM usuarios u
       LEFT JOIN palpites p ON p.usuario_id = u.id
+      LEFT JOIN jogos j ON j.id = p.jogo_id
       WHERE u.is_admin = 0
       GROUP BY u.id
       ORDER BY total_pontos DESC, palpites_com_pontos DESC, u.nome ASC

@@ -4,10 +4,11 @@
 
 <h1>🏆 Ranking do Bolão</h1>
 <p class="subtitulo">⚽ Confira quem está liderando o Bolão da Copa 2026 e acompanhe a evolução dos participantes rodada a rodada.</p>
+<p class="texto-aux" style="font-size:0.8rem;margin:0 0 12px">ⓘ Coluna <strong>Palpites</strong> mostra <em>finalizados / total</em>. Demais métricas (<em>Média, Pontuados, Melhor, Aproveitamento</em>) referem-se apenas a jogos <strong>finalizados</strong>. <em>Pontos</em> = jogos finalizados + extras + bônus.</p>
 
 <% if (ranking.length > 0) {
     var lider = ranking[0];
-    var maiorAcertos = ranking.reduce(function(a,b){ return (a.palpites_com_pontos||0) > (b.palpites_com_pontos||0) ? a : b; });
+    var maisPalpitesPontuados = ranking.reduce(function(a,b){ return (a.palpites_com_pontos||0) > (b.palpites_com_pontos||0) ? a : b; });
     var maiorMelhor = ranking.reduce(function(a,b){ return (a.maior_palpite||0) > (b.maior_palpite||0) ? a : b; });
     // Calcula "média pts/palpite" geral (mais útil que média por participante)
     // Garante que valores são Number e filtra NaN/undefined para evitar lixo do SQL
@@ -19,9 +20,9 @@
   <div class="card mb-2" style="background:linear-gradient(135deg,#fef9c3,#fef3c7);border-left:4px solid var(--verde)">
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;text-align:center">
       <div><span style="font-size:1.2rem">🏆</span><br><strong><%= lider.nome %></strong><br><span style="font-size:1.3rem;font-weight:800;color:var(--verde)"><%= lider.total_pontos %> pts</span></div>
-      <div><span style="font-size:1.2rem">🎯</span><br>Mais acertos<br><strong><%= maiorAcertos.nome %></strong><br><%= maiorAcertos.palpites_com_pontos %> acertos</div>
+      <div><span style="font-size:1.2rem">🎯</span><br>Mais palpites pontuados<br><strong><%= maisPalpitesPontuados.nome %></strong><br><%= maisPalpitesPontuados.palpites_com_pontos %> de <%= maisPalpitesPontuados.palpites_finalizados || 0 %> finalizados</div>
       <div><span style="font-size:1.2rem">🔥</span><br>Maior pontuação<br><strong><%= maiorMelhor.nome %></strong><br><%= maiorMelhor.maior_palpite %> pts em 1 jogo</div>
-      <div><span style="font-size:1.2rem">📊</span><br>Média geral<br><strong><%= mediaGeral %></strong><br>pts por palpite</div>
+      <div><span style="font-size:1.2rem">📊</span><br>Média geral<br><strong><%= mediaGeral %></strong><br>pts/palpite (finalizados)</div>
     </div>
   </div>
 <% } %>
@@ -143,23 +144,24 @@
       <tr>
         <th class="pos">#</th>
         <th>Participante</th>
-        <th class="text-center">Palpites</th>
-        <th class="text-center">Acertos</th>
+        <th class="text-center" title="Finalizados / Total">Palpites</th>
+        <th class="text-center" title="Palpites em jogos finalizados que pontuaram (>0 pts)">Pontuados</th>
         <th class="text-center">Dif. Líder</th>
-        <th class="text-center">Média</th>
-        <th class="text-center">Melhor</th>
-        <th class="text-center">Aproveitamento</th>
-        <th class="text-center">Pontos</th>
+        <th class="text-center" title="Média pts por palpite em jogos finalizados">Média</th>
+        <th class="text-center" title="Maior pontuação em um único jogo finalizado">Melhor</th>
+        <th class="text-center" title="% do máximo possível em jogos finalizados">Aproveitamento</th>
+        <th class="text-center" title="Total: palpites + extras + bônus">Pontos</th>
       </tr>
     </thead>
     <tbody>
       <% ranking.forEach(function(u) { %>
         <%
           var dif = u.total_pontos - lider.total_pontos;
-          // Média usa apenas pontos de jogos (palpites_pontos) — exclui extras/bônus para não distorcer
+          // Média usa apenas palpites finalizados (denominador consistente com o numerador)
           var ppts = asNum(u.palpites_pontos);
+          var pfinal = asNum(u.palpites_finalizados);
           var tpalp = asNum(u.total_palpites);
-          var media = tpalp > 0 ? (ppts / tpalp).toFixed(2) : '—';
+          var media = pfinal > 0 ? (ppts / pfinal).toFixed(2) : '—';
           var barPct = asNum(lider.total_pontos) > 0 ? Math.round((asNum(u.total_pontos) / asNum(lider.total_pontos)) * 100) : 0;
         %>
         <tr class="<%= typeof usuario !== 'undefined' && usuario && usuario.id === u.id ? 'voce' : '' %>">
@@ -175,7 +177,7 @@
               <% } %>
             </div>
           </td>
-          <td class="text-center"><%= u.total_palpites %></td>
+          <td class="text-center"><%= pfinal %><span style="color:var(--cinza-escuro)">/<%= tpalp %></span></td>
           <td class="text-center"><%= u.palpites_com_pontos %></td>
           <td class="text-center" style="font-weight:600;color:<%= dif === 0 ? 'var(--verde)' : 'var(--cinza-escuro)' %>"><%= dif === 0 ? '—' : (dif > 0 ? '+' + dif : dif) %></td>
           <td class="text-center"><%= media %> pts</td>
