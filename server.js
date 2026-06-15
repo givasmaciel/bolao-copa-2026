@@ -106,15 +106,13 @@ app.use((req, res, next) => {
   next();
 });
 
-// Garante que foto do usuário esteja sempre na sessão
+// Garante que foto do usuário esteja sempre na sessão e views
 app.use(async (req, res, next) => {
-  if (req.session?.usuario?.id && !req.session.usuario.foto) {
+  if (req.session?.usuario?.id) {
     try {
       const row = await get('SELECT foto FROM usuarios WHERE id = ?', [req.session.usuario.id]);
-      if (row?.foto) {
-        req.session.usuario.foto = row.foto;
-        res.locals.usuario = req.session.usuario;
-      }
+      req.session.usuario.foto = row?.foto || null;
+      res.locals.usuario = req.session.usuario;
     } catch (e) { /* fallback silencioso */ }
   }
   next();

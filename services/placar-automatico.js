@@ -42,8 +42,11 @@ async function buscarPlacares() {
       return resultado;
     }
 
+    let encontrouFinalizado = false;
+
     for (const partida of partidas) {
       if (partida.status !== 'FINISHED') continue;
+      encontrouFinalizado = true;
       if (partida.score_home === null || partida.score_away === null) continue;
       if (!partida.home || !partida.away) continue;
 
@@ -100,7 +103,11 @@ async function buscarPlacares() {
     }
 
     resultado.ok = true;
-    resultado.mensagem = `${resultado.atualizados} jogo(s) atualizado(s), ${resultado.ignorados} ignorado(s).`;
+    if (!encontrouFinalizado) {
+      resultado.mensagem = 'Nenhum jogo finalizado encontrado na API.';
+    } else {
+      resultado.mensagem = `${resultado.atualizados} jogo(s) atualizado(s), ${resultado.ignorados} ignorado(s).`;
+    }
   } catch (err) {
     resultado.mensagem = `Erro: ${err.message}`;
     resultado.erros = 1;
@@ -109,6 +116,7 @@ async function buscarPlacares() {
 
   ultimaExecucao = new Date();
   ultimoResultado = resultado;
+  console.log(`[Placar Automático] ${resultado.mensagem} (${resultado.atualizados} atualizados, ${resultado.ignorados} ignorados)`);
   return resultado;
 }
 
