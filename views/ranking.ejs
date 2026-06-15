@@ -4,7 +4,27 @@
 
 <h1>🏆 Ranking do Bolão</h1>
 <p class="subtitulo">⚽ Confira quem está liderando o Bolão da Copa 2026 e acompanhe a evolução dos participantes rodada a rodada.</p>
-<p class="texto-aux" style="font-size:0.8rem;margin:0 0 12px">ⓘ Coluna <strong>Palpites</strong> mostra <em>finalizados / total</em>. Demais métricas (<em>Média, Pontuados, Melhor, Aproveitamento</em>) referem-se apenas a jogos <strong>finalizados</strong>. <em>Pontos</em> = jogos finalizados + extras + bônus.</p>
+<p class="texto-aux" style="font-size:0.8rem;margin:0 0 12px">
+  ⓘ Coluna <strong>Palpites</strong> mostra <em>finalizados / total</em>. Demais métricas (<em>Média, Pontuados, Melhor, Aproveitamento</em>) referem-se apenas a jogos <strong>finalizados</strong>. <em>Pontos</em> = jogos finalizados + extras + bônus.
+</p>
+
+<details class="card mb-2" style="padding:8px 12px;cursor:pointer">
+  <summary style="font-weight:600;list-style:none;display:flex;align-items:center;gap:6px">
+    📋 <strong>Critérios de desempate</strong> <span style="font-weight:400;color:var(--cinza-escuro);font-size:0.85rem">— clique para ver</span>
+  </summary>
+  <p style="font-size:0.85rem;margin:8px 0 4px">Quando dois ou mais participantes têm a mesma pontuação, o desempate é feito <strong>nesta ordem</strong>:</p>
+  <ol style="font-size:0.85rem;margin:4px 0 0;padding-left:24px;line-height:1.7">
+    <li><strong>Total de pontos</strong> (jogos finalizados + extras + bônus) — desempate principal</li>
+    <li><strong>Placares exatos</strong> (acertou o placar certinho: 2×1, 0×0, etc.)</li>
+    <li><strong>Resultado + gol</strong> (acertou quem ganhou/perdeu <em>e</em> acertou o gol de pelo menos um time)</li>
+    <li><strong>Só resultado</strong> (acertou quem ganhou, mas errou os dois placares parciais)</li>
+    <li><strong>Gols certos</strong> (número total de placares pariais acertados: cada gol de cada time conta +1 se acertou)</li>
+    <li><strong>1 gol certo</strong> (errou quem ganhou mas acertou o gol de um time)</li>
+    <li><strong>Palpites pontuados</strong> (quantos palpites em jogos finalizados pontuaram &gt; 0)</li>
+    <li><strong>Nome</strong> (ordem alfabética — último critério)</li>
+  </ol>
+  <p class="texto-aux" style="font-size:0.8rem;margin:8px 0 0">Critérios 2–7 consideram apenas <strong>jogos finalizados</strong>. Extras e bônus entram no total mas não no desempate de qualidade.</p>
+</details>
 
 <% if (ranking.length > 0) {
     // Helper: encontra todos os participantes empatados no topo de uma métrica

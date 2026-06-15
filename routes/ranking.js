@@ -33,15 +33,31 @@ router.get('/', async (req, res) => {
         COALESCE((SELECT SUM(pontos) FROM pontos_bonus WHERE usuario_id = u.id), 0) AS bonus_pontos,
         SUM(CASE WHEN p.pontos_obtidos > 0 THEN 1 ELSE 0 END) AS palpites_com_pontos,
         COALESCE(MAX(p.pontos_obtidos), 0) AS maior_palpite,
-        -- Placar exato: aposta que acertou o resultado E a pts_obtidos é igual a pts_exato da fase
-        SUM(CASE WHEN p.pontos_obtidos = fp.pts_exato THEN 1 ELSE 0 END) AS placares_exatos
+        -- Métricas por faixa de pontuação (apenas jogos finalizados)
+        SUM(CASE WHEN j.finalizado = 1 AND p.pontos_obtidos = fp.pts_exato THEN 1 ELSE 0 END) AS placares_exatos,
+        SUM(CASE WHEN j.finalizado = 1 AND p.pontos_obtidos = fp.pts_resultado_gol THEN 1 ELSE 0 END) AS acertos_resultado_gol,
+        SUM(CASE WHEN j.finalizado = 1 AND p.pontos_obtidos = fp.pts_resultado THEN 1 ELSE 0 END) AS acertos_resultado,
+        SUM(CASE WHEN j.finalizado = 1 AND p.pontos_obtidos = fp.pts_gol THEN 1 ELSE 0 END) AS acertos_gol,
+        -- Gols certos: +1 por gol de cada time que o palpite acertou exatamente
+        SUM(CASE WHEN j.finalizado = 1 AND p.palpite_gols_casa = j.gols_casa THEN 1 ELSE 0 END) +
+        SUM(CASE WHEN j.finalizado = 1 AND p.palpite_gols_visitante = j.gols_visitante THEN 1 ELSE 0 END) AS gols_acertados
       FROM usuarios u
       LEFT JOIN palpites p ON p.usuario_id = u.id
       LEFT JOIN jogos j ON j.id = p.jogo_id
       LEFT JOIN fase_pontuacao fp ON fp.fase = j.fase
       WHERE u.is_admin = 0
       GROUP BY u.id
-      ORDER BY total_pontos DESC, palpites_com_pontos DESC, u.nome ASC
+      -- Critérios de desempate (do mais forte pro mais fraco):
+      -- 1) total_pontos, 2) placares exatos, 3) resultado+gol, 4) resultado,
+      -- 5) gols certos, 6) 1 gol certo, 7) palpites pontuados, 8) nome
+      ORDER BY total_pontos DESC,
+               placares_exatos DESC,
+               acertos_resultado_gol DESC,
+               acertos_resultado DESC,
+               gols_acertados DESC,
+               acertos_gol DESC,
+               palpites_com_pontos DESC,
+               u.nome ASC
     `);
 
     // Adiciona posição
