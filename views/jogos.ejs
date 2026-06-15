@@ -5,51 +5,57 @@
 <h1>📅 Tabela de jogos da Copa 2026</h1>
 <p class="subtitulo">Acompanhe todos os <%= totalJogos %> jogos do torneio. Conforme os jogos forem acontecendo, os placares e os pontos do bolão são atualizados.</p>
 
+<%
+function jogoCard(j) { var h = '';
+h += '<div class="jogo-card' + (j.finalizado === 1 ? ' finalizado' : '') + '">';
+h += '<div class="jogo-time">';
+if (j.casa_bandeira) { h += '<img src="' + j.casa_bandeira + '" alt="' + (j.casa_pt||'') + '">'; } else { h += '<span style="width:32px;height:24px;background:#e2e8f0;border-radius:3px;display:inline-block"></span>'; }
+h += '<span>' + (j.casa_pt || 'A definir') + '</span></div>';
+h += '<div class="jogo-info">';
+if (j.finalizado === 1) { h += '<div class="jogo-placar-display">' + j.gols_casa + ' × ' + j.gols_visitante + '</div>'; } else { h += '<div class="jogo-placar-display" style="color:#aaa">×</div>'; }
+h += '<div class="jogo-data">📅 ' + new Date(j.data).toLocaleString('pt-BR', { dateStyle:'short', timeStyle:'short', timeZone:'America/Sao_Paulo' }) + '</div>';
+h += '<div class="jogo-estadio">📍 ' + (j.estadio||'') + ', ' + (j.cidade||'') + '</div>';
+if (j.grupo_letra) { h += '<div style="margin-top:4px"><span class="badge" style="background:var(--verde);color:white">Grupo ' + j.grupo_letra + '</span></div>'; }
+else if (j.fase === 'final') { h += '<div style="margin-top:4px"><span class="badge badge-final">⭐ FINAL</span></div>'; }
+else { h += '<div style="margin-top:4px"><span class="badge badge-knockout">Mata-mata</span></div>'; }
+if (typeof usuario !== 'undefined' && usuario) { h += '<div style="margin-top:6px"><a href="/jogos/' + j.id + '/palpites" class="btn btn-sm btn-secondary" style="font-size:0.7rem">👥 Ver palpites</a></div>'; }
+h += '</div>';
+h += '<div class="jogo-time visitante"><span>' + (j.visitante_pt || 'A definir') + '</span>';
+if (j.visitante_bandeira) { h += '<img src="' + j.visitante_bandeira + '" alt="' + (j.visitante_pt||'') + '">'; } else { h += '<span style="width:32px;height:24px;background:#e2e8f0;border-radius:3px;display:inline-block"></span>'; }
+h += '</div></div>';
+return h; }
+%>
+
 <% Object.keys(fases).forEach(function(fase) { const f = fases[fase]; if (!f.jogos || f.jogos.length === 0) return; %>
   <h2><%= f.nome %></h2>
-  <% f.jogos.forEach(function(jogo) { %>
-    <div class="jogo-card <%= jogo.finalizado === 1 ? 'finalizado' : '' %>">
-      <div class="jogo-time">
-        <% if (jogo.casa_bandeira) { %>
-          <img src="<%= jogo.casa_bandeira %>" alt="<%= jogo.casa_pt %>">
-        <% } else { %>
-          <span style="width:32px; height:24px; background:#e2e8f0; border-radius:3px; display:inline-block"></span>
-        <% } %>
-        <span><%= jogo.casa_pt || 'A definir' %></span>
-      </div>
-
-      <div class="jogo-info">
-        <% if (jogo.finalizado === 1) { %>
-          <div class="jogo-placar-display"><%= jogo.gols_casa %> × <%= jogo.gols_visitante %></div>
-        <% } else { %>
-          <div class="jogo-placar-display" style="color:#aaa">×</div>
-        <% } %>
-        <div class="jogo-data">📅 <%= new Date(jogo.data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'America/Sao_Paulo' }) %></div>
-        <div class="jogo-estadio">📍 <%= jogo.estadio %>, <%= jogo.cidade %></div>
-        <% if (jogo.grupo_letra) { %>
-          <div style="margin-top:4px"><span class="badge" style="background:var(--verde); color:white">Grupo <%= jogo.grupo_letra %></span></div>
-        <% } else if (jogo.fase === 'final') { %>
-          <div style="margin-top:4px"><span class="badge badge-final">⭐ FINAL</span></div>
-        <% } else { %>
-          <div style="margin-top:4px"><span class="badge badge-knockout">Mata-mata</span></div>
-        <% } %>
-        <% if (typeof usuario !== 'undefined' && usuario) { %>
-          <div style="margin-top:6px">
-            <a href="/jogos/<%= jogo.id %>/palpites" class="btn btn-sm btn-secondary" style="font-size:0.7rem">👥 Ver palpites</a>
-          </div>
-        <% } %>
-      </div>
-
-      <div class="jogo-time visitante">
-        <span><%= jogo.visitante_pt || 'A definir' %></span>
-        <% if (jogo.visitante_bandeira) { %>
-          <img src="<%= jogo.visitante_bandeira %>" alt="<%= jogo.visitante_pt %>">
-        <% } else { %>
-          <span style="width:32px; height:24px; background:#e2e8f0; border-radius:3px; display:inline-block"></span>
-        <% } %>
-      </div>
+  <%
+    const abertos = f.jogos.filter(function(j){ return j.finalizado !== 1; });
+    const finalizados = f.jogos.filter(function(j){ return j.finalizado === 1; });
+  %>
+  <% abertos.forEach(function(jogo) { %><%- jogoCard(jogo) %><% }); %>
+  <% if (finalizados.length > 0) { %>
+    <div class="finalizados-toggle" onclick="toggleFinalizados(this)" style="cursor:pointer;display:flex;align-items:center;gap:6px;padding:8px 12px;background:var(--cinza);border-radius:6px;margin-bottom:8px;font-size:0.85rem;user-select:none">
+      <span class="seta">▶</span>
+      <span><strong><%= finalizados.length %></strong> jogo(s) finalizado(s)</span>
     </div>
-  <% }); %>
+    <div class="finalizados-wrapper" style="display:none">
+      <% finalizados.forEach(function(jogo) { %><%- jogoCard(jogo) %><% }); %>
+    </div>
+  <% } %>
 <% }); %>
+
+<script>
+function toggleFinalizados(el) {
+  const wrapper = el.nextElementSibling;
+  const seta = el.querySelector('.seta');
+  if (wrapper.style.display === 'none') {
+    wrapper.style.display = 'block';
+    seta.textContent = '▼';
+  } else {
+    wrapper.style.display = 'none';
+    seta.textContent = '▶';
+  }
+}
+</script>
 
 <%- include('partials/footer') %>
