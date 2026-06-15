@@ -10,7 +10,7 @@
   <table class="table" style="width:auto">
     <tr>
       <td><strong>Última execução:</strong></td>
-      <td><%= status.ultimaExecucao ? new Date(status.ultimaExecucao).toLocaleString('pt-BR') : 'Nunca' %></td>
+      <td><%= status.ultimaExecucao ? new Date(status.ultimaExecucao).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'America/Sao_Paulo' }) : 'Nunca' %></td>
     </tr>
     <tr>
       <td><strong>Resultado:</strong></td>
