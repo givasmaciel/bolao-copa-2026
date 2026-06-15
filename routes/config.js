@@ -105,23 +105,27 @@ router.post('/foto', verificarAutenticado, (req, res) => {
       const usuarioId = req.session.usuario.id;
       limparFotoAntiga(usuarioId);
 
-      let nomeArquivo;
+      let nomeArquivo, bufferFinal;
       if (sharp) {
         nomeArquivo = `usuario-${usuarioId}.webp`;
-        const caminhoFinal = path.join(uploadsDir, nomeArquivo);
-        await sharp(req.file.buffer)
+        bufferFinal = await sharp(req.file.buffer)
           .resize(200, 200, { fit: 'cover', position: 'centre' })
           .webp({ quality: 85 })
-          .toFile(caminhoFinal);
+          .toBuffer();
+        fs.writeFileSync(path.join(uploadsDir, nomeArquivo), bufferFinal);
       } else {
         const ext = path.extname(req.file.originalname).toLowerCase() || '.jpg';
         nomeArquivo = `usuario-${usuarioId}${ext}`;
-        const caminhoFinal = path.join(uploadsDir, nomeArquivo);
-        fs.writeFileSync(caminhoFinal, req.file.buffer);
+        bufferFinal = req.file.buffer;
+        fs.writeFileSync(path.join(uploadsDir, nomeArquivo), bufferFinal);
       }
 
+      const fotoBase64 = bufferFinal.toString('base64');
+      const mime = path.extname(nomeArquivo) === '.webp' ? 'image/webp' : 'image/jpeg';
+      const dataUri = `data:${mime};base64,${fotoBase64}`;
       const fotoPath = '/uploads/' + nomeArquivo;
-      await run('UPDATE usuarios SET foto = ? WHERE id = ?', [fotoPath, usuarioId]);
+
+      await run('UPDATE usuarios SET foto = ?, foto_base64 = ? WHERE id = ?', [fotoPath, dataUri, usuarioId]);
       req.session.usuario.foto = fotoPath;
       req.flash('sucesso', 'Foto atualizada com sucesso!');
     } catch (dbErr) {
@@ -136,7 +140,7 @@ router.post('/foto', verificarAutenticado, (req, res) => {
 router.post('/foto/remover', verificarAutenticado, async (req, res) => {
   try {
     limparFotoAntiga(req.session.usuario.id);
-    await run('UPDATE usuarios SET foto = NULL WHERE id = ?', [req.session.usuario.id]);
+    await run('UPDATE usuarios SET foto = NULL, foto_base64 = NULL WHERE id = ?', [req.session.usuario.id]);
     delete req.session.usuario.foto;
     req.flash('sucesso', 'Foto removida.');
   } catch (err) {

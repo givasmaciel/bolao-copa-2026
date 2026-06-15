@@ -274,6 +274,15 @@ async function criarSchema() {
     }
   } catch (e) { /* Coluna já existe */ }
 
+  // Migração 2026-06-15: coluna foto_base64 (foto persistente no banco, não some no deploy)
+  try {
+    if (usandoPG) {
+      await run("ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS foto_base64 TEXT");
+    } else {
+      await run("ALTER TABLE usuarios ADD COLUMN foto_base64 TEXT");
+    }
+  } catch (e) { /* Coluna já existe */ }
+
   // Migração 2026-06-10: coluna palpite_limite (admin pode alterar prazo de cada jogo)
   try {
     if (usandoPG) {

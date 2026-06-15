@@ -150,12 +150,21 @@ app.use('/classificacao', classificacaoRoutes);
 // GET /foto/:id — serve a foto do usuário com fallback SVG (iniciais) se o arquivo sumiu (deploy Render)
 app.get('/foto/:id', async (req, res) => {
   try {
-    const usuario = await get('SELECT nome, foto FROM usuarios WHERE id = ?', [req.params.id]);
+    const usuario = await get('SELECT nome, foto, foto_base64 FROM usuarios WHERE id = ?', [req.params.id]);
     if (!usuario) return res.status(404).type('svg').send('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect fill="#ccc" width="200" height="200"/><text x="100" y="115" text-anchor="middle" font-size="60" fill="#666" font-family="sans-serif">?</text></svg>');
 
+    // 1. Tenta base64 do banco (persiste após deploy)
+    if (usuario.foto_base64) {
+      const parts = usuario.foto_base64.match(/^data:(image\/\w+);base64,(.+)$/);
+      if (parts) {
+        res.type(parts[1]);
+        return res.send(Buffer.from(parts[2], 'base64'));
+      }
+    }
+
+    // 2. Fallback: arquivo no disco
     const fs = require('fs');
     const uploadsDir = path.join(__dirname, 'public', 'uploads');
-
     if (usuario.foto) {
       const files = fs.readdirSync(uploadsDir).filter(f => f.startsWith(`usuario-${req.params.id}.`));
       if (files.length > 0) {
@@ -167,10 +176,11 @@ app.get('/foto/:id', async (req, res) => {
       }
     }
 
+    // 3. Fallback final: SVG com iniciais
     const nome = usuario.nome || '?';
     const palavras = nome.trim().split(/\s+/);
     const iniciais = palavras.length >= 2 ? (palavras[0][0] + palavras[palavras.length - 1][0]).toUpperCase() : nome.substring(0, 2).toUpperCase();
-    const cor = ['var(--verde)','#2563eb','#dc2626','#ca8a04','#7c3aed','#0891b2','#be185d'][Number(req.params.id) % 7];
+    const cor = ['#22c55e','#3b82f6','#ef4444','#ca8a04','#a855f7','#06b6d4','#ec4899'][Number(req.params.id) % 7];
     res.type('svg');
     res.send(`<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect fill="${cor}" width="200" height="200"/><text x="100" y="120" text-anchor="middle" font-size="64" fill="white" font-family="sans-serif" font-weight="bold">${iniciais}</text></svg>`);
   } catch (e) {
