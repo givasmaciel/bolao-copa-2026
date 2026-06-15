@@ -183,9 +183,9 @@
         <th>Participante</th>
         <th class="text-center" title="Finalizados / Total">Palpites</th>
         <th class="text-center" title="Palpites em jogos finalizados que pontuaram (>0 pts)">Pontuados</th>
-        <th class="text-center">Dif. Líder</th>
         <th class="text-center" title="Média pts por palpite em jogos finalizados">Média</th>
-        <th class="text-center" title="Maior pontuação em um único jogo finalizado (saturado em 20 na fase de grupos; diferenciará no mata-mata)">Melhor</th>
+        <th class="text-center" title="Placares exatos (20 pts) — 2º critério de desempate">Exatos</th>
+        <th class="text-center" title="Acertos de resultado + gol de um time (14 pts) — 3º critério de desempate">Res+Gol</th>
         <th class="text-center" title="% do máximo possível em jogos finalizados">Aproveitamento</th>
         <th class="text-center" title="Total: palpites + extras + bônus">Pontos</th>
       </tr>
@@ -193,15 +193,12 @@
     <tbody>
       <% ranking.forEach(function(u) { %>
         <%
-          // Referência do líder (primeiro do array, que tem os maiores pontos)
-          var liderRef = ranking[0];
-          var dif = asNum(u.total_pontos) - asNum(liderRef.total_pontos);
           // Média usa apenas palpites finalizados (denominador consistente com o numerador)
           var ppts = asNum(u.palpites_pontos);
           var pfinal = asNum(u.palpites_finalizados);
           var tpalp = asNum(u.total_palpites);
           var media = pfinal > 0 ? (ppts / pfinal).toFixed(2) : '—';
-          var barPct = asNum(liderRef.total_pontos) > 0 ? Math.round((asNum(u.total_pontos) / asNum(liderRef.total_pontos)) * 100) : 0;
+          var barPct = asNum(ranking[0].total_pontos) > 0 ? Math.round((asNum(u.total_pontos) / asNum(ranking[0].total_pontos)) * 100) : 0;
         %>
         <tr class="<%= typeof usuario !== 'undefined' && usuario && usuario.id === u.id ? 'voce' : '' %>">
           <td class="pos <%= u.posicao === 1 ? 'pos-1' : (u.posicao === 2 ? 'pos-2' : (u.posicao === 3 ? 'pos-3' : '')) %>">
@@ -218,9 +215,9 @@
           </td>
           <td class="text-center"><%= pfinal %><span style="color:var(--cinza-escuro)">/<%= tpalp %></span></td>
           <td class="text-center"><%= u.palpites_com_pontos %></td>
-          <td class="text-center" style="font-weight:600;color:<%= dif === 0 ? 'var(--verde)' : 'var(--cinza-escuro)' %>"><%= dif === 0 ? '—' : (dif > 0 ? '+' + dif : dif) %></td>
           <td class="text-center"><%= media %> pts</td>
-          <td class="text-center"><%= u.maior_palpite %> pts</td>
+          <td class="text-center" style="font-weight:600"><%= u.placares_exatos || 0 %></td>
+          <td class="text-center" style="font-weight:600"><%= u.acertos_resultado_gol || 0 %></td>
           <td class="text-center">
             <span style="font-size:0.85rem;font-weight:600"><%= u.total_pontos %> / <%= totalDisputado %></span><br>
             <span style="font-size:0.75rem;color:var(--cinza-escuro)"><%= u.aproveitamento %>%</span>
