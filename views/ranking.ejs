@@ -7,21 +7,38 @@
 <p class="texto-aux" style="font-size:0.8rem;margin:0 0 12px">ⓘ Coluna <strong>Palpites</strong> mostra <em>finalizados / total</em>. Demais métricas (<em>Média, Pontuados, Melhor, Aproveitamento</em>) referem-se apenas a jogos <strong>finalizados</strong>. <em>Pontos</em> = jogos finalizados + extras + bônus.</p>
 
 <% if (ranking.length > 0) {
-    var lider = ranking[0];
-    var maisPalpitesPontuados = ranking.reduce(function(a,b){ return (a.palpites_com_pontos||0) > (b.palpites_com_pontos||0) ? a : b; });
-    var maisPlacaresExatos = ranking.reduce(function(a,b){ return (a.placares_exatos||0) > (b.placares_exatos||0) ? a : b; });
-    // Calcula "média pts/palpite" geral (mais útil que média por participante)
-    // Garante que valores são Number e filtra NaN/undefined para evitar lixo do SQL
+    // Helper: encontra todos os participantes empatados no topo de uma métrica
+    function topComEmpates(getValue) {
+      var max = ranking.reduce(function(m, u) { var v = getValue(u); return v > m ? v : m; }, 0);
+      return ranking.filter(function(u) { return getValue(u) === max && max > 0; });
+    }
     function asNum(v) { var n = Number(v); return isFinite(n) ? n : 0; }
-    var totalPontosJogos = ranking.reduce(function(s,u){ return s + asNum(u.palpites_pontos); }, 0);
-    var totalPalpites = ranking.reduce(function(s,u){ return s + asNum(u.total_palpites); }, 0);
-    var mediaGeral = totalPalpites > 0 ? (totalPontosJogos / totalPalpites).toFixed(2) : '—';
+    function nomesCurto(participantes, maxNomes) {
+      if (!participantes || participantes.length === 0) return '—';
+      var limite = maxNomes || 2;
+      var nomes = participantes.slice(0, limite).map(function(u) { return u.nome; });
+      if (participantes.length > limite) nomes.push('+' + (participantes.length - limite) + ' outros');
+      return nomes.join(', ');
+    }
+
+    var lideres = topComEmpates(function(u) { return asNum(u.total_pontos); });
+    var topPontuados = topComEmpates(function(u) { return asNum(u.palpites_com_pontos); });
+    var topExatos = topComEmpates(function(u) { return asNum(u.placares_exatos); });
+
+    // "média pts/palpite" geral (finalizados)
+    var totalPontosJogos = ranking.reduce(function(s, u) { return s + asNum(u.palpites_pontos); }, 0);
+    var totalPalpitesFinalizados = ranking.reduce(function(s, u) { return s + asNum(u.palpites_finalizados); }, 0);
+    var mediaGeral = totalPalpitesFinalizados > 0 ? (totalPontosJogos / totalPalpitesFinalizados).toFixed(2) : '—';
+
+    // Valor da métrica do top (para mostrar no banner)
+    var valorPontuados = topPontuados[0] ? topPontuados[0].palpites_com_pontos : 0;
+    var valorExatos = topExatos[0] ? topExatos[0].placares_exatos : 0;
   %>
   <div class="card mb-2" style="background:linear-gradient(135deg,#fef9c3,#fef3c7);border-left:4px solid var(--verde)">
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;text-align:center">
-      <div><span style="font-size:1.2rem">🏆</span><br><strong><%= lider.nome %></strong><br><span style="font-size:1.3rem;font-weight:800;color:var(--verde)"><%= lider.total_pontos %> pts</span></div>
-      <div><span style="font-size:1.2rem">🎯</span><br>Mais palpites pontuados<br><strong><%= maisPalpitesPontuados.nome %></strong><br><%= maisPalpitesPontuados.palpites_com_pontos %> de <%= maisPalpitesPontuados.palpites_finalizados || 0 %> finalizados</div>
-      <div><span style="font-size:1.2rem">🎯</span><br>Mais placares exatos<br><strong><%= maisPlacaresExatos.nome %></strong><br><%= maisPlacaresExatos.placares_exatos || 0 %> acerto(s) exato(s)</div>
+      <div><span style="font-size:1.2rem">🏆</span><br><strong><%= nomesCurto(lideres) %></strong><br><span style="font-size:1.3rem;font-weight:800;color:var(--verde)"><%= lideres[0] ? lideres[0].total_pontos : 0 %> pts</span></div>
+      <div><span style="font-size:1.2rem">✅</span><br>Mais palpites pontuados<br><strong><%= nomesCurto(topPontuados) %></strong><br><%= valorPontuados %> de <%= topPontuados[0] ? (topPontuados[0].palpites_finalizados || 0) : 0 %> finalizados</div>
+      <div><span style="font-size:1.2rem">🎯</span><br>Mais placares exatos<br><strong><%= nomesCurto(topExatos) %></strong><br><%= valorExatos %> acerto(s) exato(s)</div>
       <div><span style="font-size:1.2rem">📊</span><br>Média geral<br><strong><%= mediaGeral %></strong><br>pts/palpite (finalizados)</div>
     </div>
   </div>
@@ -156,13 +173,15 @@
     <tbody>
       <% ranking.forEach(function(u) { %>
         <%
-          var dif = u.total_pontos - lider.total_pontos;
+          // Referência do líder (primeiro do array, que tem os maiores pontos)
+          var liderRef = ranking[0];
+          var dif = asNum(u.total_pontos) - asNum(liderRef.total_pontos);
           // Média usa apenas palpites finalizados (denominador consistente com o numerador)
           var ppts = asNum(u.palpites_pontos);
           var pfinal = asNum(u.palpites_finalizados);
           var tpalp = asNum(u.total_palpites);
           var media = pfinal > 0 ? (ppts / pfinal).toFixed(2) : '—';
-          var barPct = asNum(lider.total_pontos) > 0 ? Math.round((asNum(u.total_pontos) / asNum(lider.total_pontos)) * 100) : 0;
+          var barPct = asNum(liderRef.total_pontos) > 0 ? Math.round((asNum(u.total_pontos) / asNum(liderRef.total_pontos)) * 100) : 0;
         %>
         <tr class="<%= typeof usuario !== 'undefined' && usuario && usuario.id === u.id ? 'voce' : '' %>">
           <td class="pos <%= u.posicao === 1 ? 'pos-1' : (u.posicao === 2 ? 'pos-2' : (u.posicao === 3 ? 'pos-3' : '')) %>">
