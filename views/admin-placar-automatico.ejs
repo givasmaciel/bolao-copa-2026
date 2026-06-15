@@ -3,7 +3,7 @@
 <%- include('partials/flash') %>
 
 <h1>⚙️ Placar Automático</h1>
-<p class="subtitulo">Busca placares reais da Copa 2026 via <code>wheniskickoff.com</code> e atualiza os resultados automaticamente.</p>
+<p class="subtitulo">Busca placares reais da Copa 2026 via <code>26worldcup.cn</code> e atualiza os resultados automaticamente.</p>
 
 <div class="card mb-2">
   <h3>Status</h3>
@@ -38,8 +38,8 @@
 <div class="card">
   <h3>Como funciona</h3>
   <ul style="line-height:1.8">
-    <li>A cada <strong>15 minutos</strong> o sistema consulta a API pública <code>wheniskickoff.com</code>.</li>
-    <li>Processa jogos com status <code>FINISHED</code> assim que a API retorna o placar.</li>
+    <li>A cada <strong>15 minutos</strong> o sistema consulta a API <code>26worldcup.cn</code> (dados da API-Football).</li>
+    <li>Processa jogos com status <code>FT</code> assim que a API retorna o placar.</li>
     <li>Após atualizar o placar, os pontos de todos os palpites daquele jogo são recalculados.</li>
     <li>Jogos já finalizados no sistema (<code>finalizado = 1</code>) são ignorados.</li>
     <li>Não substitui a edição manual — é uma conveniência para agilizar o processo.</li>

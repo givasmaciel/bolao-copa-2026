@@ -1,7 +1,7 @@
 const { run, get, all } = require('../database/db');
 
 const API_URL = 'https://26worldcup.cn/api/v1/cup/2026/schedule';
-const API_KEY = 'ft_bolao_co_8d3ff2c4132244de97a58898dd260728694d25a3';
+const API_KEY = process.env.PLANO_AUTO_API_KEY || 'ft_bolao_co_8d3ff2c4132244de97a58898dd260728694d25a3';
 
 const API_NOME_PARA_SIGLA = {
   'Mexico': 'MEX', 'South Africa': 'AFS', 'South Korea': 'COR', 'Czechia': 'CZE',

@@ -14,6 +14,7 @@ Deploy automático no Render (free tier) via Blueprint com PostgreSQL. Localment
 - **Visualização pública de palpites** (`/jogos/:id/palpites`) — 3 níveis de visibilidade: 🔒 oculto antes do fechamento, 👀 visível sem pontos após fechar, visível com pontos após resultado; agrupamento por pontuação; destaca o palpite do visitante
 - **Config** (`/config`) — participante altera próprio nome (sincronizado com username)
 - **Admin como juiz** — não participa, não aparece no ranking, redirecionado de `/palpites`
+- **Placar automático** — busca resultados reais da API 26worldcup.cn a cada 15 minutos; atualiza placar e recalcula pontos automaticamente; acionável manualmente pelo admin em `/admin/placar-automatico`
 - **Pontos bônus** — participantes tardios recebem pontuação do último colocado -1 da rodada de ingresso; cadastro encerra após fechamento dos extras; tooltip no ranking mostra motivo
 - **Rotas administrativas** — resultados dos jogos, recalcular pontos, gerenciar usuários (promover/rebaixar/excluir/resetar senha, resetar palpites individual/massa, alterar username, criar participante), admin extras, admin config
 - **Recuperação de senha** — token por email (SMTP opcional; fallback exibe link na tela)
@@ -82,7 +83,7 @@ npm start             # http://localhost:3000
 
 ## Variáveis de ambiente
 
-`DATABASE_URL`, `SESSION_SECRET`, `ADMIN_NOME`, `ADMIN_EMAIL`, `ADMIN_SENHA`, `BASE_URL`, `DIAGNOSTIC_KEY`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`
+`DATABASE_URL`, `SESSION_SECRET`, `ADMIN_NOME`, `ADMIN_EMAIL`, `ADMIN_SENHA`, `BASE_URL`, `DIAGNOSTIC_KEY`, `PLANO_AUTO_API_KEY`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`
 
 ## Estrutura do projeto
 
@@ -106,7 +107,11 @@ routes/
   jogos.js       — listagem pública dos 104 jogos
   ranking.js     — ranking com pontos extras, desempate, exclui admins
   senha.js       — reset de senha com token + email
-  admin.js       — resultados, recalcular, usuários, criar participante, extras, config, pontuação por fase, pontos bônus
+  admin.js       — resultados, recalcular, placar automático, usuários, criar participante, extras, config, pontuação por fase, pontos bônus
+
+services/
+  placar-automatico.js — integração com API 26worldcup.cn (busca resultados a cada 15 min)
+  mata-mata.js         — lógica de geração dos confrontos eliminatórios
 
 middleware/
   auth.js        — verificarAutenticado, verificarAdmin, jaLogado
@@ -126,7 +131,7 @@ views/
   resumo.ejs     — estatísticas, rodadas, racha, histórico
   config.ejs     — alterar nome
   classificacao.ejs — grupos e classificação
-  admin.ejs, admin-jogos.ejs, admin-usuarios.ejs, admin-extras.ejs, admin-pontuacao-fases.ejs
+  admin.ejs, admin-jogos.ejs, admin-usuarios.ejs, admin-extras.ejs, admin-pontuacao-fases.ejs, admin-placar-automatico.ejs
   esqueci-senha.ejs, redefinir-senha.ejs
   404.ejs, 500.ejs
 
@@ -140,7 +145,7 @@ raiz/
 
 - Admin (is_admin=1) redirecionado de `/palpites` e `/palpites-extras` com flash
 - Palpites travam 2 min antes do horário BRT de cada jogo (frontend + backend)
-- Pontuação automática ao admin marcar jogo como finalizado; botão de recalcular disponível
+- Pontuação automática ao admin marcar jogo como finalizado; botão de recalcular disponível; placar automático via API 26worldcup.cn a cada 15 min
 - Admin pode recalcular pontos, resetar palpites (individual/massa), resetar senha, promover/rebaixar, excluir usuários
 - Cadastro aberto — qualquer pessoa pode criar conta livremente (até o fechamento dos palpites extras)
 - Admin pode conceder pontos bônus a participantes tardios (último colocado -1 da rodada de ingresso; cadastro encerra após fechamento dos extras)
