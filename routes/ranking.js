@@ -32,10 +32,13 @@ router.get('/', async (req, res) => {
         ), 0) AS extras_pontos,
         COALESCE((SELECT SUM(pontos) FROM pontos_bonus WHERE usuario_id = u.id), 0) AS bonus_pontos,
         SUM(CASE WHEN p.pontos_obtidos > 0 THEN 1 ELSE 0 END) AS palpites_com_pontos,
-        COALESCE(MAX(p.pontos_obtidos), 0) AS maior_palpite
+        COALESCE(MAX(p.pontos_obtidos), 0) AS maior_palpite,
+        -- Placar exato: aposta que acertou o resultado E a pts_obtidos é igual a pts_exato da fase
+        SUM(CASE WHEN p.pontos_obtidos = fp.pts_exato THEN 1 ELSE 0 END) AS placares_exatos
       FROM usuarios u
       LEFT JOIN palpites p ON p.usuario_id = u.id
       LEFT JOIN jogos j ON j.id = p.jogo_id
+      LEFT JOIN fase_pontuacao fp ON fp.fase = j.fase
       WHERE u.is_admin = 0
       GROUP BY u.id
       ORDER BY total_pontos DESC, palpites_com_pontos DESC, u.nome ASC

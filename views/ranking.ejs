@@ -9,7 +9,7 @@
 <% if (ranking.length > 0) {
     var lider = ranking[0];
     var maisPalpitesPontuados = ranking.reduce(function(a,b){ return (a.palpites_com_pontos||0) > (b.palpites_com_pontos||0) ? a : b; });
-    var maiorMelhor = ranking.reduce(function(a,b){ return (a.maior_palpite||0) > (b.maior_palpite||0) ? a : b; });
+    var maisPlacaresExatos = ranking.reduce(function(a,b){ return (a.placares_exatos||0) > (b.placares_exatos||0) ? a : b; });
     // Calcula "média pts/palpite" geral (mais útil que média por participante)
     // Garante que valores são Number e filtra NaN/undefined para evitar lixo do SQL
     function asNum(v) { var n = Number(v); return isFinite(n) ? n : 0; }
@@ -21,7 +21,7 @@
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;text-align:center">
       <div><span style="font-size:1.2rem">🏆</span><br><strong><%= lider.nome %></strong><br><span style="font-size:1.3rem;font-weight:800;color:var(--verde)"><%= lider.total_pontos %> pts</span></div>
       <div><span style="font-size:1.2rem">🎯</span><br>Mais palpites pontuados<br><strong><%= maisPalpitesPontuados.nome %></strong><br><%= maisPalpitesPontuados.palpites_com_pontos %> de <%= maisPalpitesPontuados.palpites_finalizados || 0 %> finalizados</div>
-      <div><span style="font-size:1.2rem">🔥</span><br>Maior pontuação<br><strong><%= maiorMelhor.nome %></strong><br><%= maiorMelhor.maior_palpite %> pts em 1 jogo</div>
+      <div><span style="font-size:1.2rem">🎯</span><br>Mais placares exatos<br><strong><%= maisPlacaresExatos.nome %></strong><br><%= maisPlacaresExatos.placares_exatos || 0 %> acerto(s) exato(s)</div>
       <div><span style="font-size:1.2rem">📊</span><br>Média geral<br><strong><%= mediaGeral %></strong><br>pts/palpite (finalizados)</div>
     </div>
   </div>
@@ -148,7 +148,7 @@
         <th class="text-center" title="Palpites em jogos finalizados que pontuaram (>0 pts)">Pontuados</th>
         <th class="text-center">Dif. Líder</th>
         <th class="text-center" title="Média pts por palpite em jogos finalizados">Média</th>
-        <th class="text-center" title="Maior pontuação em um único jogo finalizado">Melhor</th>
+        <th class="text-center" title="Maior pontuação em um único jogo finalizado (saturado em 20 na fase de grupos; diferenciará no mata-mata)">Melhor</th>
         <th class="text-center" title="% do máximo possível em jogos finalizados">Aproveitamento</th>
         <th class="text-center" title="Total: palpites + extras + bônus">Pontos</th>
       </tr>
