@@ -33,7 +33,7 @@
             <% } %>
             <li class="user-pill">
               <% if (usuario.foto) { %>
-                <img src="<%= usuario.foto %>?_=<%= Date.now() %>" alt="" style="width:24px;height:24px;border-radius:50%;object-fit:cover">
+                <img src="<%= usuario.foto %>?_=<%= Date.now() %>" alt="" style="width:24px;height:24px;border-radius:50%;object-fit:cover" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'"><span style="font-size:1.1rem;display:none">👤</span>
               <% } else { %>
                 <span style="font-size:1.1rem">👤</span>
               <% } %>
