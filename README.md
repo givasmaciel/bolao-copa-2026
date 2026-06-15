@@ -14,11 +14,12 @@ Deploy automático no Render (free tier) via Blueprint com PostgreSQL. Localment
 - **Visualização pública de palpites** (`/jogos/:id/palpites`) — 3 níveis de visibilidade: 🔒 oculto antes do fechamento, 👀 visível sem pontos após fechar, visível com pontos após resultado; agrupamento por pontuação; destaca o palpite do visitante
 - **Config** (`/config`) — participante altera próprio nome (sincronizado com username)
 - **Admin como juiz** — não participa, não aparece no ranking, redirecionado de `/palpites`
-- **Placar automático** — busca resultados reais da API 26worldcup.cn a cada 15 minutos; atualiza placar e recalcula pontos automaticamente; acionável manualmente pelo admin em `/admin/placar-automatico`
+- **Placar automático** — busca resultados reais da API 26worldcup.cn a cada 30 minutos; atualiza placar e recalcula pontos automaticamente; acionável manualmente pelo admin em `/admin/placar-automatico`
 - **Pontos bônus** — participantes tardios recebem pontuação do último colocado -1 da rodada de ingresso; cadastro encerra após fechamento dos extras; tooltip no ranking mostra motivo
 - **Rotas administrativas** — resultados dos jogos, recalcular pontos, gerenciar usuários (promover/rebaixar/excluir/resetar senha, resetar palpites individual/massa, alterar username, criar participante), admin extras, admin config
 - **Recuperação de senha** — token por email (SMTP opcional; fallback exibe link na tela)
-- **Ranking** — inclui pontos extras via subquery; desempate por mais palpites com pontos > 0; exclui admins
+- **Ranking** — inclui pontos extras via subquery; desempate por mais palpites com pontos > 0; exclui admins; colunas Dif. Líder e Média pts/palpite; barra visual proporcional ao líder; "🏆 Líder + 🎯 Mais acertos + 🔥 Maior pontuação" em banner destacado
+- **Perfil do participante** — cards horizontais compactos (Palpites, Acertos, Pontos, Aproveit., Média/palpite, Pts disp.); palpites por rodada com resultado real × palpite × pontos
 
 ## Pontuação — Jogos
 
@@ -110,7 +111,7 @@ routes/
   admin.js       — resultados, recalcular, placar automático, usuários, criar participante, extras, config, pontuação por fase, pontos bônus
 
 services/
-  placar-automatico.js — integração com API 26worldcup.cn (busca resultados a cada 15 min)
+  placar-automatico.js — integração com API 26worldcup.cn (busca resultados a cada 30 min, respeitando limite de 100 req/dia)
   mata-mata.js         — lógica de geração dos confrontos eliminatórios
 
 middleware/

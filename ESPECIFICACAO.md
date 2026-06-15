@@ -53,10 +53,11 @@ O banco opera de forma transparente com **SQLite** (desenvolvimento local) ou **
 | `nome` | TEXT NOT NULL | Nome de exibição do participante |
 | `email` | TEXT NOT NULL UNIQUE | E-mail (normalizado para minúsculas) |
 | `username` | TEXT UNIQUE | Apelido para login (nullable, auto-preenchido via prefixo do email) |
-
 | `senha_hash` | TEXT NOT NULL | Hash bcrypt da senha |
 | `is_admin` | INTEGER DEFAULT 0 | 1 = administrador |
 | `criado_em` | TIMESTAMP / DATETIME DEFAULT | Data de criação |
+| `foto_base64` | TEXT | Foto de perfil em base64 (persiste no PostgreSQL mesmo após deploy no Render) |
+| `foto` | TEXT | Caminho da foto no disco (efêmero no Render) |
 
 ### `grupos`
 
@@ -274,7 +275,8 @@ Armazena configurações do sistema, como o prazo limite dos palpites extras (ex
 
 **Funcionalidades:**
 - Alterar nome de exibição (`nome`) — também sincronizado com o campo `username` para login.
-
+- Upload e remoção de foto de perfil — salva como arquivo no disco (`public/uploads/`) e como base64 na tabela `usuarios.foto_base64` para persistir no PostgreSQL mesmo após deploy no Render.
+- Exibição da foto via rota `/foto/:id` (prioriza base64 do banco → fallback arquivo → fallback SVG com iniciais).
 - Exibição de mensagens flash de sucesso/erro.
 
 ### 5.7 Jogos — Listagem Pública (`routes/jogos.js`)
@@ -296,7 +298,8 @@ Armazena configurações do sistema, como o prazo limite dos palpites extras (ex
 | GET | `/ranking` | Ranking geral com pontuação total |
 
 **Conteúdo:**
-- Tabela principal: posição, participante, palpites, acertos, melhor palpite, pontos extras, bônus (com tooltip mostrando motivo ao passar o mouse), aproveitamento percentual, total de pontos.
+- Banner do líder acima da tabela com 🏆 líder (nome + pts), 🎯 mais acertos, 🔥 maior pontuação em 1 jogo, 📊 média geral de pts por participante.
+- Tabela principal: posição, participante, palpites, acertos, **Dif. Líder** (— para o líder, −X para os demais), **Média pts/palpite**, melhor palpite, **Aproveitamento** (formato "X / Y (Z%)"), total de pontos com barra visual proporcional ao líder.
 - Tabela por rodada: pontos acumulados em cada rodada + coluna "Extra" (soma de extras e bônus) antes do total.
 - Disclaimer explicando a regra de bônus (último colocado -1) e que cadastro encerra após o prazo dos extras.
 - Se houver resultados de extras definidos, seção "Resultados dos Palpites Extras" com acertadores por seleção.
@@ -502,6 +505,7 @@ Executado antes do servidor em produção:
 | `SMTP_USER` | Não | Usuário SMTP |
 | `SMTP_PASS` | Não | Senha SMTP |
 | `SMTP_FROM` | Não | Remetente dos e-mails |
+| `PLANO_AUTO_API_KEY` | Não | Chave da API 26worldcup.cn para placar automático (fallback para chave hardcoded) |
 
 ---
 
