@@ -5,7 +5,7 @@
 <h1>🏆 Ranking do Bolão</h1>
 <p class="subtitulo">⚽ Confira quem está liderando o Bolão da Copa 2026 e acompanhe a evolução dos participantes rodada a rodada.</p>
 <p class="texto-aux" style="font-size:0.8rem;margin:0 0 12px">
-  ⓘ As métricas de qualidade, <em>Média</em> e <em>Aproveitamento</em> referem-se apenas a jogos <strong>finalizados</strong>. <em>Pontos</em> = jogos finalizados + extras + bônus. <em>Pont.</em> é a soma de <em>Exatos + Res+Gol + Só Res + 1 Gol</em> (quantos palpites pontuaram &gt; 0).
+  ⓘ <em>Palpites</em> mostra o total de palpites <strong>feitos até o momento</strong> pelo participante (cresce conforme ele palita novos jogos). As métricas de qualidade, <em>Média</em> e <em>Aproveitamento</em> referem-se apenas a jogos <strong>finalizados</strong>. <em>Pontos</em> = jogos finalizados + extras + bônus. <em>Pont.</em> é a soma de <em>Exatos + Res+Gol + Só Res + 1 Gol</em> (quantos palpites pontuaram &gt; 0).
 </p>
 
 <details class="card mb-2" style="padding:8px 12px;cursor:pointer">
@@ -234,6 +234,7 @@
       <tr>
         <th class="pos" rowspan="2">#</th>
         <th rowspan="2">Participante</th>
+        <th class="text-center" rowspan="2" title="Total de palpites feitos até o momento (cresce com novos palpites)">Palpites</th>
         <th class="text-center" colspan="6">🎯 Qualidade dos acertos</th>
         <th class="text-center" rowspan="2" title="Média pts por palpite em jogos finalizados">Média</th>
         <th class="text-center" rowspan="2" title="% do máximo possível em jogos finalizados">Aproveit.</th>
@@ -254,6 +255,7 @@
           // Média usa apenas palpites finalizados (denominador consistente com o numerador)
           var ppts = asNum(u.palpites_pontos);
           var pfinal = asNum(u.palpites_finalizados);
+          var tpalp = asNum(u.total_palpites);
           var media = pfinal > 0 ? (ppts / pfinal).toFixed(2) : '—';
           var barPct = asNum(ranking[0].total_pontos) > 0 ? Math.round((asNum(u.total_pontos) / asNum(ranking[0].total_pontos)) * 100) : 0;
         %>
@@ -270,6 +272,7 @@
               <% } %>
             </div>
           </td>
+          <td class="text-center" title="Total de palpites feitos até o momento"><%= tpalp %></td>
           <td class="text-center" style="font-weight:700;color:var(--verde)" title="Placares exatos (20 pts)"><%= u.placares_exatos || 0 %></td>
           <td class="text-center" title="Resultado + gol (14 pts)"><%= u.acertos_resultado_gol || 0 %></td>
           <td class="text-center" title="Só resultado (8 pts)"><%= u.acertos_resultado || 0 %></td>

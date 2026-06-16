@@ -304,6 +304,7 @@ Armazena configurações do sistema, como o prazo limite dos palpites extras (ex
 - Tabela principal com as colunas:
   - `#` (posição com 🥇🥈🥉 para top 3)
   - `Participante` (avatar + nome + tag "(você)" para o usuário logado)
+  - `Palpites` (total dinâmico de palpites feitos pelo participante até o momento — cresce conforme ele palita novos jogos)
   - `🎯 Qualidade dos acertos` (grupo de 6 sub-colunas): **Exatos** (20 pts) → **Res+Gol** (14 pts) → **Só Res** (8 pts) → **1 Gol** (3 pts) → **Gols** (placares parciais certos) → **Pont.** (soma das 4 primeiras = palpites pontuados)
   - `Média` (pts/palpite em finalizados)
   - `Aproveit.` (% do máximo possível em finalizados)
