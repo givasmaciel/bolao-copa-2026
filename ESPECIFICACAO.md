@@ -298,16 +298,38 @@ Armazena configurações do sistema, como o prazo limite dos palpites extras (ex
 | GET | `/ranking` | Ranking geral com pontuação total |
 
 **Conteúdo:**
-- Banner do líder acima da tabela com 🏆 líder (nome + pts), 🎯 mais acertos, 🔥 maior pontuação em 1 jogo, 📊 média geral de pts por participante.
-- Tabela principal: posição, participante, palpites, acertos, **Dif. Líder** (— para o líder, −X para os demais), **Média pts/palpite**, melhor palpite, **Aproveitamento** (formato "X / Y (Z%)"), total de pontos com barra visual proporcional ao líder.
-- Tabela por rodada: pontos acumulados em cada rodada + coluna "Extra" (soma de extras e bônus) antes do total.
+- Card expansível no topo com tabela de **Critérios de desempate** (4 colunas: `# / Critério / Pontos / O que conta`), com badges destacando os pesos por acerto (20/14/8/3 pts, +1/gol, qtd, soma, abc).
+- Banner com 4 células: 🏆 **Líder** (nome + pts), ✅ **Mais palpites pontuados** (com qtd e "de X finalizados"), 🎯 **Mais placares exatos** (com qtd de acertos), 📊 **Média geral** (pts/palpite em jogos finalizados).
+- Card de **Estatísticas dos Jogos Concluídos** com placares exatos, acertos de resultado, empates, 1 gol certo, zeros, média pts/palpite, melhor palpite, aproveitamento médio global, usuários pontuando, etc. — cada um em uma célula com label em maiúsculas e valor grande.
+- Tabela principal com as colunas:
+  - `#` (posição com 🥇🥈🥉 para top 3)
+  - `Participante` (avatar + nome + tag "(você)" para o usuário logado)
+  - `Palpites` (formato `finalizados / total`)
+  - `🎯 Qualidade dos acertos` (grupo de 6 sub-colunas): **Exatos** (20 pts) → **Res+Gol** (14 pts) → **Só Res** (8 pts) → **1 Gol** (3 pts) → **Gols** (placares parciais certos) → **Pont.** (soma das 4 primeiras = palpites pontuados)
+  - `Média` (pts/palpite em finalizados)
+  - `Aproveit.` (% do máximo possível em finalizados)
+  - `Pontos` (com barra visual proporcional ao líder)
+- Tabela por rodada: pontos acumulados em cada rodada (R1, R2, R3, 32av, 16av, QF, SF, 3º, Final) + coluna "Extra" (soma de extras e bônus) antes do total.
 - Disclaimer explicando a regra de bônus (último colocado -1) e que cadastro encerra após o prazo dos extras.
 - Se houver resultados de extras definidos, seção "Resultados dos Palpites Extras" com acertadores por seleção.
 
 **Cálculo:**
 - `total_pontos = SUM(palpites.pontos_obtidos) + SUM(pontos dos palpites_extras via subquery) + SUM(pontos_bonus)`.
 - Exclui administradores (`is_admin = 0`).
-- Critério de desempate: maior número de palpites com `pontos_obtidos > 0`; persistindo empate, ordem alfabética por nome.
+- **Critérios de desempate (8 níveis, do mais forte pro mais fraco):**
+
+  | # | Critério | SQL / Métrica | Pontos (grupos) |
+  |---|---|---|---|
+  | 1 | Total de pontos | `total_pontos` | soma |
+  | 2 | Placares exatos | `placares_exatos` | 20 pts |
+  | 3 | Resultado + gol | `acertos_resultado_gol` | 14 pts |
+  | 4 | Só resultado | `acertos_resultado` | 8 pts |
+  | 5 | 1 gol certo | `acertos_gol` | 3 pts |
+  | 6 | Gols certos | `gols_acertados` (soma dos placares parciais) | +1 / gol |
+  | 7 | Palpites pontuados | `palpites_com_pontos` | qtd |
+  | 8 | Nome | `u.nome` | alfabético |
+
+  Critérios 2–6 consideram apenas **jogos finalizados**. Extras e bônus entram no total mas não no desempate de qualidade. Os pesos exatos por acerto vêm da tabela `fase_pontuacao` e podem variar por fase.
 - Posição calculada no servidor: muda apenas quando o total de pontos difere do participante anterior.
 - Aproveitamento = (pontos do participante / totalDisputado) × 100, onde totalDisputado = soma dos pts_exato dos jogos finalizados + soma dos pontos dos resultados_extras.
 

@@ -18,7 +18,7 @@ Deploy automático no Render (free tier) via Blueprint com PostgreSQL. Localment
 - **Pontos bônus** — participantes tardios recebem pontuação do último colocado -1 da rodada de ingresso; cadastro encerra após fechamento dos extras; tooltip no ranking mostra motivo
 - **Rotas administrativas** — resultados dos jogos, recalcular pontos, gerenciar usuários (promover/rebaixar/excluir/resetar senha, resetar palpites individual/massa, alterar username, criar participante), admin extras, admin config
 - **Recuperação de senha** — token por email (SMTP opcional; fallback exibe link na tela)
-- **Ranking** — inclui pontos extras via subquery; desempate hierárquico (em ordem: placares exatos → resultado+gol → resultado → gols certos → 1 gol certo → palpites pontuados → nome); exclui admins; colunas Dif. Líder e Média pts/palpite (sobre finalizados); barra visual proporcional ao líder; banner com "🏆 Líder + 🎯 Mais palpites pontuados + 🔥 Maior pontuação em 1 jogo + 📊 Média pts/palpite"; coluna Palpites exibida como "finalizados/total" para evitar confusão entre jogos finalizados e pendentes; regras de desempate documentadas em card expansível no topo do ranking
+- **Ranking** — inclui pontos extras via subquery; exclui admins; desempate hierárquico em 8 níveis (total pontos → placares exatos → resultado+gol → só resultado → 1 gol certo → gols certos → palpites pontuados → nome alfabético); card de regras no topo com tabela `Critério / Pontos / O que conta`; grupo "🎯 Qualidade dos acertos" com 6 colunas (Exatos, Res+Gol, Só Res, 1 Gol, Gols, Pont.) seguindo a cascata do SQL; barra visual proporcional ao líder no total; banner com 🏆 Líder + ✅ Mais palpites pontuados + 🎯 Mais placares exatos + 📊 Média geral; coluna Palpites exibida como "finalizados/total" para evitar confusão entre jogos finalizados e pendentes
 - **Perfil do participante** — cards horizontais compactos (Palpites, Acertos, Pontos, Aproveit., Média/palpite, Pts disp.); palpites por rodada com resultado real × palpite × pontos
 
 ## Pontuação — Jogos
@@ -153,7 +153,7 @@ raiz/
 - Pontuação por fase configurável pelo admin em `/admin/pontuacao-fases`
 - Aproveitamento percentual exibido no ranking e perfil do usuário
 - Resultados dos extras no ranking só aparecem após admin definir em `/admin/extras`
-- Desempate no ranking: quem tem mais palpites com pontos > 0
+- Desempate no ranking: cascata de 8 critérios — total de pontos → placares exatos → resultado+gol → só resultado → 1 gol certo → gols certos → palpites pontuados → nome (alfabético)
 - Trust proxy: `app.set('trust proxy', 1)` para sessão funcionar atrás do proxy HTTPS do Render
 - Sessão: cookie-based, secure em produção, sameSite lax, 30 dias
 - Todos os horários armazenados em BRT (-03:00)
