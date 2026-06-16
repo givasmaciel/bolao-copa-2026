@@ -153,9 +153,9 @@
   <div class="card" style="border-left:4px solid var(--verde);margin-bottom:20px">
     <div class="flex-between" style="cursor:pointer" onclick="var c=this.nextElementSibling;var i=this.querySelector('.toggle-icon');var h=c.classList.toggle('hidden');i.textContent=h?'▶':'▼'">
       <h3 style="margin:0">✅ Seus palpites salvos</h3>
-      <span class="toggle-icon" style="font-size:0.8rem;color:var(--cinza-escuro)">▼</span>
+      <span class="toggle-icon" style="font-size:0.8rem;color:var(--cinza-escuro)">▶</span>
     </div>
-    <div style="margin-top:12px">
+    <div class="hidden" style="margin-top:12px">
       <% rodadasOrdenadas.forEach(function(rodada, idx) {
         const dados = palpitesPorRodada[rodada];
         if (dados.salvos.length === 0) return;
