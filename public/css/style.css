@@ -656,6 +656,20 @@ h3 {
   letter-spacing: 0.5px;
 }
 
+/* Sub-cabeçalho (2ª linha do thead) — tom mais escuro pra criar hierarquia */
+.ranking-tabela thead tr:nth-child(2) th {
+  background: #007a2e;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* Cabeçalho de grupo (colspan) — centralizado, com divisórias verticais suaves */
+.ranking-tabela thead tr:first-child th[colspan] {
+  text-align: center;
+  letter-spacing: 0.8px;
+  border-left: 1px solid rgba(255, 255, 255, 0.3);
+  border-right: 1px solid rgba(255, 255, 255, 0.3);
+}
+
 .ranking-tabela td {
   padding: 14px 12px;
   border-bottom: 1px solid var(--cinza-claro);
