@@ -5,33 +5,46 @@
 <h1>📊 Painel</h1>
 
 <% if (nextGame) { %>
-  <div class="card" style="border-left:4px solid <%= nextGame.jahFechou ? 'var(--erro)' : 'var(--amarelo)' %>;background:<%= nextGame.jahFechou ? '#fff5f5' : '#fffde7' %>">
+  <%
+    const urgente = !nextGame.jahFechou && nextGame.diffMin <= 120;
+    const fechado = nextGame.jahFechou;
+    const aberto = !urgente && !fechado;
+    const bgStyle = fechado
+      ? 'background:linear-gradient(135deg,#fff5f5,#ffe0e0);border-left:4px solid var(--erro)'
+      : urgente
+        ? 'background:linear-gradient(135deg,#fff8db,#ffe28a);border-left:4px solid #f59e0b;box-shadow:0 4px 16px rgba(245,158,11,.25)'
+        : 'background:linear-gradient(135deg,#fffde7,#fef3c7);border-left:4px solid var(--amarelo)';
+    const titulo = fechado ? '🔒 JOGO FECHADO' : (urgente ? '⚠️ PALPITE FECHANDO' : '⚽ PRÓXIMO JOGO');
+    const tituloCor = fechado ? 'var(--erro)' : (urgente ? '#b45309' : 'var(--verde)');
+  %>
+  <div class="card" style="<%= bgStyle %>">
     <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
-      <div style="font-size:2rem"><%= nextGame.jahFechou ? '🔒' : '⚽' %></div>
-      <div style="flex:1">
-        <div style="font-weight:700;font-size:1.1rem">
+      <div style="font-size:2.4rem;<%= urgente ? 'animation:pulse 1.5s infinite' : '' %>"><%= fechado ? '🔒' : (urgente ? '⏰' : '⚽') %></div>
+      <div style="flex:1;min-width:240px">
+        <div style="font-weight:800;font-size:0.78rem;letter-spacing:1px;color:<%= tituloCor %>;text-transform:uppercase"><%= titulo %></div>
+        <div style="font-weight:700;font-size:1.15rem;margin-top:2px">
           <%= nextGame.casa_pt %> × <%= nextGame.visitante_pt %>
         </div>
-        <div style="font-size:0.85rem;color:var(--cinza-escuro)">
+        <div style="font-size:0.82rem;color:var(--cinza-escuro);margin-top:2px">
           📍 <%= nextGame.estadio %>, <%= nextGame.cidade %> &middot; 🕐 <%= nextGame.horaBRT %> (BRT)
         </div>
-        <div style="font-size:0.85rem;margin-top:4px">
-          <% if (nextGame.jahFechou) { %>
-            <span style="color:var(--erro);font-weight:600">🔒 Fechado para palpites</span>
+        <div style="font-size:0.88rem;margin-top:6px">
+          <% if (fechado) { %>
+            <span style="color:var(--erro);font-weight:600">Fechado para palpites</span>
             <% if (nextGame.temPalpite) { %>
               &middot; Seu palpite: <strong><%= nextGame.palpite_gols_casa %>×<%= nextGame.palpite_gols_visitante %></strong>
             <% } else { %>
               &middot; <span class="texto-aux">Você não palpitou</span>
             <% } %>
-          <% } else if (nextGame.diffMin <= 120) { %>
-            <span style="color:var(--erro);font-weight:600">⏰ Fecha em <%= nextGame.diffMin %> minutos!</span>
+          <% } else if (urgente) { %>
+            <span style="color:#b45309;font-weight:700">Fecha em <%= nextGame.diffMin %> minutos!</span>
             <% if (!nextGame.temPalpite) { %>
-              &middot; <a href="/palpites" style="font-weight:600">Palpitar agora →</a>
+              &middot; <a href="/palpites" style="font-weight:700;color:#b45309;text-decoration:underline">Palpitar agora →</a>
             <% } else { %>
               &middot; Seu palpite: <strong><%= nextGame.palpite_gols_casa %>×<%= nextGame.palpite_gols_visitante %></strong>
             <% } %>
           <% } else { %>
-            <span style="color:var(--verde)">✅ Aberto para palpites até <%= nextGame.diffMin %> minutos</span>
+            <span style="color:var(--verde);font-weight:600">✅ Aberto para palpites até <%= nextGame.diffMin %> minutos</span>
             <% if (nextGame.temPalpite) { %>
               &middot; Seu palpite: <strong><%= nextGame.palpite_gols_casa %>×<%= nextGame.palpite_gols_visitante %></strong>
             <% } else { %>

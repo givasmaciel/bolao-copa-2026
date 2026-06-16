@@ -5,6 +5,27 @@
 <h1>⚽ Meus palpites</h1>
 <p class="subtitulo">Dê o placar dos jogos da fase de grupos. Você pode editar até <strong>2 minutos antes</strong> do jogo começar (prazo pode ser alterado pelo administrador).</p>
 
+<%
+  const palpitesFeitos = stats.total_palpites || 0;
+  const totalJogos = totalJogosGrupo || 0;
+  const pctProgresso = totalJogos > 0 ? Math.round((palpitesFeitos / totalJogos) * 100) : 0;
+  const restantes = Math.max(0, totalJogos - palpitesFeitos);
+%>
+<div class="progress-palpites">
+  <div class="progress-label">
+    <span>📊 Progresso dos palpites</span>
+    <span><strong><%= palpitesFeitos %></strong> / <%= totalJogos %> jogos (<%= pctProgresso %>%)</span>
+  </div>
+  <div class="progress-bar">
+    <div class="progress-fill" style="width: <%= pctProgresso %>%"></div>
+  </div>
+  <% if (restantes > 0) { %>
+    <div style="font-size:0.75rem;color:var(--cinza-escuro);margin-top:6px">Faltam <strong><%= restantes %></strong> palpite(s) — continue! ⚽</div>
+  <% } else if (totalJogos > 0) { %>
+    <div style="font-size:0.75rem;color:var(--verde);margin-top:6px;font-weight:600">🎉 Você palpitou em todos os jogos!</div>
+  <% } %>
+</div>
+
 <div class="grid grid-3 mb-2">
   <div class="stat-card">
     <div class="stat-valor"><%= stats.total_palpites %></div>
@@ -63,23 +84,13 @@
               <%= pontos %> pts
             </div>
           <% } %>
-          <div class="jogo-data"><%= new Date(jogo.data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'America/Sao_Paulo' }) %></div>
-          <div class="jogo-estadio">📍 <%= jogo.estadio %>, <%= jogo.cidade %></div>
-          <div style="margin-top:4px"><span class="badge badge-finalizado">Final</span></div>
-          <div style="margin-top:4px">
-            <a href="/palpites/jogo/<%= jogo.id %>" class="btn btn-sm btn-secondary" style="font-size:0.7rem;padding:3px 8px">📋 Ver palpites</a>
-          </div>
+          <a href="/palpites/jogo/<%= jogo.id %>" class="btn btn-sm btn-secondary" style="font-size:0.7rem;padding:3px 8px;margin-top:4px">📋 Ver palpites</a>
         <% } else if (fechado) { %>
           <div class="jogo-placar-display">? × ?</div>
           <% if (temPalpite) { %>
-            <div class="texto-aux">Seu palpite: <strong><%= jogo.palpite_gols_casa %> × <%= jogo.palpite_gols_visitante %></strong></div>
+            <div class="texto-aux" style="font-size:0.72rem">Seu palpite: <strong><%= jogo.palpite_gols_casa %> × <%= jogo.palpite_gols_visitante %></strong></div>
           <% } %>
-          <div class="jogo-data"><%= new Date(jogo.data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'America/Sao_Paulo' }) %></div>
-          <div class="jogo-estadio">📍 <%= jogo.estadio %>, <%= jogo.cidade %></div>
-          <div style="margin-top:4px"><span class="badge badge-pendente">Fechado</span></div>
-          <div style="margin-top:4px">
-            <a href="/palpites/jogo/<%= jogo.id %>" class="btn btn-sm btn-secondary" style="font-size:0.7rem;padding:3px 8px">📋 Ver palpites</a>
-          </div>
+          <a href="/palpites/jogo/<%= jogo.id %>" class="btn btn-sm btn-secondary" style="font-size:0.7rem;padding:3px 8px;margin-top:4px">📋 Ver palpites</a>
         <% } else { %>
           <form method="POST" action="/palpites/<%= jogo.id %>" class="jogo-form" onsubmit="return salvarIndividual(event, this)">
             <input type="hidden" name="_csrf" value="<%= csrfToken %>">
@@ -102,12 +113,8 @@
                 required
               >
             </div>
-            <button type="submit" class="btn btn-sm btn-primary mt-1 salvar-btn">💾 Salvar</button>
+            <button type="submit" class="btn btn-sm btn-primary salvar-btn" style="margin-top:2px">💾 Salvar</button>
           </form>
-          <div class="jogo-data"><%= new Date(jogo.data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'America/Sao_Paulo' }) %></div>
-          <div class="jogo-estadio">📍 <%= jogo.estadio %>, <%= jogo.cidade %></div>
-          <div class="countdown" style="font-size:0.75rem;color:var(--verde);font-weight:bold;margin-top:2px"></div>
-          <div class="texto-aux" style="font-size:0.72rem;margin-top:2px"><%= jogo.total_bets %> palpites</div>
         <% } %>
       </div>
 
@@ -115,40 +122,87 @@
         <span><%= jogo.visitante_pt %></span>
         <img src="<%= jogo.visitante_bandeira %>" alt="<%= jogo.visitante_pt %>">
       </div>
+
+      <% const dataFmt = new Date(jogo.data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'America/Sao_Paulo' }); %>
+      <div class="jogo-footer">
+        <span>📅 <%= dataFmt %></span>
+        <span>📍 <%= jogo.estadio %>, <%= jogo.cidade %></span>
+        <span>👥 <%= jogo.total_bets %> palpites</span>
+        <% if (finalizado) { %><span class="badge badge-finalizado">Final</span><% } else if (fechado) { %><span class="badge badge-pendente">Fechado</span><% } else { %><span class="countdown" data-fecha="<%= margem.toISOString() %>"></span><% } %>
+      </div>
     </div>
 <% } %>
 
 <% if (temSalvos) { %>
-<div class="card" style="border-left:4px solid var(--verde);margin-bottom:20px">
-  <div class="flex-between" style="cursor:pointer" onclick="this.nextElementSibling.classList.toggle('hidden');this.querySelector('.toggle-icon').textContent = this.nextElementSibling.classList.contains('hidden') ? '▶' : '▼'">
-    <h3 style="margin:0">✅ Seus palpites salvos</h3>
-    <span class="toggle-icon" style="font-size:0.8rem;color:var(--cinza-escuro)">▼</span>
-  </div>
-  <div style="margin-top:12px">
-    <% [abertos, fechados, finalizados].forEach(function(cat) {
-      Object.keys(cat).sort(function(a,b) { return parseInt(a) - parseInt(b); }).forEach(function(rodada) {
-        const jogosRodada = cat[rodada].filter(function(j) { return j.palpite_gols_casa !== null && j.palpite_gols_casa !== undefined; });
-        if (jogosRodada.length === 0) return;
-    %>
-      <div style="margin-bottom:12px">
-        <strong style="font-size:0.85rem;color:var(--azul)">Rodada <%= rodada %></strong>
-        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">
-          <% jogosRodada.forEach(function(j) { %>
-            <span style="display:inline-flex;align-items:center;gap:4px;background:var(--cinza-claro);padding:4px 10px;border-radius:6px;font-size:0.8rem;border:1px solid var(--cinza)">
-              <%= j.casa_pt %> <strong><%= j.palpite_gols_casa %>×<%= j.palpite_gols_visitante %></strong> <%= j.visitante_pt %>
-              <% if (j.finalizado === 1) { %>
-                <span style="color:var(--verde);font-weight:700">(<%= j.pontos_obtidos || 0 %>pts)</span>
-              <% } %>
-            </span>
-          <% }); %>
+  <%
+    // Agrupa palpites salvos por rodada com contagem de progresso
+    const palpitesPorRodada = {};
+    [abertos, fechados, finalizados].forEach(function(cat) {
+      Object.keys(cat).forEach(function(r) {
+        if (!palpitesPorRodada[r]) palpitesPorRodada[r] = { salvos: [], total: 0 };
+        cat[r].forEach(function(j) {
+          palpitesPorRodada[r].total++;
+          if (j.palpite_gols_casa !== null && j.palpite_gols_casa !== undefined) {
+            palpitesPorRodada[r].salvos.push(j);
+          }
+        });
+      });
+    });
+    const rodadasOrdenadas = Object.keys(palpitesPorRodada).sort(function(a,b) { return parseInt(a) - parseInt(b); });
+  %>
+  <div class="card" style="border-left:4px solid var(--verde);margin-bottom:20px">
+    <div class="flex-between" style="cursor:pointer" onclick="var c=this.nextElementSibling;var i=this.querySelector('.toggle-icon');var h=c.classList.toggle('hidden');i.textContent=h?'▶':'▼'">
+      <h3 style="margin:0">✅ Seus palpites salvos</h3>
+      <span class="toggle-icon" style="font-size:0.8rem;color:var(--cinza-escuro)">▼</span>
+    </div>
+    <div style="margin-top:12px">
+      <% rodadasOrdenadas.forEach(function(rodada, idx) {
+        const dados = palpitesPorRodada[rodada];
+        if (dados.salvos.length === 0) return;
+        const preview = dados.salvos.slice(0, 3);
+        const restantes = dados.salvos.length - preview.length;
+      %>
+        <div style="margin-bottom:10px">
+          <div style="font-size:0.85rem;font-weight:700;color:var(--azul);display:flex;align-items:center;gap:6px;margin-bottom:4px">
+            🏁 Rodada <%= rodada %>
+            <span style="background:var(--cinza-claro);color:var(--cinza-escuro);padding:1px 8px;border-radius:10px;font-size:0.7rem;font-weight:600"><%= dados.salvos.length %>/<%= dados.total %></span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:3px">
+            <% preview.forEach(function(j) { %>
+              <div style="display:flex;align-items:center;gap:6px;font-size:0.82rem;padding:3px 8px;background:var(--cinza-claro);border-radius:6px">
+                <span style="color:var(--verde);font-weight:700">✔</span>
+                <span><%= j.casa_pt %></span>
+                <strong style="color:var(--verde)"><%= j.palpite_gols_casa %>×<%= j.palpite_gols_visitante %></strong>
+                <span><%= j.visitante_pt %></span>
+                <% if (j.finalizado === 1) { %>
+                  <span class="pontos-badge <%= (j.pontos_obtidos || 0) === 0 ? 'zero' : '' %>" style="font-size:0.65rem;margin-left:auto"><%= j.pontos_obtidos || 0 %> pts</span>
+                <% } %>
+              </div>
+            <% }); %>
+          </div>
+          <% if (restantes > 0) { %>
+            <button type="button" onclick="var ps=this.parentElement.querySelectorAll('.palpite-restante');ps.forEach(function(p){p.classList.toggle('hidden')});this.textContent=this.textContent.indexOf('Ver')===0?'Ocultar ▴':'Ver mais '+<%= restantes %>+' ▾'" style="margin-top:4px;background:none;border:none;color:var(--azul);font-size:0.78rem;cursor:pointer;padding:2px 0">
+              Ver mais <%= restantes %> ▾
+            </button>
+            <% dados.salvos.slice(3).forEach(function(j) { %>
+              <div class="palpite-restante hidden" style="display:flex;align-items:center;gap:6px;font-size:0.82rem;padding:3px 8px;background:var(--cinza-claro);border-radius:6px;margin-top:3px">
+                <span style="color:var(--verde);font-weight:700">✔</span>
+                <span><%= j.casa_pt %></span>
+                <strong style="color:var(--verde)"><%= j.palpite_gols_casa %>×<%= j.palpite_gols_visitante %></strong>
+                <span><%= j.visitante_pt %></span>
+                <% if (j.finalizado === 1) { %>
+                  <span class="pontos-badge <%= (j.pontos_obtidos || 0) === 0 ? 'zero' : '' %>" style="font-size:0.65rem;margin-left:auto"><%= j.pontos_obtidos || 0 %> pts</span>
+                <% } %>
+              </div>
+            <% }); %>
+          <% } %>
         </div>
-      </div>
-    <% }); }); %>
+      <% }); %>
+    </div>
+    <div class="texto-aux mt-1" style="font-size:0.75rem">
+      <%= stats.total_palpites %> de <%= totalJogosGrupo %> palpites preenchidos
+    </div>
   </div>
-  <div class="texto-aux mt-1" style="font-size:0.75rem">
-    <%= stats.total_palpites %> de <%= totalJogosGrupo %> palpites preenchidos
-  </div>
-</div>
 <% } %>
 
 <!-- Seção: Jogos Abertos (palpite disponível) -->
