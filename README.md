@@ -7,9 +7,11 @@ Deploy automático no Render (free tier) via Blueprint com PostgreSQL. Localment
 
 - **Login por email, username ou nome** — qualquer um dos três é aceito
 - **Cadastro aberto** — qualquer pessoa pode criar conta sem código de convite
-- **Palpites por jogo (save individual)** — cada jogo tem seu próprio botão de salvar; trava 2 minutos antes do horário BRT de cada partida
+- **Palpites por jogo (save individual)** — cada jogo tem seu próprio botão de salvar; trava 2 minutos antes do horário BRT de cada partida; **cards compactos** em grid 3 colunas (casa | placar | visitante) com metadata consolidada em um footer único (data, estádio, palpites, countdown) — ~35% menores que a versão anterior
+- **Progress bar de palpites** — card verde no topo de `/palpites` mostrando "X/72 jogos (NN%)" + barra de progresso com gradiente; mensagem contextual "Faltam Y palpites" ou "🎉 Você palpitou em todos!"
+- **Palpites salvos agrupados por rodada** — card expansível com header "Rodada N" + badge de progresso (feitos/total); primeiros 3 palpites visíveis com ✔; botão "Ver mais N" expande o resto (seção inicia **colapsada** por padrão)
 - **Palpites Extras** — campeão, vice, 3º, finalistas, semis, quartas, oitavas, 1/16 avos; salvamento por categoria com contador de seleções ao vivo
-- **Dashboard** (`/dashboard`) — cards de estatísticas, próximos 5 jogos, palpites pendentes, top 5 do ranking, banner de alerta com contagem regressiva em BRT, notificação de palpites extras pendentes
+- **Dashboard** (`/dashboard`) — cards de estatísticas, próximos 5 jogos, palpites pendentes, top 5 do ranking, **banner do próximo jogo com 3 estados visuais** (fechado/urgente≤2h com animação pulse + gradiente amarelo→laranja / aberto em amarelo), notificação de palpites extras pendentes
 - **Resumo** (`/resumo`) — estatísticas detalhadas por tipo de ponto, pontos por rodada, racha (comparação head-to-head) com qualquer participante, histórico de jogos finalizados
 - **Visualização pública de palpites** (`/jogos/:id/palpites`) — 3 níveis de visibilidade: 🔒 oculto antes do fechamento, 👀 visível sem pontos após fechar, visível com pontos após resultado; agrupamento por pontuação; destaca o palpite do visitante
 - **Config** (`/config`) — participante altera próprio nome (sincronizado com username)
@@ -154,6 +156,8 @@ raiz/
 - Aproveitamento percentual exibido no ranking e perfil do usuário
 - Resultados dos extras no ranking só aparecem após admin definir em `/admin/extras`
 - Desempate no ranking: cascata de 8 critérios — total de pontos → placares exatos → resultado+gol → só resultado → 1 gol certo → gols certos → palpites pontuados → nome (alfabético)
+- Banner do próximo jogo no dashboard: 3 estados — **fechado** (vermelho claro, "🔒 JOGO FECHADO"), **urgente** ≤ 2h (gradiente amarelo→laranja, "⚠️ PALPITE FECHANDO" em CAIXA ALTA com ícone pulsante, box-shadow amarelo) e **aberto** (amarelo claro, "⚽ PRÓXIMO JOGO")
+- Cards de palpites em layout grid 3 colunas: padding reduzido, metadata (data, estádio, contagem, countdown) consolidada em footer único com border-top dashed
 - Trust proxy: `app.set('trust proxy', 1)` para sessão funcionar atrás do proxy HTTPS do Render
 - Sessão: cookie-based, secure em produção, sameSite lax, 30 dias
 - Todos os horários armazenados em BRT (-03:00)

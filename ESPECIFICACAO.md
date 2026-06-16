@@ -205,7 +205,10 @@ Armazena configurações do sistema, como o prazo limite dos palpites extras (ex
 - Regras gerais com item sobre encerramento de cadastro após prazo dos extras.
 - Próximos 5 jogos com contagem regressiva (BRT).
 - Top 5 do ranking.
-- Banner de alerta com contagem regressiva para o próximo jogo.
+- **Banner do próximo jogo com 3 estados visuais:**
+  - **Fechado** (`jahFechou = true`) — fundo vermelho claro, "🔒 JOGO FECHADO" em CAIXA ALTA vermelha; exibe palpite do usuário ou "Você não palpitou".
+  - **Urgente** (`diffMin <= 120`) — gradiente amarelo→laranja, "⚠️ PALPITE FECHANDO" em CAIXA ALTA laranja escuro, ícone com `animation: pulse 1.5s infinite`, box-shadow amarelo translúcido; CTA "Palpitar agora →" em laranja escuro.
+  - **Aberto** — fundo amarelo claro, "⚽ PRÓXIMO JOGO" em verde; exibe "Aberto para palpites até X minutos".
 - Notificação de palpites extras pendentes.
 
 ### 5.3 Palpites dos Jogos (`routes/palpites.js`)
@@ -224,6 +227,12 @@ Armazena configurações do sistema, como o prazo limite dos palpites extras (ex
 - Placar validado entre 0–99; valores vazios ou não numéricos são ignorados.
 - Se o jogo possui campo `time_casa` (nome alternativo) ou está bloqueado, exibe mensagem apropriada.
 - Lógica de upsert: INSERT se não existe palpite; UPDATE se já existe.
+
+**Layout da página `/palpites`:**
+- **Progress bar** no topo: card verde com "**X** / 72 jogos (NN%)" + barra gradiente verde; mensagem contextual "Faltam Y palpites — continue! ⚽" ou "🎉 Você palpitou em todos os jogos!".
+- **Card "Seus palpites salvos"** (expansível, **inicia colapsado** por padrão): agrupa palpites salvos por rodada com header "🏁 Rodada N" + badge "feitos/total". Primeiros 3 palpites visíveis com ✔ verde; botão "Ver mais N ▾" expande o restante (vira "Ocultar ▴"). Pontos inline nos jogos finalizados.
+- **Cards de jogo compactos** (grid 3 colunas `1fr auto 1fr`): casa | placar + botão Salvar | visitante. Metadata (data, estádio, contagem, countdown) consolidada em um footer horizontal separado por `border-top: 1px dashed`. ~35% menores que a versão anterior.
+- **Por rodada**: cada rodada agrupa seus jogos, com botões "⚡ Preencher todos" (atalho de placar único) e "💾 Salvar todos" (envio em lote).
 
 ### 5.4 Palpites Extras (`routes/extras.js`)
 
