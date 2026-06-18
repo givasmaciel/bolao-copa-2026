@@ -38,6 +38,7 @@ O banco opera de forma transparente com **SQLite** (desenvolvimento local) ou **
   - `SERIAL` (PG) vs `AUTOINCREMENT` (SQLite) para PKs.
   - `TIMESTAMPTZ` (PG) vs `DATETIME` (SQLite) para colunas de data/hora.
   - `IF NOT EXISTS` para adição condicional de colunas.
+- **Atenção — dupla fonte de verdade**: O `schema.js` contém uma migration (linhas ~328–407) que sobrescreve os 72 jogos de grupo toda vez que o servidor inicia. O `seed.js` também define esses mesmos jogos. **Ambos os arquivos devem ser mantidos em sincronia** ao alterar horários, estádios ou cidades de jogos da fase de grupos.
 - SQLite: `PRAGMA journal_mode = WAL` e `PRAGMA foreign_keys = ON`.
 - Setup em produção: `node database/setup.js && node server.js`. O `setup.js` cria as tabelas, executa seed se vazio e cria/atualiza admin via variáveis de ambiente.
 
@@ -623,7 +624,7 @@ bolao/
 ## 11. Notas Técnicas Adicionais
 
 - **Render free tier**: O banco PostgreSQL e o serviço web休眠 após 15 minutos de inatividade. A primeira requisição após o período de inatividade pode levar alguns segundos (cold start).
-- **Timezone**: Todas as datas de jogos são armazenadas com offset `-03:00` (BRT). O PostgreSQL (TIMESTAMPTZ) converte internamente para UTC; o SQLite armazena como datetime string.
+- **Timezone**: Todas as datas de jogos são armazenadas em BRT (`-03:00`). O `seed.js` usa strings no formato `'YYYY-MM-DD HH:mm-03:00'` e converte para UTC (+3h) antes de inserir no banco. As views exibem via `toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })`, que converte de UTC de volta para BRT. A migration do `schema.js` usa `Date.UTC(y, M-1, d, h+3, m)` — mesmo algoritmo.
 - **Segurança de sessão**: `sameSite: 'lax'` e `secure: true` em produção. O trust proxy é ativado com `app.set('trust proxy', 1)` para que o Express confie no header `X-Forwarded-Proto` enviado pelo proxy do Render.
 - **Índices**: A constraint UNIQUE em `palpites(usuario_id, jogo_id)` atua como índice para consultas de ranking e recálculo.
 
