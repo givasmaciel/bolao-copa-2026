@@ -7,9 +7,9 @@ Deploy automático no Render (free tier) via Blueprint com PostgreSQL. Localment
 
 - **Login por email, username ou nome** — qualquer um dos três é aceito
 - **Cadastro aberto** — qualquer pessoa pode criar conta sem código de convite
-- **Palpites por jogo (save individual)** — cada jogo tem seu próprio botão de salvar; trava 2 minutos antes do horário BRT de cada partida; **cards compactos** em grid 3 colunas (casa | placar | visitante) com metadata consolidada em um footer único (data, estádio, palpites, countdown) — ~35% menores que a versão anterior
-- **Progress bar de palpites** — card verde no topo de `/palpites` mostrando "X/72 jogos (NN%)" + barra de progresso com gradiente; mensagem contextual "Faltam Y palpites" ou "🎉 Você palpitou em todos!"
-- **Palpites salvos agrupados por rodada** — card expansível com header "Rodada N" + badge de progresso (feitos/total); primeiros 3 palpites visíveis com ✔; botão "Ver mais N" expande o resto (seção inicia **colapsada** por padrão)
+- **Palpites em todas as fases** — grupos e mata-mata (r32, r16, qf, sf, terceiro, final); cada jogo tem formulário individual; trava 2 minutos antes do horário BRT; **cards compactos** em grid 3 colunas (casa | placar | visitante) com metadata consolidada em um footer único (data, estádio, palpites, countdown)
+- **Progress bar de palpites** — card verde no topo de `/palpites` mostrando "X/Y jogos (NN%)" + barra de progresso com gradiente; mensagem contextual "Faltam Y palpites" ou "🎉 Você palpitou em todos!"
+- **Palpites salvos agrupados por fase** — card expansível com header por fase (ex.: "Fase de Grupos - Rodada 1", "32 avos de Final") + badge de progresso (feitos/total); primeiros 3 palpites visíveis com ✔; botão "Ver mais N" expande o resto (seção inicia **colapsada** por padrão)
 - **Palpites Extras** — campeão, vice, 3º, finalistas, semis, quartas, oitavas, 1/16 avos; salvamento por categoria com contador de seleções ao vivo
 - **Dashboard** (`/dashboard`) — cards de estatísticas, próximos 5 jogos, palpites pendentes, top 5 do ranking, **banner do próximo jogo com 3 estados visuais** (fechado/urgente≤2h com animação pulse + gradiente amarelo→laranja / aberto em amarelo), notificação de palpites extras pendentes
 - **Resumo** (`/resumo`) — estatísticas detalhadas por tipo de ponto, pontos por rodada, racha (comparação head-to-head) com qualquer participante, histórico de jogos finalizados

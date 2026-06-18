@@ -5,15 +5,37 @@ const { PALPITE_MARGEM_MS } = require('../services/palpite-config');
 
 const router = express.Router();
 
-// POST /palpites/salvar-rodada - salva todos os palpites de uma rodada (deve vir antes de /:jogoId)
+const FASE_GROUPS = {
+  grupo: { label: 'Fase de Grupos', order: 1 },
+  r32: { label: '32 avos de Final', order: 2 },
+  r16: { label: 'Oitavas de Final', order: 3 },
+  qf: { label: 'Quartas de Final', order: 4 },
+  sf: { label: 'Semifinais', order: 5 },
+  terceiro: { label: 'Disputa de 3º lugar', order: 6 },
+  final: { label: 'Final', order: 7 }
+};
+
+function groupKey(jogo) {
+  if (jogo.fase === 'grupo') {
+    return {
+      key: 'grupo-r' + jogo.rodada,
+      label: 'Fase de Grupos - Rodada ' + jogo.rodada,
+      order: jogo.rodada
+    };
+  }
+  const fg = FASE_GROUPS[jogo.fase] || { label: jogo.fase, order: 99 };
+  return { key: jogo.fase, label: fg.label, order: fg.order };
+}
+
+// POST /palpites/salvar-rodada - salva todos os palpites de uma rodada/fase
 router.post('/salvar-rodada', verificarAutenticado, async (req, res) => {
   const usuarioId = req.session.usuario.id;
   if (req.session.usuario.is_admin) {
     return res.status(403).json({ ok: false, erro: 'Administradores não podem participar do bolão.' });
   }
 
-  const { rodada, jogos } = req.body;
-  if (!rodada || !jogos) {
+  const { fase, rodada, jogos } = req.body;
+  if (!jogos) {
     return res.status(400).json({ ok: false, erro: 'Dados inválidos.' });
   }
 
@@ -23,10 +45,11 @@ router.post('/salvar-rodada', verificarAutenticado, async (req, res) => {
   }
 
   const places = jogoIds.map(() => '?').join(',');
-  const jogosDB = await all(
-    `SELECT id, data, finalizado, palpite_limite FROM jogos WHERE id IN (${places}) AND fase = 'grupo' AND rodada = ?`,
-    [...jogoIds, rodada]
-  );
+  let sql = 'SELECT id, data, finalizado, palpite_limite FROM jogos WHERE id IN (' + places + ')';
+  const params = [...jogoIds];
+  if (fase) { sql += ' AND fase = ?'; params.push(fase); }
+  if (rodada) { sql += ' AND rodada = ?'; params.push(rodada); }
+  const jogosDB = await all(sql, params);
 
   const jogosValidos = jogosDB.filter(j => {
     const agora = new Date();
@@ -70,11 +93,11 @@ router.post('/salvar-rodada', verificarAutenticado, async (req, res) => {
     salvos++;
   }
 
-  req.flash('sucesso', salvos + ' palpites salvos na rodada ' + rodada + '!');
+  req.flash('sucesso', salvos + ' palpites salvos!');
   res.json({ ok: true });
 });
 
-// GET /palpites - mostra todos os jogos (fase de grupos) para o usuário dar palpites
+// GET /palpites - mostra todos os jogos para o usuário dar palpites
 router.get('/', verificarAutenticado, async (req, res) => {
   try {
     if (req.session.usuario.is_admin) {
@@ -84,7 +107,7 @@ router.get('/', verificarAutenticado, async (req, res) => {
     const jogos = await all(`
       SELECT
         j.id, j.fase, j.rodada, j.data, j.estadio, j.cidade, j.pais,
-        j.finalizado, j.gols_casa, j.gols_visitante, j.palpite_limite,
+        j.finalizado, j.gols_casa, j.gols_visitante, j.palpite_limite, j.descricao,
         g.letra AS grupo_letra,
         sc.nome AS casa_nome, sc.nome_pt AS casa_pt, sc.sigla AS casa_sigla, sc.bandeira_url AS casa_bandeira,
         sv.nome AS visitante_nome, sv.nome_pt AS visitante_pt, sv.sigla AS visitante_sigla, sv.bandeira_url AS visitante_bandeira,
@@ -95,8 +118,7 @@ router.get('/', verificarAutenticado, async (req, res) => {
       LEFT JOIN selecoes sc ON j.selecao_casa_id = sc.id
       LEFT JOIN selecoes sv ON j.selecao_visitante_id = sv.id
       LEFT JOIN palpites p ON p.jogo_id = j.id AND p.usuario_id = ?
-      WHERE j.fase = 'grupo'
-      ORDER BY j.rodada, j.data, j.id
+      ORDER BY j.data, j.id
     `, [req.session.usuario.id]);
 
     // Separa em abertos, fechados e finalizados
@@ -104,45 +126,55 @@ router.get('/', verificarAutenticado, async (req, res) => {
     const abertos = {};
     const fechados = {};
     const finalizados = {};
+    let totalTodos = 0;
 
     for (const jogo of jogos) {
-      const r = jogo.rodada;
+      // Pula jogos sem time definido (mata-mata ainda não gerado)
+      if (!jogo.casa_pt || !jogo.visitante_pt) continue;
+      totalTodos++;
+
+      const gk = groupKey(jogo);
       if (jogo.finalizado === 1) {
-        if (!finalizados[r]) finalizados[r] = [];
-        finalizados[r].push(jogo);
+        if (!finalizados[gk.key]) finalizados[gk.key] = { label: gk.label, order: gk.order, jogos: [] };
+        finalizados[gk.key].jogos.push(jogo);
         continue;
       }
       const dataJogo = new Date(jogo.data);
       const limite = jogo.palpite_limite ? new Date(jogo.palpite_limite) : null;
       const margem = limite || new Date(dataJogo.getTime() - PALPITE_MARGEM_MS);
       if (agora >= margem) {
-        if (!fechados[r]) fechados[r] = [];
-        fechados[r].push(jogo);
+        if (!fechados[gk.key]) fechados[gk.key] = { label: gk.label, order: gk.order, jogos: [] };
+        fechados[gk.key].jogos.push(jogo);
       } else {
-        if (!abertos[r]) abertos[r] = [];
-        abertos[r].push(jogo);
+        if (!abertos[gk.key]) abertos[gk.key] = { label: gk.label, order: gk.order, jogos: [] };
+        abertos[gk.key].jogos.push(jogo);
       }
     }
 
+    // Ordena grupos
+    function sortEntries(dict) {
+      return Object.keys(dict).sort(function(a, b) {
+        return dict[a].order - dict[b].order;
+      }).map(function(k) { return dict[k]; });
+    }
+
     // Estatísticas do usuário
-    const [stats, totalGrupoRow] = await Promise.all([
-      get(`
-        SELECT
-          COUNT(p.id) AS total_palpites,
-          COALESCE(SUM(p.pontos_obtidos), 0) AS total_pontos
-        FROM palpites p
-        WHERE p.usuario_id = ?
-      `, [req.session.usuario.id]),
-      get("SELECT COUNT(*) AS total FROM jogos WHERE fase = 'grupo'")
-    ]);
+    const stats = await get(`
+      SELECT
+        COUNT(p.id) AS total_palpites,
+        COALESCE(SUM(p.pontos_obtidos), 0) AS total_pontos
+      FROM palpites p
+      WHERE p.usuario_id = ?
+    `, [req.session.usuario.id]);
 
     res.render('palpites', {
       title: 'Meus palpites',
-      abertos,
-      fechados,
-      finalizados,
+      abertos: sortEntries(abertos),
+      fechados: sortEntries(fechados),
+      finalizados: sortEntries(finalizados),
       stats: stats || { total_palpites: 0, total_pontos: 0 },
-      totalJogosGrupo: totalGrupoRow?.total || 0
+      totalJogos: totalTodos,
+      faseGroups: FASE_GROUPS
     });
   } catch (err) {
     console.error('Erro ao listar palpites:', err);
@@ -174,9 +206,9 @@ router.post('/:jogoId', verificarAutenticado, async (req, res) => {
   }
 
   try {
-    // Verifica se o jogo existe, está na fase de grupos e ainda não começou
+    // Verifica se o jogo existe e ainda não começou
     const jogo = await get(
-      "SELECT id, data, finalizado, palpite_limite FROM jogos WHERE id = ? AND fase = 'grupo'",
+      "SELECT id, data, finalizado, palpite_limite FROM jogos WHERE id = ?",
       [jogoId]
     );
     if (!jogo) {
@@ -272,13 +304,8 @@ router.get('/jogo/:id', verificarAutenticado, async (req, res) => {
   }
 });
 
-// GET /palpites/knockout - placeholder
+// GET /palpites/knockout - redireciona para página principal (unificada)
 router.get('/knockout', verificarAutenticado, async (req, res) => {
-  if (req.session.usuario.is_admin) {
-    req.flash('erro', 'Administradores não podem participar do bolão.');
-    return res.redirect('/admin');
-  }
-  req.flash('aviso', 'Os palpites do mata-mata serão liberados após o fim da fase de grupos.');
   res.redirect('/palpites');
 });
 

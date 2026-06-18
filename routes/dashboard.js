@@ -19,7 +19,7 @@ router.get('/', verificarAutenticado, async (req, res) => {
       LEFT JOIN selecoes sc ON j.selecao_casa_id = sc.id
       LEFT JOIN selecoes sv ON j.selecao_visitante_id = sv.id
       LEFT JOIN palpites p ON p.jogo_id = j.id AND p.usuario_id = ?
-      WHERE j.fase = 'grupo' AND j.finalizado = 0
+      WHERE j.finalizado = 0 AND j.selecao_casa_id IS NOT NULL
       ORDER BY j.data ASC
       LIMIT 5
     `, [userId]);
@@ -29,7 +29,7 @@ router.get('/', verificarAutenticado, async (req, res) => {
       SELECT COUNT(*) AS total
       FROM jogos j
       LEFT JOIN palpites p ON p.jogo_id = j.id AND p.usuario_id = ?
-      WHERE j.fase = 'grupo' AND j.finalizado = 0 AND p.id IS NULL
+      WHERE j.finalizado = 0 AND j.selecao_casa_id IS NOT NULL AND p.id IS NULL
     `, [userId]);
 
     // Top 5 do ranking
@@ -74,7 +74,7 @@ router.get('/', verificarAutenticado, async (req, res) => {
     `, [userId]);
 
     const totalFinalizados = await get(`
-      SELECT COUNT(*) AS total FROM jogos WHERE fase = 'grupo' AND finalizado = 1
+      SELECT COUNT(*) AS total FROM jogos WHERE finalizado = 1 AND selecao_casa_id IS NOT NULL
     `);
 
     // Últimos 5 jogos finalizados com o palpite do usuário
@@ -87,7 +87,7 @@ router.get('/', verificarAutenticado, async (req, res) => {
       LEFT JOIN selecoes sc ON j.selecao_casa_id = sc.id
       LEFT JOIN selecoes sv ON j.selecao_visitante_id = sv.id
       LEFT JOIN palpites p ON p.jogo_id = j.id AND p.usuario_id = ?
-      WHERE j.fase = 'grupo' AND j.finalizado = 1
+      WHERE j.finalizado = 1 AND j.selecao_casa_id IS NOT NULL
       ORDER BY j.data DESC LIMIT 5
     `, [userId]);
 

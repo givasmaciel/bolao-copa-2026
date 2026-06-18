@@ -199,7 +199,7 @@ app.get('/api/proximo-jogo', async (req, res) => {
       FROM jogos j
       LEFT JOIN selecoes sc ON j.selecao_casa_id = sc.id
       LEFT JOIN selecoes sv ON j.selecao_visitante_id = sv.id
-      WHERE j.fase = 'grupo' AND j.finalizado = 0
+      WHERE j.finalizado = 0 AND j.selecao_casa_id IS NOT NULL
       ORDER BY j.data ASC LIMIT 1
     `);
     if (!jogo) return res.json({ ok: false });

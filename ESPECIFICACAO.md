@@ -215,11 +215,12 @@ Armazena configurações do sistema, como o prazo limite dos palpites extras (ex
 
 | Método | Rota | Descrição |
 |---|---|---|
-| GET | `/palpites` | Lista os 72 jogos da fase de grupos com formulário individual por jogo |
+| GET | `/palpites` | Lista todos os jogos (grupos + mata-mata) com formulário individual por jogo |
 | POST | `/palpites/salvar/:jogoId` | Salva ou atualiza o palpite de UM jogo específico |
 
 **Regras:**
-- Apenas jogos com `fase = 'grupo'` são exibidos.
+- Jogos de todas as fases são exibidos: grupos e mata-mata (r32, r16, qf, sf, terceiro, final).
+- Jogos de mata-mata sem times definidos (`selecao_casa_id` nulo) são ocultados até o admin gerar os confrontos.
 - Cada jogo possui seu próprio formulário e botão "Salvar" individual (NÃO é salvamento em lote).
 - Cada jogo é bloqueado 2 minutos antes do seu horário (horário de Brasília).
 - Jogos finalizados (`finalizado = 1`) são bloqueados independentemente do horário.
@@ -229,10 +230,10 @@ Armazena configurações do sistema, como o prazo limite dos palpites extras (ex
 - Lógica de upsert: INSERT se não existe palpite; UPDATE se já existe.
 
 **Layout da página `/palpites`:**
-- **Progress bar** no topo: card verde com "**X** / 72 jogos (NN%)" + barra gradiente verde; mensagem contextual "Faltam Y palpites — continue! ⚽" ou "🎉 Você palpitou em todos os jogos!".
-- **Card "Seus palpites salvos"** (expansível, **inicia colapsado** por padrão): agrupa palpites salvos por rodada com header "🏁 Rodada N" + badge "feitos/total". Primeiros 3 palpites visíveis com ✔ verde; botão "Ver mais N ▾" expande o restante (vira "Ocultar ▴"). Pontos inline nos jogos finalizados.
-- **Cards de jogo compactos** (grid 3 colunas `1fr auto 1fr`): casa | placar + botão Salvar | visitante. Metadata (data, estádio, contagem, countdown) consolidada em um footer horizontal separado por `border-top: 1px dashed`. ~35% menores que a versão anterior.
-- **Por rodada**: cada rodada agrupa seus jogos, com botões "⚡ Preencher todos" (atalho de placar único) e "💾 Salvar todos" (envio em lote).
+- **Progress bar** no topo: card verde com "**X** / Y jogos (NN%)" + barra gradiente verde; mensagem contextual "Faltam Y palpites — continue! ⚽" ou "🎉 Você palpitou em todos os jogos!".
+- **Card "Seus palpites salvos"** (expansível, **inicia colapsado** por padrão): agrupa palpites por fase com header da fase (ex.: "Fase de Grupos - Rodada 1", "32 avos de Final", "Oitavas") + badge "feitos/total". Primeiros 3 palpites visíveis com ✔ verde; botão "Ver mais N ▾" expande o restante (vira "Ocultar ▴"). Pontos inline nos jogos finalizados.
+- **Cards de jogo compactos** (grid 3 colunas `1fr auto 1fr`): casa | placar + botão Salvar | visitante. Metadata (data, estádio, contagem, countdown) consolidada em um footer horizontal separado por `border-top: 1px dashed`.
+- **Por fase**: cada fase agrupa seus jogos. Grupos são subdivididos em rodadas, mata-mata aparece por fase (r32, r16, qf, sf, 3º, final). Botões "⚡ Preencher todos" e "💾 Salvar todos" por agrupamento.
 
 ### 5.4 Palpites Extras (`routes/extras.js`)
 
@@ -431,7 +432,7 @@ A pontuação é fixa por categoria, conforme tabela na seção 5.4. Os pontos s
 
 3. **Jogos finalizados são imutáveis** — Se `finalizado = 1`, o palpite é bloqueado independentemente do horário.
 
-4. **Mata-mata indisponível para palpites** — Apenas a fase de grupos está disponível para apostas. Confrontos de mata-mata têm `selecao_casa_id` e `selecao_visitante_id` nulos.
+4. **Mata-mata disponível para palpites** — Todas as fases (grupos e mata-mata) estão disponíveis. Confrontos de mata-mata só aparecem após o admin gerar os confrontos (preencher `selecao_casa_id` e `selecao_visitante_id`). Jogos com times nulos são ocultados dos palpites.
 
 5. **Recálculo automático** — Ao salvar resultado com `finalizado = 1`, todos os palpites daquele jogo são recalculados. Se desfinalizado, pontos zeram.
 
@@ -582,7 +583,7 @@ bolao/
 │   ├── login.ejs                     # Formulário de login
 │   ├── cadastro.ejs                  # Formulário de cadastro
 │   ├── dashboard.ejs                 # Dashboard pós-login
-│   ├── palpites.ejs                  # Palpites da fase de grupos (72 jogos)
+│   ├── palpites.ejs                  # Palpites de todas as fases (grupos + mata-mata)
 │   ├── palpites-extras.ejs           # Palpites extras
 │   ├── palpites-usuario.ejs          # Detalhamento dos palpites de um participante
 │   ├── jogos.ejs                     # Tabela de jogos pública

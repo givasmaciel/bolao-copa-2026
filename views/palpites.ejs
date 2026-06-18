@@ -3,25 +3,25 @@
 <%- include('partials/flash') %>
 
 <h1>⚽ Meus palpites</h1>
-<p class="subtitulo">Dê o placar dos jogos da fase de grupos. Você pode editar até <strong>2 minutos antes</strong> do jogo começar (prazo pode ser alterado pelo administrador).</p>
+<p class="subtitulo">Dê o placar dos jogos de <strong>todas as fases</strong>. Você pode editar até <strong>2 minutos antes</strong> do jogo começar (prazo pode ser alterado pelo administrador).</p>
 
 <%
   const palpitesFeitos = stats.total_palpites || 0;
-  const totalJogos = totalJogosGrupo || 0;
-  const pctProgresso = totalJogos > 0 ? Math.round((palpitesFeitos / totalJogos) * 100) : 0;
-  const restantes = Math.max(0, totalJogos - palpitesFeitos);
+  const totalGlobal = totalJogos || 0;
+  const pctProgresso = totalGlobal > 0 ? Math.round((palpitesFeitos / totalGlobal) * 100) : 0;
+  const restantes = Math.max(0, totalGlobal - palpitesFeitos);
 %>
 <div class="progress-palpites">
   <div class="progress-label">
     <span>📊 Progresso dos palpites</span>
-    <span><strong><%= palpitesFeitos %></strong> / <%= totalJogos %> jogos (<%= pctProgresso %>%)</span>
+    <span><strong><%= palpitesFeitos %></strong> / <%= totalGlobal %> jogos (<%= pctProgresso %>%)</span>
   </div>
   <div class="progress-bar">
     <div class="progress-fill" style="width: <%= pctProgresso %>%"></div>
   </div>
   <% if (restantes > 0) { %>
     <div style="font-size:0.75rem;color:var(--cinza-escuro);margin-top:6px">Faltam <strong><%= restantes %></strong> palpite(s) — continue! ⚽</div>
-  <% } else if (totalJogos > 0) { %>
+  <% } else if (totalGlobal > 0) { %>
     <div style="font-size:0.75rem;color:var(--verde);margin-top:6px;font-weight:600">🎉 Você palpitou em todos os jogos!</div>
   <% } %>
 </div>
@@ -36,17 +36,17 @@
     <div class="stat-label">Pontos conquistados</div>
   </div>
   <div class="stat-card">
-    <div class="stat-valor"><%= totalJogosGrupo %></div>
+    <div class="stat-valor"><%= totalGlobal %></div>
     <div class="stat-label">Jogos no total</div>
   </div>
 </div>
 
 <% const agora = new Date(); %>
 
-<% 
-  function contarJogos(objeto) {
-    let total = 0;
-    for (const k in objeto) total += objeto[k].length;
+<%
+  function contarJogos(arr) {
+    var total = 0;
+    for (var i = 0; i < arr.length; i++) total += arr[i].jogos.length;
     return total;
   }
   const temAbertos = contarJogos(abertos) > 0;
@@ -54,7 +54,7 @@
   const temFinalizados = contarJogos(finalizados) > 0;
   const temSalvos = stats.total_palpites > 0;
 
-  function renderJogo(jogo, rodada) {
+  function renderJogo(jogo, groupId) {
     const dataJogo = new Date(jogo.data);
     const palpiteLimite = jogo.palpite_limite ? new Date(jogo.palpite_limite) : null;
     const margem = palpiteLimite || new Date(dataJogo.getTime() - PALPITE_MARGEM_MS);
@@ -98,7 +98,7 @@
               <input
                 type="number"
                 name="casa"
-                class="input-casa-rd<%= rodada %>"
+                class="input-grp-<%= groupId %>"
                 value="<%= temPalpite ? jogo.palpite_gols_casa : '0' %>"
                 min="0" max="99"
                 required
@@ -107,7 +107,7 @@
               <input
                 type="number"
                 name="visitante"
-                class="input-visit-rd<%= rodada %>"
+                class="input-visit-grp-<%= groupId %>"
                 value="<%= temPalpite ? jogo.palpite_gols_visitante : '0' %>"
                 min="0" max="99"
                 required
@@ -135,20 +135,21 @@
 
 <% if (temSalvos) { %>
   <%
-    // Agrupa palpites salvos por rodada com contagem de progresso
-    const palpitesPorRodada = {};
+    // Agrupa palpites salvos por grupo
+    const palpitesPorGrupo = {};
     [abertos, fechados, finalizados].forEach(function(cat) {
-      Object.keys(cat).forEach(function(r) {
-        if (!palpitesPorRodada[r]) palpitesPorRodada[r] = { salvos: [], total: 0 };
-        cat[r].forEach(function(j) {
-          palpitesPorRodada[r].total++;
+      for (var g = 0; g < cat.length; g++) {
+        var grupo = cat[g];
+        if (!palpitesPorGrupo[grupo.label]) palpitesPorGrupo[grupo.label] = { salvos: [], total: 0, label: grupo.label };
+        grupo.jogos.forEach(function(j) {
+          palpitesPorGrupo[grupo.label].total++;
           if (j.palpite_gols_casa !== null && j.palpite_gols_casa !== undefined) {
-            palpitesPorRodada[r].salvos.push(j);
+            palpitesPorGrupo[grupo.label].salvos.push(j);
           }
         });
-      });
+      }
     });
-    const rodadasOrdenadas = Object.keys(palpitesPorRodada).sort(function(a,b) { return parseInt(a) - parseInt(b); });
+    const gruposOrdenados = Object.keys(palpitesPorGrupo);
   %>
   <div class="card" style="border-left:4px solid var(--verde);margin-bottom:20px">
     <div class="flex-between" style="cursor:pointer" onclick="var c=this.nextElementSibling;var i=this.querySelector('.toggle-icon');var h=c.classList.toggle('hidden');i.textContent=h?'▶':'▼'">
@@ -156,15 +157,15 @@
       <span class="toggle-icon" style="font-size:0.8rem;color:var(--cinza-escuro)">▶</span>
     </div>
     <div class="hidden" style="margin-top:12px">
-      <% rodadasOrdenadas.forEach(function(rodada, idx) {
-        const dados = palpitesPorRodada[rodada];
+      <% gruposOrdenados.forEach(function(label) {
+        const dados = palpitesPorGrupo[label];
         if (dados.salvos.length === 0) return;
         const preview = dados.salvos.slice(0, 3);
         const restantes = dados.salvos.length - preview.length;
       %>
         <div style="margin-bottom:10px">
           <div style="font-size:0.85rem;font-weight:700;color:var(--azul);display:flex;align-items:center;gap:6px;margin-bottom:4px">
-            🏁 Rodada <%= rodada %>
+            🏁 <%= label %>
             <span style="background:var(--cinza-claro);color:var(--cinza-escuro);padding:1px 8px;border-radius:10px;font-size:0.7rem;font-weight:600"><%= dados.salvos.length %>/<%= dados.total %></span>
           </div>
           <div style="display:flex;flex-direction:column;gap:3px">
@@ -200,40 +201,50 @@
       <% }); %>
     </div>
     <div class="texto-aux mt-1" style="font-size:0.75rem">
-      <%= stats.total_palpites %> de <%= totalJogosGrupo %> palpites preenchidos
+      <%= stats.total_palpites %> de <%= totalGlobal %> palpites preenchidos
     </div>
   </div>
 <% } %>
 
+<!-- Função helper para gerar id único pro grupo -->
+<%
+  function groupHtmlId(grupo) {
+    return grupo.label.replace(/[\s-]+/g, '-').toLowerCase();
+  }
+%>
+
 <!-- Seção: Jogos Abertos (palpite disponível) -->
 <% if (temAbertos) { %>
 <div class="section-group" data-tipo="abertos">
-  <% Object.keys(abertos).sort(function(a,b) { return parseInt(a) - parseInt(b); }).forEach(function(rodada) { %>
+  <% for (var g = 0; g < abertos.length; g++) {
+    const grupo = abertos[g];
+    const gid = groupHtmlId(grupo);
+  %>
     <div class="flex" style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-      <h2 class="jogo-rodada-titulo" style="margin:0">Rodada <%= rodada %></h2>
-      <button class="btn btn-sm btn-secondary" onclick="palpitarRodada(<%= rodada %>)" style="font-size:0.8rem">⚡ Preencher todos</button>
-      <button class="btn btn-sm btn-primary" onclick="salvarRodada(<%= rodada %>, this)" style="font-size:0.8rem">💾 Salvar todos</button>
+      <h2 class="jogo-rodada-titulo" style="margin:0"><%= grupo.label %></h2>
+      <button class="btn btn-sm btn-secondary" onclick="palpitarGrupo('<%= gid %>')" style="font-size:0.8rem">⚡ Preencher todos</button>
+      <button class="btn btn-sm btn-primary" onclick="salvarGrupo('<%= gid %>', '<%= grupo.label %>', this)" style="font-size:0.8rem">💾 Salvar todos</button>
     </div>
-    <div id="rodada-<%= rodada %>-preencher" style="display:none;margin-bottom:8px;background:var(--bg-card);padding:8px;border-radius:8px">
-      <form onsubmit="return preencherRodada(event, <%= rodada %>)" class="flex gap-1" style="align-items:center;flex-wrap:wrap">
+    <div id="grupo-<%= gid %>-preencher" style="display:none;margin-bottom:8px;background:var(--bg-card);padding:8px;border-radius:8px">
+      <form onsubmit="return preencherGrupo(event, '<%= gid %>')" class="flex gap-1" style="align-items:center;flex-wrap:wrap">
         <span style="font-size:0.85rem">Preencher todos com:</span>
-        <input type="number" id="rd-casa-<%= rodada %>" min="0" max="99" placeholder="0" style="width:50px;padding:4px" required>
+        <input type="number" id="grp-casa-<%= gid %>" min="0" max="99" placeholder="0" style="width:50px;padding:4px" required>
         <span class="x">×</span>
-        <input type="number" id="rd-visit-<%= rodada %>" min="0" max="99" placeholder="0" style="width:50px;padding:4px" required>
+        <input type="number" id="grp-visit-<%= gid %>" min="0" max="99" placeholder="0" style="width:50px;padding:4px" required>
         <button type="submit" class="btn btn-sm btn-primary">Aplicar</button>
-        <button type="button" class="btn btn-sm btn-secondary" onclick="fecharPreencher(<%= rodada %>)">✕</button>
+        <button type="button" class="btn btn-sm btn-secondary" onclick="fecharPreencherGrupo('<%= gid %>')">✕</button>
       </form>
     </div>
-    <div class="rodada-jogos" data-rodada="<%= rodada %>">
-    <% abertos[rodada].forEach(function(jogo) { %>
-      <%- renderJogo(jogo, rodada) %>
+    <div class="grupo-jogos" data-grupo="<%= gid %>">
+    <% grupo.jogos.forEach(function(jogo) { %>
+      <%- renderJogo(jogo, gid) %>
     <% }); %>
     </div>
-  <% }); %>
+  <% } %>
 </div>
 <% } %>
 
-<!-- Seção: Jogos Fechados (já iniciaram, sem palpite) -->
+<!-- Seção: Jogos Fechados -->
 <% if (temFechados) { %>
 <div class="section-group" data-tipo="fechados">
   <div class="flex-between" style="cursor:pointer;margin-top:24px;padding:8px 0" onclick="this.nextElementSibling.classList.toggle('hidden');this.querySelector('.toggle-icon').textContent = this.nextElementSibling.classList.contains('hidden') ? '▶' : '▼'">
@@ -241,16 +252,18 @@
     <span class="toggle-icon" style="font-size:0.8rem;color:var(--cinza-escuro)">▼</span>
   </div>
   <div>
-  <% Object.keys(fechados).sort(function(a,b) { return parseInt(a) - parseInt(b); }).forEach(function(rodada) { %>
+  <% for (var g = 0; g < fechados.length; g++) {
+    const grupo = fechados[g];
+  %>
     <div style="margin-top:12px">
-      <h3 style="font-size:0.9rem;color:var(--cinza-escuro);margin:0 0 8px 0">Rodada <%= rodada %></h3>
-      <div class="rodada-jogos">
-      <% fechados[rodada].forEach(function(jogo) { %>
-        <%- renderJogo(jogo, rodada) %>
+      <h3 style="font-size:0.9rem;color:var(--cinza-escuro);margin:0 0 8px 0"><%= grupo.label %></h3>
+      <div class="grupo-jogos">
+      <% grupo.jogos.forEach(function(jogo) { %>
+        <%- renderJogo(jogo, '') %>
       <% }); %>
       </div>
     </div>
-  <% }); %>
+  <% } %>
   </div>
 </div>
 <% } %>
@@ -263,27 +276,30 @@
     <span class="toggle-icon" style="font-size:0.8rem;color:var(--cinza-escuro)">▼</span>
   </div>
   <div>
-  <% Object.keys(finalizados).sort(function(a,b) { return parseInt(a) - parseInt(b); }).forEach(function(rodada) { %>
+  <% for (var g = 0; g < finalizados.length; g++) {
+    const grupo = finalizados[g];
+  %>
     <div style="margin-top:12px">
-      <h3 style="font-size:0.9rem;color:var(--cinza-escuro);margin:0 0 8px 0">Rodada <%= rodada %></h3>
-      <div class="rodada-jogos">
-      <% finalizados[rodada].forEach(function(jogo) { %>
-        <%- renderJogo(jogo, rodada) %>
+      <h3 style="font-size:0.9rem;color:var(--cinza-escuro);margin:0 0 8px 0"><%= grupo.label %></h3>
+      <div class="grupo-jogos">
+      <% grupo.jogos.forEach(function(jogo) { %>
+        <%- renderJogo(jogo, '') %>
       <% }); %>
       </div>
     </div>
-  <% }); %>
+  <% } %>
   </div>
 </div>
 <% } %>
 
 <script>
 const CSRF_TOKEN = '<%= csrfToken %>';
-async function salvarRodada(rd, btn) {
-  if (!confirm('Salvar todos os palpites ABERTOS da rodada ' + rd + '?')) return;
+
+async function salvarGrupo(gid, label, btn) {
+  if (!confirm('Salvar todos os palpites ABERTOS de "' + label + '"?')) return;
   const jogos = {};
-  const container = document.querySelector('.rodada-jogos[data-rodada="' + rd + '"]');
-  if (!container) { alert('Rodada não encontrada.'); return; }
+  const container = document.querySelector('.grupo-jogos[data-grupo="' + gid + '"]');
+  if (!container) { alert('Grupo não encontrado.'); return; }
   const forms = container.querySelectorAll('.jogo-card form');
   forms.forEach(function(form) {
     const action = form.getAttribute('action');
@@ -297,7 +313,7 @@ async function salvarRodada(rd, btn) {
     }
   });
   if (Object.keys(jogos).length === 0) {
-    alert('Nenhum jogo aberto nesta rodada.');
+    alert('Nenhum jogo aberto neste grupo.');
     return;
   }
   try {
@@ -306,7 +322,7 @@ async function salvarRodada(rd, btn) {
     const res = await fetch('/palpites/salvar-rodada', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN },
-      body: JSON.stringify({ rodada: rd, jogos })
+      body: JSON.stringify({ jogos })
     });
     const data = await res.json();
     if (data.ok) {
@@ -334,7 +350,6 @@ function atualizarCountdowns() {
       cd.textContent = '⏰ Fechado!';
       cd.style.color = '#c0392b';
       card.classList.add('iniciado');
-      // Recarrega em 5s para refletir estado fechado
       setTimeout(function() { location.reload(); }, 5000);
     } else {
       const h = Math.floor(diff / 3600000);
@@ -347,12 +362,12 @@ function atualizarCountdowns() {
 setInterval(atualizarCountdowns, 1000);
 atualizarCountdowns();
 
-function palpitarRodada(rd) {
-  document.getElementById('rodada-' + rd + '-preencher').style.display = 'block';
+function palpitarGrupo(gid) {
+  document.getElementById('grupo-' + gid + '-preencher').style.display = 'block';
 }
 
-function fecharPreencher(rd) {
-  document.getElementById('rodada-' + rd + '-preencher').style.display = 'none';
+function fecharPreencherGrupo(gid) {
+  document.getElementById('grupo-' + gid + '-preencher').style.display = 'none';
 }
 
 function salvarIndividual(ev, form) {
@@ -371,14 +386,14 @@ function salvarIndividual(ev, form) {
   return false;
 }
 
-function preencherRodada(ev, rd) {
+function preencherGrupo(ev, gid) {
   ev.preventDefault();
-  const casa = document.getElementById('rd-casa-' + rd).value;
-  const visit = document.getElementById('rd-visit-' + rd).value;
+  const casa = document.getElementById('grp-casa-' + gid).value;
+  const visit = document.getElementById('grp-visit-' + gid).value;
   if (casa === '' || visit === '') return false;
-  document.querySelectorAll('.input-casa-rd' + rd).forEach(function(inp) { inp.value = casa; });
-  document.querySelectorAll('.input-visit-rd' + rd).forEach(function(inp) { inp.value = visit; });
-  fecharPreencher(rd);
+  document.querySelectorAll('.input-grp-' + gid).forEach(function(inp) { inp.value = casa; });
+  document.querySelectorAll('.input-visit-grp-' + gid).forEach(function(inp) { inp.value = visit; });
+  fecharPreencherGrupo(gid);
   return false;
 }
 </script>
