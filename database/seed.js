@@ -143,7 +143,7 @@ const ESTADIOS = {
     { id: 20, fase: 'grupo', rodada: 1, grupo: 'J', casa: 39, visitante: 40, data: '2026-06-17 01:00-03:00', estadio: 14 },
     { id: 21, fase: 'grupo', rodada: 1, grupo: 'K', casa: 41, visitante: 42, data: '2026-06-17 14:00-03:00', estadio: 11 },
     { id: 22, fase: 'grupo', rodada: 1, grupo: 'L', casa: 45, visitante: 46, data: '2026-06-17 17:00-03:00', estadio: 7 },
-    { id: 23, fase: 'grupo', rodada: 1, grupo: 'K', casa: 43, visitante: 44, data: '2026-06-17 21:00-03:00', estadio: 1 },
+    { id: 23, fase: 'grupo', rodada: 1, grupo: 'K', casa: 43, visitante: 44, data: '2026-06-17 23:00-03:00', estadio: 1 },
     { id: 24, fase: 'grupo', rodada: 1, grupo: 'L', casa: 47, visitante: 48, data: '2026-06-17 20:00-03:00', estadio: 5 },
     // Rodada 2
     { id: 25, fase: 'grupo', rodada: 2, grupo: 'A', casa: 1, visitante: 3, data: '2026-06-18 22:00-03:00', estadio: 2 },
