@@ -626,3 +626,9 @@ bolao/
 - **Timezone**: Todas as datas de jogos são armazenadas com offset `-03:00` (BRT). O PostgreSQL (TIMESTAMPTZ) converte internamente para UTC; o SQLite armazena como datetime string.
 - **Segurança de sessão**: `sameSite: 'lax'` e `secure: true` em produção. O trust proxy é ativado com `app.set('trust proxy', 1)` para que o Express confie no header `X-Forwarded-Proto` enviado pelo proxy do Render.
 - **Índices**: A constraint UNIQUE em `palpites(usuario_id, jogo_id)` atua como índice para consultas de ranking e recálculo.
+
+---
+
+## 12. Referências
+
+- **Clube da Copa** ([clubedacopa.com.br](https://www.clubedacopa.com.br/jogos)) — tabela completa com horários de Brasília, estádios e análise de jogos passados. Site de referência para conferir/atualizar dados dos jogos (horários, estádios, resultados).
