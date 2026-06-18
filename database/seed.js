@@ -157,7 +157,7 @@ const ESTADIOS = {
     { id: 33, fase: 'grupo', rodada: 2, grupo: 'E', casa: 17, visitante: 19, data: '2026-06-20 17:00-03:00', estadio: 5 },
     { id: 34, fase: 'grupo', rodada: 2, grupo: 'E', casa: 20, visitante: 18, data: '2026-06-20 21:00-03:00', estadio: 12 },
     { id: 35, fase: 'grupo', rodada: 2, grupo: 'F', casa: 21, visitante: 23, data: '2026-06-20 14:00-03:00', estadio: 11 },
-    { id: 36, fase: 'grupo', rodada: 2, grupo: 'F', casa: 24, visitante: 22, data: '2026-06-20 23:00-03:00', estadio: 3 },
+    { id: 36, fase: 'grupo', rodada: 2, grupo: 'F', casa: 24, visitante: 22, data: '2026-06-21 01:00-03:00', estadio: 3 },
     { id: 37, fase: 'grupo', rodada: 2, grupo: 'G', casa: 25, visitante: 27, data: '2026-06-21 16:00-03:00', estadio: 8 },
     { id: 38, fase: 'grupo', rodada: 2, grupo: 'G', casa: 28, visitante: 26, data: '2026-06-21 22:00-03:00', estadio: 4 },
     { id: 39, fase: 'grupo', rodada: 2, grupo: 'H', casa: 29, visitante: 31, data: '2026-06-21 13:00-03:00', estadio: 10 },
@@ -208,8 +208,8 @@ const ESTADIOS = {
   { id: 82, fase: 'r32', rodada: 4, casa: null, visitante: null, data: '2026-07-01 17:00-03:00', estadio: 13, descricao: '1ºG vs 3ºA/E/H/I/J' },
   { id: 83, fase: 'r32', rodada: 4, casa: null, visitante: null, data: '2026-07-02 20:00-03:00', estadio: 5, descricao: '2ºK vs 2ºL' },
   { id: 84, fase: 'r32', rodada: 4, casa: null, visitante: null, data: '2026-07-02 16:00-03:00', estadio: 8, descricao: '1ºH vs 2ºJ' },
-  { id: 85, fase: 'r32', rodada: 4, casa: null, visitante: null, data: '2026-07-02 00:00-03:00', estadio: 4, descricao: '1ºB vs 3ºE/F/G/I/J' },
-  { id: 86, fase: 'r32', rodada: 4, casa: null, visitante: null, data: '2026-07-03 17:00-03:00', estadio: 10, descricao: '1ºJ vs 2ºH' },
+  { id: 85, fase: 'r32', rodada: 4, casa: null, visitante: null, data: '2026-07-03 00:00-03:00', estadio: 4, descricao: '1ºB vs 3ºE/F/G/I/J' },
+  { id: 86, fase: 'r32', rodada: 4, casa: null, visitante: null, data: '2026-07-03 19:00-03:00', estadio: 9, descricao: '1ºJ vs 2ºH' },
   { id: 87, fase: 'r32', rodada: 4, casa: null, visitante: null, data: '2026-07-03 22:30-03:00', estadio: 12, descricao: '1ºK vs 3ºD/E/I/J/L' },
   { id: 88, fase: 'r32', rodada: 4, casa: null, visitante: null, data: '2026-07-03 15:00-03:00', estadio: 7, descricao: '2ºD vs 2ºG' },
   // Oitavas de final (R16) - 8 jogos
@@ -217,18 +217,18 @@ const ESTADIOS = {
   { id: 90, fase: 'r16', rodada: 5, casa: null, visitante: null, data: '2026-07-04 14:00-03:00', estadio: 11, descricao: 'Vencedor 73 vs Vencedor 75' },
   { id: 91, fase: 'r16', rodada: 5, casa: null, visitante: null, data: '2026-07-05 17:00-03:00', estadio: 6, descricao: 'Vencedor 76 vs Vencedor 78' },
   { id: 92, fase: 'r16', rodada: 5, casa: null, visitante: null, data: '2026-07-05 21:00-03:00', estadio: 1, descricao: 'Vencedor 79 vs Vencedor 80' },
-  { id: 93, fase: 'r16', rodada: 5, casa: null, visitante: null, data: '2026-07-06 15:00-03:00', estadio: 7, descricao: 'Vencedor 83 vs Vencedor 84' },
-  { id: 94, fase: 'r16', rodada: 5, casa: null, visitante: null, data: '2026-07-06 20:00-03:00', estadio: 13, descricao: 'Vencedor 81 vs Vencedor 82' },
+  { id: 93, fase: 'r16', rodada: 5, casa: null, visitante: null, data: '2026-07-06 16:00-03:00', estadio: 7, descricao: 'Vencedor 83 vs Vencedor 84' },
+  { id: 94, fase: 'r16', rodada: 5, casa: null, visitante: null, data: '2026-07-06 21:00-03:00', estadio: 13, descricao: 'Vencedor 81 vs Vencedor 82' },
   { id: 95, fase: 'r16', rodada: 5, casa: null, visitante: null, data: '2026-07-07 13:00-03:00', estadio: 10, descricao: 'Vencedor 86 vs Vencedor 88' },
   { id: 96, fase: 'r16', rodada: 5, casa: null, visitante: null, data: '2026-07-07 17:00-03:00', estadio: 4, descricao: 'Vencedor 85 vs Vencedor 87' },
   // Quartas de final (QF) - 4 jogos
   { id: 97, fase: 'qf', rodada: 6, casa: null, visitante: null, data: '2026-07-09 17:00-03:00', estadio: 16, descricao: 'Vencedor 89 vs Vencedor 90' },
   { id: 98, fase: 'qf', rodada: 6, casa: null, visitante: null, data: '2026-07-10 16:00-03:00', estadio: 8, descricao: 'Vencedor 93 vs Vencedor 94' },
   { id: 99, fase: 'qf', rodada: 6, casa: null, visitante: null, data: '2026-07-11 18:00-03:00', estadio: 9, descricao: 'Vencedor 91 vs Vencedor 92' },
-  { id: 100, fase: 'qf', rodada: 6, casa: null, visitante: null, data: '2026-07-11 21:00-03:00', estadio: 12, descricao: 'Vencedor 95 vs Vencedor 96' },
+  { id: 100, fase: 'qf', rodada: 6, casa: null, visitante: null, data: '2026-07-11 22:00-03:00', estadio: 12, descricao: 'Vencedor 95 vs Vencedor 96' },
   // Semifinais (SF) - 2 jogos
   { id: 101, fase: 'sf', rodada: 7, casa: null, visitante: null, data: '2026-07-14 16:00-03:00', estadio: 7, descricao: 'Vencedor 97 vs Vencedor 98' },
-  { id: 102, fase: 'sf', rodada: 7, casa: null, visitante: null, data: '2026-07-15 16:00-03:00', estadio: 7, descricao: 'Vencedor 99 vs Vencedor 100' },
+  { id: 102, fase: 'sf', rodada: 7, casa: null, visitante: null, data: '2026-07-15 16:00-03:00', estadio: 10, descricao: 'Vencedor 99 vs Vencedor 100' },
   // Disputa de 3º lugar
   { id: 103, fase: 'terceiro', rodada: 8, casa: null, visitante: null, data: '2026-07-18 18:00-03:00', estadio: 9, descricao: 'Perdedor 101 vs Perdedor 102' },
   // Final
