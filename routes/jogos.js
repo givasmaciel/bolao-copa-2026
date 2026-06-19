@@ -19,7 +19,7 @@ router.get('/', async (req, res) => {
       LEFT JOIN grupos g ON j.grupo_id = g.id
       LEFT JOIN selecoes sc ON j.selecao_casa_id = sc.id
       LEFT JOIN selecoes sv ON j.selecao_visitante_id = sv.id
-      ORDER BY j.id
+      ORDER BY j.data, j.id
     `);
 
     // Agrupa por fase
