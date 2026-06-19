@@ -25,7 +25,12 @@ Deploy no Render (Node.js) com banco Neon PostgreSQL. Localmente usa SQLite.
 - **Tratamento de erros sem reload silencioso** — `salvarIndividual` e `salvarGrupo` validam placar antes de enviar, mostram mensagem detalhada em caso de erro HTTP, mantêm o placar que o usuário digitou e re-habilitam o botão
 - **PWA (Progressive Web App)** — manifest.json + service worker (cache offline de assets estáticos, network-first para HTML), atalhos para Palpites/Ranking/Jogos, instalável no celular como app nativo
 - **Health check `/healthz`** — endpoint público que verifica conexão com banco, retorna uptime, latência, marcador e contagens. Retorna 503 se banco offline. Útil para monitoramento do Render e debugging.
-- **Sentry (opcional)** — se `SENTRY_DSN` estiver definido, errors vão automaticamente para o painel do Sentry com contexto da request. `tracesSampleRate=0.1` em produção. Filtra `/healthz` e favicon para evitar ruído.
+- **Sentry (opcional)** — se `SENTRY_DSN` estiver definido em produção, errors vão automaticamente para o painel do Sentry com contexto da request. `tracesSampleRate=0.1`. Filtra `/healthz`, `/favicon` e `/admin` para evitar ruído.
+- **Toast/snackbar** — substitui `alert()` por notificações modernas (canto inferior, somem sozinhas, com ícones e cores por tipo). Mobile UX muito melhor
+- **Modo escuro automático** — `@media (prefers-color-scheme: dark)` ativa tema escuro se o SO pedir (iOS, Android, macOS, Win11). Variáveis CSS trocam paleta
+- **Confirmação de exclusão** — admin precisa digitar o nome do usuário para excluir (modal). Protege contra cliques acidentais que apagariam participantes
+- **Logs estruturados** — `logger.js` emite JSON para stdout (Render indexa). Busca por `level:error`, `msg:palpites`, etc.
+- **Content-Security-Policy** — header CSP restringe scripts/estilos a origens confiáveis, mais `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`. Defesa contra XSS
 - **Recuperação de senha** — token por email (SMTP opcional; fallback exibe link na tela)
 - **Ranking** — inclui pontos extras via subquery; exclui admins; desempate hierárquico em 8 níveis (total pontos → placares exatos → resultado+gol → só resultado → 1 gol certo → gols certos → palpites pontuados → nome alfabético); card de regras no topo com tabela `Critério / Pontos / O que conta`; colunas: `Palpites` (total dinâmico de palpites feitos pelo participante, cresce com novos palpites), `🎯 Qualidade dos acertos` (6 sub-colunas: Exatos, Res+Gol, Só Res, 1 Gol, Gols, Pont.) seguindo a cascata do SQL, `Média`, `Aproveit.`, `Pontos`; barra visual proporcional ao líder no total; banner com 🏆 Líder + ✅ Mais palpites pontuados + 🎯 Mais placares exatos + 📊 Média geral
 - **Perfil do participante** — cards horizontais compactos (Palpites, Acertos, Pontos, Aproveit., Média/palpite, Pts disp.); palpites por rodada com resultado real × palpite × pontos
@@ -234,6 +239,48 @@ Para ativar:
 2. Criar projeto Node.js
 3. Copiar o DSN
 4. Adicionar `SENTRY_DSN=...` nas env vars do Render
+
+### Segurança (defesa em profundidade)
+
+Headers HTTP setados via middleware em `server.js`:
+```
+Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://flagcdn.com; ...
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+Referrer-Policy: strict-origin-when-cross-origin
+```
+- **CSP**: bloqueia scripts não autorizados (defesa contra XSS via injeção)
+- **X-Frame-Options**: impede embed em iframe (defesa contra clickjacking)
+- **X-Content-Type-Options**: força MIME correto
+- **Referrer-Policy**: limita info de origem enviada a terceiros
+
+### Logs estruturados (`logger.js`)
+
+Substituiu `console.log/error` por logger que emite JSON. Buscas úteis no Render:
+```
+level:error                              # todos os erros
+msg:"unhandled error" AND url:/palpites   # erros específicos em palpites
+level:warn AND msg:CSRF                  # tentativas CSRF inválidas
+```
+
+### Toast/snackbar (`public/js/toast.js`)
+
+Substitui `alert()` por notificações modernas:
+```javascript
+toast('Palpite salvo!', 'success');          // ✅ verde, some em 4s
+toast('Erro ao salvar', 'error', 6000);      // ❌ vermelho, 6s
+toast('Atenção', 'warning');                 // ⚠️ amarelo
+toast('Info genérica');                       // ℹ️ azul
+```
+Aparece canto inferior central, com botão × para fechar manualmente. Mobile UX muito melhor que `alert()` nativo.
+
+### Modo escuro (`public/css/style.css`)
+
+`@media (prefers-color-scheme: dark)` ativa tema escuro automaticamente se o SO pedir (iOS, Android, macOS, Windows 11). Cobre cards, inputs, tabelas, ranking, modal e toasts via variáveis CSS (`--bg-page`, `--bg-card`, `--border-soft`, `--text-muted`).
+
+### Confirmação de exclusão (`views/admin-usuarios.ejs`)
+
+Modal exige **digitar o nome** do usuário para habilitar o botão Excluir. Enter confirma, Esc cancela. Substitui o antigo `confirm()` de 1-clique que podia causar exclusões acidentais.
 
 ## Scripts de manutenção
 
