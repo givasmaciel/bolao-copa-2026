@@ -51,6 +51,24 @@ app.use(session({
 }));
 app.use(flash());
 
+// Identifica qual banco está conectado (lê uma vez no boot e cacheia)
+let dbMarker = 'desconhecido';
+(async () => {
+  try {
+    const m = await get("SELECT valor FROM config WHERE chave = 'db_marker'");
+    if (m && m.valor) dbMarker = m.valor;
+    else {
+      // Não tem marcador ainda — pega host do DATABASE_URL como fallback
+      const u = process.env.DATABASE_URL || '';
+      const h = u.split('@')[1]?.split('/')[0] || 'local';
+      dbMarker = h;
+    }
+    console.log('[boot] dbMarker =', dbMarker);
+  } catch (e) {
+    console.warn('[boot] erro lendo db_marker:', e.message);
+  }
+})();
+
 // CSRF token — gera e valida
 const crypto = require('crypto');
 app.use((req, res, next) => {
@@ -103,6 +121,7 @@ app.use((req, res, next) => {
   res.locals.aviso = req.flash('aviso');
   res.locals.usuario = req.session.usuario || null;
   res.locals.PALPITE_MARGEM_MS = PALPITE_MARGEM_MS;
+  res.locals.dbMarker = dbMarker;
   next();
 });
 

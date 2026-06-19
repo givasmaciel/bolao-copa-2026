@@ -6,15 +6,22 @@ const { PALPITE_MARGEM_MS } = require('../services/palpite-config');
 const router = express.Router();
 
 // GET /jogos/db-info - rota publica de debug que mostra qual banco esta conectado
-// Le a 'db_marker' da tabela config (so existe no Neon)
+// Le a 'db_marker' da tabela config (util para distinguir Render vs Neon)
 router.get('/db-info', async (req, res) => {
   try {
     const url = process.env.DATABASE_URL || '';
     const host = url.split('@')[1]?.split('/')[0] || '?';
     const marker = await get("SELECT valor FROM config WHERE chave = 'db_marker'");
+    const contagens = {
+      usuarios: (await get('SELECT COUNT(*) AS c FROM usuarios'))?.c || 0,
+      jogos: (await get('SELECT COUNT(*) AS c FROM jogos'))?.c || 0,
+      palpites: (await get('SELECT COUNT(*) AS c FROM palpites'))?.c || 0,
+      jogos_finalizados: (await get('SELECT COUNT(*) AS c FROM jogos WHERE finalizado = 1'))?.c || 0,
+    };
     res.json({
       host,
       marcador: marker?.valor || 'NAO_ENCONTRADO',
+      contagens,
       rodando_em: new Date().toISOString()
     });
   } catch (err) {

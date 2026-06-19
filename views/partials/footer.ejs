@@ -2,6 +2,9 @@
   <footer>
     <p>⚽ Bolão da Copa do Mundo FIFA 2026 • Dados baseados no projeto <a href="https://github.com/rezarahiminia/worldcup2026" target="_blank" rel="noopener">worldcup2026</a></p>
     <p style="opacity:0.7; margin-top:6px; font-size:0.8rem">Feito com 💚 para os amantes do futebol</p>
+    <% if (typeof dbMarker !== 'undefined' && dbMarker) { %>
+      <p style="opacity:0.5; margin-top:4px; font-size:0.7rem">🗄️ DB: <%= dbMarker %></p>
+    <% } %>
   </footer>
 </body>
 </html>

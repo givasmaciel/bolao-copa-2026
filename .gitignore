@@ -6,3 +6,4 @@ node_modules
 *.db-wal
 data/
 .claude/
+MANUAL_LOCAL.md

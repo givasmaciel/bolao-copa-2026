@@ -324,16 +324,21 @@ async function salvarGrupo(gid, label, btn) {
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN },
       body: JSON.stringify({ jogos })
     });
+    if (!res.ok) {
+      const text = await res.text().catch(function() { return ''; });
+      throw new Error('HTTP ' + res.status + (text ? ' — ' + text.slice(0, 150) : ''));
+    }
     const data = await res.json();
     if (data.ok) {
       location.reload();
     } else {
-      alert(data.erro || 'Erro ao salvar.');
+      alert('❌ Erro: ' + (data.erro || 'desconhecido'));
       btn.disabled = false;
       btn.textContent = '💾 Salvar todos';
     }
   } catch (err) {
-    alert('Erro ao salvar.');
+    console.error('[salvarGrupo]', err);
+    alert('❌ Erro ao salvar grupo.\n\n' + err.message + '\n\nTente novamente em alguns segundos.');
     btn.disabled = false;
     btn.textContent = '💾 Salvar todos';
   }
@@ -373,6 +378,14 @@ function fecharPreencherGrupo(gid) {
 function salvarIndividual(ev, form) {
   ev.preventDefault();
   const btn = form.querySelector('.salvar-btn');
+  const casaInput = form.querySelector('input[name="casa"]');
+  const visitInput = form.querySelector('input[name="visitante"]');
+  // Validação prévia — evita envio de placar vazio/negativo
+  if (!casaInput.value || !visitInput.value || Number(casaInput.value) < 0 || Number(visitInput.value) < 0) {
+    alert('⚠️ Preencha os dois placares com números válidos (0 ou maior).');
+    return false;
+  }
+  const placarOriginal = { casa: casaInput.value, visitante: visitInput.value };
   btn.disabled = true;
   btn.textContent = '⏳ Salvando...';
   fetch(form.action, {
@@ -380,9 +393,22 @@ function salvarIndividual(ev, form) {
     headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRF-Token': CSRF_TOKEN },
     body: new URLSearchParams(new FormData(form))
   }).then(function(r) {
-    if (r.redirected) { location.href = r.url; return; }
-    location.reload();
-  }).catch(function() { location.reload(); });
+    if (r.ok || r.redirected || r.status === 302) {
+      location.reload();
+    } else {
+      return r.text().then(function(t) {
+        throw new Error('HTTP ' + r.status + (t ? ' — ' + t.slice(0, 100) : ''));
+      });
+    }
+  }).catch(function(err) {
+    console.error('[salvarIndividual]', err);
+    btn.disabled = false;
+    btn.textContent = '💾 Salvar';
+    // Restaura o placar que o usuário digitou (caso algum JS tenha mexido)
+    casaInput.value = placarOriginal.casa;
+    visitInput.value = placarOriginal.visitante;
+    alert('❌ Erro ao salvar palpite.\n\n' + err.message + '\n\nTente novamente em alguns segundos.');
+  });
   return false;
 }
 
