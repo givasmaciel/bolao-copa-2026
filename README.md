@@ -23,6 +23,9 @@ Deploy no Render (Node.js) com banco Neon PostgreSQL. Localmente usa SQLite.
 - **Rota de diagnóstico** — `/jogos/db-info` retorna JSON com `host`, `marcador` (do `db_marker` da tabela `config`), contagens (`usuarios`, `jogos`, `palpites`, `jogos_finalizados`) e timestamp
 - **Indicador de banco** — `db_marker` lido no boot é exibido discretamente no rodapé (ex.: "🗄️ DB: render-producao-2026-06-19"), evitando confusão quando há mais de um banco em uso (Render, Neon, dev local)
 - **Tratamento de erros sem reload silencioso** — `salvarIndividual` e `salvarGrupo` validam placar antes de enviar, mostram mensagem detalhada em caso de erro HTTP, mantêm o placar que o usuário digitou e re-habilitam o botão
+- **PWA (Progressive Web App)** — manifest.json + service worker (cache offline de assets estáticos, network-first para HTML), atalhos para Palpites/Ranking/Jogos, instalável no celular como app nativo
+- **Health check `/healthz`** — endpoint público que verifica conexão com banco, retorna uptime, latência, marcador e contagens. Retorna 503 se banco offline. Útil para monitoramento do Render e debugging.
+- **Sentry (opcional)** — se `SENTRY_DSN` estiver definido, errors vão automaticamente para o painel do Sentry com contexto da request. `tracesSampleRate=0.1` em produção. Filtra `/healthz` e favicon para evitar ruído.
 - **Recuperação de senha** — token por email (SMTP opcional; fallback exibe link na tela)
 - **Ranking** — inclui pontos extras via subquery; exclui admins; desempate hierárquico em 8 níveis (total pontos → placares exatos → resultado+gol → só resultado → 1 gol certo → gols certos → palpites pontuados → nome alfabético); card de regras no topo com tabela `Critério / Pontos / O que conta`; colunas: `Palpites` (total dinâmico de palpites feitos pelo participante, cresce com novos palpites), `🎯 Qualidade dos acertos` (6 sub-colunas: Exatos, Res+Gol, Só Res, 1 Gol, Gols, Pont.) seguindo a cascata do SQL, `Média`, `Aproveit.`, `Pontos`; barra visual proporcional ao líder no total; banner com 🏆 Líder + ✅ Mais palpites pontuados + 🎯 Mais placares exatos + 📊 Média geral
 - **Perfil do participante** — cards horizontais compactos (Palpites, Acertos, Pontos, Aproveit., Média/palpite, Pts disp.); palpites por rodada com resultado real × palpite × pontos
@@ -91,7 +94,7 @@ Admin local: `npm run criar-admin` (usuário: `admin@teste.com` / `admin123`)
 
 ## Variáveis de ambiente
 
-`DATABASE_URL`, `SESSION_SECRET`, `ADMIN_NOME`, `ADMIN_EMAIL`, `ADMIN_SENHA`, `BASE_URL`, `DIAGNOSTIC_KEY`, `PLANO_AUTO_API_KEY`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`
+`DATABASE_URL`, `SESSION_SECRET`, `ADMIN_NOME`, `ADMIN_EMAIL`, `ADMIN_SENHA`, `BASE_URL`, `DIAGNOSTIC_KEY`, `PLANO_AUTO_API_KEY`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, `SENTRY_DSN` (opcional — error tracking)
 
 ## Estrutura do projeto
 
@@ -177,6 +180,60 @@ scripts/
 - Sessão: cookie-based, secure em produção, sameSite lax, 30 dias
 - Todos os horários armazenados em BRT (-03:00)
 - **TZ=UTC no db.js**: o driver node-pg parseia TIMESTAMPTZ usando o fuso local do processo. Para evitar shift de +3h (Render roda em America/Sao_Paulo), o `process.env.TZ` é forçado a 'UTC' antes do `require('pg')`. As views convertem para BRT com `toLocaleString({ timeZone: 'America/Sao_Paulo' })`.
+
+## Observabilidade e PWA
+
+### PWA (Progressive Web App)
+
+O site é instalável no celular como app nativo:
+- **`/manifest.json`** — nome, ícones SVG (192×192 e 512×512), atalhos para Palpites/Ranking/Jogos
+- **`/sw.js`** — service worker com estratégia híbrida:
+  - Assets estáticos (CSS/SVG/JS/imagens): cache-first
+  - HTML/navegação: network-first com fallback pro cache
+  - APIs, login, admin: nunca cacheia
+- **`/icon-192.svg`** e **`/icon-512.svg`** — ícone ⚽ verde Brasil
+- **Registro automático** via `<script>` no `footer.ejs`
+
+Para usar offline no celular: abrir o site no Chrome/Safari → "Adicionar à tela inicial".
+
+### Health check
+
+```bash
+curl https://bolao-copa-2026-zjoi.onrender.com/healthz
+```
+
+Retorna JSON:
+```json
+{
+  "status": "ok",
+  "uptime_segundos": 1234,
+  "db": {
+    "conectado": true,
+    "marcador": "render-producao-2026-06-19",
+    "latencia_ms": 42
+  },
+  "contagens": { "usuarios": 11, "jogos": 104, "palpites": 467, "jogos_finalizados": 28 },
+  "versao_node": "v18.x",
+  "timestamp": "2026-06-19T..."
+}
+```
+
+Retorna `503` se banco estiver offline (Render pode usar isso para restartar o serviço).
+
+### Sentry (error tracking)
+
+Configurar `SENTRY_DSN` no Render para enviar erros automaticamente. Sem DSN, Sentry fica desligado.
+
+- `tracesSampleRate: 0.1` em produção (10% das transações)
+- Filtra `/healthz` e `/favicon` para evitar ruído
+- `requestHandler` middleware captura contexto da request
+- `errorHandler` middleware (após as rotas) captura erros não tratados
+
+Para ativar:
+1. Criar conta em https://sentry.io (free tier 5k eventos/mês)
+2. Criar projeto Node.js
+3. Copiar o DSN
+4. Adicionar `SENTRY_DSN=...` nas env vars do Render
 
 ## Scripts de manutenção
 

@@ -4,6 +4,7 @@ const express = require('express');
 const session = require('express-session');
 const flash = require('connect-flash');
 const methodOverride = require('method-override');
+const Sentry = require('@sentry/node');
 
 const { criarSchema } = require('./database/schema');
 const authRoutes = require('./routes/auth');
@@ -24,6 +25,23 @@ const { PALPITE_MARGEM_MS } = require('./services/palpite-config');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Sentry — só inicializa se SENTRY_DSN estiver definido (não bloqueia dev)
+if (process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.NODE_ENV || 'development',
+    tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 0,
+    // filtra ruído: não reporta 404 do db-info, healthz, robots.txt
+    beforeSend(event) {
+      const url = event.request?.url || '';
+      if (url.includes('/healthz') || url.includes('/favicon')) return null;
+      return event;
+    }
+  });
+  app.use(Sentry.Handlers.requestHandler());
+  console.log('[sentry] inicializado (env=' + (process.env.NODE_ENV || 'development') + ')');
+}
 
 // View engine
 app.set('view engine', 'ejs');
@@ -137,6 +155,41 @@ app.use(async (req, res, next) => {
   next();
 });
 
+// Health check — usado por Render / monitoramento externo
+app.get('/healthz', async (req, res) => {
+  const start = Date.now();
+  try {
+    // verifica banco
+    const dbCheck = await get('SELECT 1 AS ok');
+    const dbLatencyMs = Date.now() - start;
+    const contagens = {
+      usuarios: (await get('SELECT COUNT(*) AS c FROM usuarios'))?.c || 0,
+      jogos: (await get('SELECT COUNT(*) AS c FROM jogos'))?.c || 0,
+      palpites: (await get('SELECT COUNT(*) AS c FROM palpites'))?.c || 0,
+      jogos_finalizados: (await get('SELECT COUNT(*) AS c FROM jogos WHERE finalizado = 1'))?.c || 0,
+    };
+    res.json({
+      status: 'ok',
+      uptime_segundos: Math.round(process.uptime()),
+      db: {
+        conectado: !!dbCheck?.ok,
+        marcador: dbMarker,
+        latencia_ms: dbLatencyMs
+      },
+      contagens,
+      versao_node: process.version,
+      timestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    res.status(503).json({
+      status: 'degraded',
+      erro: err.message,
+      db: { conectado: false, marcador: dbMarker },
+      uptime_segundos: Math.round(process.uptime())
+    });
+  }
+});
+
 // Rotas
 app.get('/', async (req, res) => {
   if (req.session && req.session.usuario) {
@@ -245,6 +298,11 @@ app.get('/api/proximo-jogo', async (req, res) => {
 app.use((req, res) => {
   res.status(404).render('404', { title: 'Página não encontrada' });
 });
+
+// Sentry error handler (deve vir DEPOIS das rotas, ANTES do error handler nosso)
+if (process.env.SENTRY_DSN) {
+  app.use(Sentry.Handlers.errorHandler());
+}
 
 // Error handler
 app.use((err, req, res, next) => {
