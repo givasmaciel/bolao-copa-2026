@@ -1,7 +1,7 @@
 # ⚽ Bolão da Copa do Mundo 2026
 
 Aplicação full-stack em português do Brasil para bolão de palpites da Copa 2026.  
-Deploy automático no Render (free tier) via Blueprint com PostgreSQL. Localmente usa SQLite.
+Deploy no Render (Node.js) com banco Neon PostgreSQL. Localmente usa SQLite.
 
 ## Funcionalidades
 
@@ -16,9 +16,11 @@ Deploy automático no Render (free tier) via Blueprint com PostgreSQL. Localment
 - **Visualização pública de palpites** (`/jogos/:id/palpites`) — 3 níveis de visibilidade: 🔒 oculto antes do fechamento, 👀 visível sem pontos após fechar, visível com pontos após resultado; agrupamento por pontuação; destaca o palpite do visitante
 - **Config** (`/config`) — participante altera próprio nome (sincronizado com username)
 - **Admin como juiz** — não participa, não aparece no ranking, redirecionado de `/palpites`
+- **Admin: editar horário/estádio** — botão "🕐 Horário/Estádio" em `/admin/jogos` para corrigir data/hora, estádio, cidade e país de qualquer jogo sem precisar de deploy
 - **Placar automático** — busca resultados reais da API 26worldcup.cn a cada 16 minutos; atualiza placar e recalcula pontos automaticamente; acionável manualmente pelo admin em `/admin/placar-automatico`
 - **Pontos bônus** — participantes tardios recebem pontuação do último colocado -1 da rodada de ingresso; cadastro encerra após fechamento dos extras; tooltip no ranking mostra motivo
 - **Rotas administrativas** — resultados dos jogos, recalcular pontos, gerenciar usuários (promover/rebaixar/excluir/resetar senha, resetar palpites individual/massa, alterar username, criar participante), admin extras, admin config
+- **Rota de diagnóstico** — `/jogos/db-info` mostra publicamente qual banco está conectado e host da DATABASE_URL
 - **Recuperação de senha** — token por email (SMTP opcional; fallback exibe link na tela)
 - **Ranking** — inclui pontos extras via subquery; exclui admins; desempate hierárquico em 8 níveis (total pontos → placares exatos → resultado+gol → só resultado → 1 gol certo → gols certos → palpites pontuados → nome alfabético); card de regras no topo com tabela `Critério / Pontos / O que conta`; colunas: `Palpites` (total dinâmico de palpites feitos pelo participante, cresce com novos palpites), `🎯 Qualidade dos acertos` (6 sub-colunas: Exatos, Res+Gol, Só Res, 1 Gol, Gols, Pont.) seguindo a cascata do SQL, `Média`, `Aproveit.`, `Pontos`; barra visual proporcional ao líder no total; banner com 🏆 Líder + ✅ Mais palpites pontuados + 🎯 Mais placares exatos + 📊 Média geral
 - **Perfil do participante** — cards horizontais compactos (Palpites, Acertos, Pontos, Aproveit., Média/palpite, Pts disp.); palpites por rodada com resultado real × palpite × pontos
@@ -62,7 +64,7 @@ Prazo dos palpites extras configurável via tabela `config` (chave `extras_data_
 ## Tecnologias
 
 - Node.js 18+, Express 4.21, EJS 3.1
-- SQLite 5 (dev) / PostgreSQL 16 (produção)
+- SQLite 5 (dev) / PostgreSQL 16 (produção via Neon)
 - bcryptjs, express-session, connect-flash, nodemailer
 - CSS puro responsivo (verde/amarelo/azul)
 - Bandeiras via flagcdn.com
@@ -71,18 +73,19 @@ Prazo dos palpites extras configurável via tabela `config` (chave `extras_data_
 
 ```bash
 npm install
-npm run seed          # 12 grupos, 48 seleções, 104 jogos (horários BRT -03:00)
-npm run criar-admin   # cria administrador manualmente
-npm start             # http://localhost:3000
+npm start             # setup + seed automático, http://localhost:3000
 ```
 
-## Deploy no Render
+Admin local: `npm run criar-admin` (usuário: `admin@teste.com` / `admin123`)
+
+> O `setup.js` executa automaticamente no `npm start`: cria schema, popula seed (104 jogos + mata-mata) e atualiza horários. Não precisa rodar `npm run seed` separadamente.
+
+## Deploy
 
 1. Push do código para o GitHub
-2. Render → New Blueprint → apontar para o repositório
-3. `render.yaml` cria PostgreSQL + web service automaticamente
-4. Configurar variáveis: `ADMIN_EMAIL`, `ADMIN_SENHA`, `SESSION_SECRET`
-5. Auto-deploy ativado em todo `git push`
+2. Render cria web service (auto-deploy ativado)
+3. Banco: **Neon** (PostgreSQL free tier, 0.5 GB) — configurar `DATABASE_URL` como env var no Render
+4. Variáveis obrigatórias: `DATABASE_URL`, `SESSION_SECRET`, `ADMIN_EMAIL`, `ADMIN_SENHA`
 
 ## Variáveis de ambiente
 
@@ -92,11 +95,11 @@ npm start             # http://localhost:3000
 
 ```
 database/
-  db.js          — adaptador dual SQLite/PostgreSQL (conversão ? para $N)
+  db.js          — adaptador dual SQLite/PostgreSQL (conversão ? para $N); força TZ=UTC para evitar shift de +3h em TIMESTAMPTZ
   session-store.js — persistência de sessão no banco (evita perda ao reiniciar)
   schema.js      — CREATE TABLE com sintaxe condicional + migrações
   seed.js        — grupos, seleções e 104 jogos em BRT
-  setup.js       — schema + seed + admin via env vars (executado no deploy)
+  setup.js       — schema + seed + mata-mata + admin via env vars (executado em todo deploy)
   criar-admin.js — script manual de criação de admin
 
 routes/
@@ -107,7 +110,7 @@ routes/
   resumo.js      — stats detalhadas, pontos por rodada, racha, histórico
   config.js      — alterar nome (sincroniza com username)
   classificacao.js — classificação dos grupos
-  jogos.js       — listagem pública dos 104 jogos
+  jogos.js       — listagem pública dos 104 jogos + rota /jogos/db-info para diagnóstico do banco conectado
   ranking.js     — ranking com pontos extras, desempate, exclui admins
   senha.js       — reset de senha com token + email
   admin.js       — resultados, recalcular, placar automático, usuários, criar participante, extras, config, pontuação por fase, pontos bônus
@@ -152,6 +155,7 @@ raiz/
 - Admin pode recalcular pontos, resetar palpites (individual/massa), resetar senha, promover/rebaixar, excluir usuários
 - Cadastro aberto — qualquer pessoa pode criar conta livremente (até o fechamento dos palpites extras)
 - Admin pode conceder pontos bônus a participantes tardios (último colocado -1 da rodada de ingresso; cadastro encerra após fechamento dos extras)
+- Admin pode editar data/hora e estádio de qualquer jogo via botão "🕐 Horário/Estádio" em `/admin/jogos` — útil para correções pontuais sem deploy
 - Pontuação por fase configurável pelo admin em `/admin/pontuacao-fases`
 - Aproveitamento percentual exibido no ranking e perfil do usuário
 - Resultados dos extras no ranking só aparecem após admin definir em `/admin/extras`
@@ -161,3 +165,4 @@ raiz/
 - Trust proxy: `app.set('trust proxy', 1)` para sessão funcionar atrás do proxy HTTPS do Render
 - Sessão: cookie-based, secure em produção, sameSite lax, 30 dias
 - Todos os horários armazenados em BRT (-03:00)
+- **TZ=UTC no db.js**: o driver node-pg parseia TIMESTAMPTZ usando o fuso local do processo. Para evitar shift de +3h (Render roda em America/Sao_Paulo), o `process.env.TZ` é forçado a 'UTC' antes do `require('pg')`. As views convertem para BRT com `toLocaleString({ timeZone: 'America/Sao_Paulo' })`.
