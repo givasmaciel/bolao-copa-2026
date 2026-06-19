@@ -16,7 +16,7 @@ Aplicação web full-stack em português do Brasil para cadastro de palpites sob
 | **Framework Web** | Express 4.21 |
 | **Templates** | EJS 3.1 (server-side rendering) |
 | **Banco (dev)** | SQLite 5 via `better-sqlite3` |
-| **Banco (prod)** | PostgreSQL 16 no Render |
+| **Banco (prod)** | PostgreSQL 16 no Neon |
 | **Sessão** | `express-session` (cookie 30 dias, `secure: true` em produção, `sameSite: 'lax'`) |
 | **Hash de senhas** | `bcryptjs` (10 rounds) |
 | **Flash messages** | `connect-flash` |
@@ -30,7 +30,7 @@ Aplicação web full-stack em português do Brasil para cadastro de palpites sob
 
 ## 3. Banco de Dados — Dual SQLite / PostgreSQL
 
-O banco opera de forma transparente com **SQLite** (desenvolvimento local) ou **PostgreSQL** (produção no Render). A detecção é feita pela presença da variável `DATABASE_URL`:
+O banco opera de forma transparente com **SQLite** (desenvolvimento local) ou **PostgreSQL** (produção no Neon). A detecção é feita pela presença da variável `DATABASE_URL`:
 
 - `database/db.js` expõe três funções — `run`, `get`, `all` — que abstraem as diferenças entre os SGBDs.
 - Placeholders `?` são convertidos automaticamente para `$1, $2, ...` no PostgreSQL.
@@ -295,6 +295,7 @@ Armazena configurações do sistema, como o prazo limite dos palpites extras (ex
 | Método | Rota | Descrição |
 |---|---|---|
 | GET | `/jogos` | Lista pública de todos os 104 jogos agrupados por fase |
+| GET | `/jogos/db-info` | Diagnóstico público: retorna JSON com host da DATABASE_URL e valor de `config.chave='db_marker'` (útil para confirmar qual banco está conectado) |
 
 **Características:**
 - Página pública (não requer login).
@@ -379,6 +380,7 @@ Armazena configurações do sistema, como o prazo limite dos palpites extras (ex
 | POST | `/admin/config` | Atualiza configurações (ex.: prazo dos extras) |
 | GET | `/admin/pontuacao-fases` | Exibe formulário de configuração de pontos por fase |
 | POST | `/admin/pontuacao-fases` | Salva pontuação personalizada por fase |
+| POST | `/admin/jogos/:id/horario` | Edita data/hora, estádio, cidade e país de um jogo (interpretado como BRT, convertido para UTC) |
 | POST | `/admin/usuarios/:id/bonus` | Adiciona pontos bônus a um participante (com motivo) |
 | POST | `/admin/usuarios/:id/bonus/:bonusId/remover` | Remove um bônus específico |
 | POST | `/admin/usuarios/:id/bonus/:bonusId/editar` | Edita pontos e motivo de um bônus específico |
@@ -387,6 +389,7 @@ Armazena configurações do sistema, como o prazo limite dos palpites extras (ex
 - Todas as rotas protegidas pelo middleware `verificarAdmin`.
 - Ao finalizar um jogo com placar, os pontos de todos os palpites daquele jogo são recalculados automaticamente via `calcularPontos()`.
 - Se um jogo for "desfinalizado" (`finalizado = 0`), os pontos são zerados.
+- **Editar horário/estádio**: o botão "🕐 Horário/Estádio" em `/admin/jogos` abre um modal inline com os valores atuais de data/hora, estádio, cidade e país. A data/hora é interpretada como BRT e convertida para UTC ao salvar. Útil para correções pontuais sem deploy.
 
 ---
 
@@ -471,16 +474,19 @@ A pontuação é fixa por categoria, conforme tabela na seção 5.4. Os pontos s
 
 ## 8. Deploy
 
-### 8.1 Render (`render.yaml`)
+### 8.1 Plataforma
+
+| Componente | Serviço |
+|---|---|
+| **Web server** | Render (Node.js) — serviço `bolao_copa_2026` |
+| **Banco de dados** | Neon (PostgreSQL 16, free tier) |
+| **Repositório** | GitHub (`main` → auto-deploy no Render) |
+
+### 8.2 render.yaml (Blueprint)
+
+O arquivo `render.yaml` define o blueprint original do Render. Atualmente o serviço em uso (`bolao_copa_2026`) foi criado manualmente e usa `DATABASE_URL` do Neon, não do banco gerado pelo blueprint.
 
 ```yaml
-databases:
-  - name: bolao-db
-    plan: free
-    databaseName: bolao
-    region: oregon
-    postgresMajorVersion: 16
-
 services:
   - type: web
     name: bolao-copa-2026
@@ -501,23 +507,22 @@ services:
       - key: ADMIN_SENHA
         sync: false
       - key: DATABASE_URL
-        fromDatabase:
-          name: bolao-db
-          property: connectionString
+        sync: false  # configurada manualmente com a connection string do Neon
 ```
 
-- `SESSION_SECRET` é auto-gerado pelo Render.
-- `DATABASE_URL` é vinculada automaticamente ao banco `bolao-db`.
+- `DATABASE_URL` é configurada manualmente no dashboard do Render com a connection string do Neon.
 - `ADMIN_EMAIL` e `ADMIN_SENHA` devem ser configurados manualmente no dashboard do Render.
-- Nome do serviço: `bolao-copa-2026`.
 - URL de produção: `https://bolao-copa-2026-zjoi.onrender.com`.
 
-### 8.2 Script de Setup (`database/setup.js`)
+### 8.3 Script de Setup (`database/setup.js`)
 
-Executado antes do servidor em produção:
+Executado em todo deploy (`node database/setup.js && node server.js`):
 1. Cria as tabelas (schema) se não existirem.
 2. Verifica se há dados; se vazio, executa o seed (48 seleções, 12 grupos, 104 jogos).
-3. Se `ADMIN_EMAIL` e `ADMIN_SENHA` estiverem definidas, cria ou atualiza o administrador automaticamente.
+3. Atualiza horários dos 72 jogos da fase de grupos.
+4. Atualiza horários dos 32 jogos do mata-mata.
+5. Corrige times trocados dos jogos 29 e 30.
+6. Se `ADMIN_EMAIL` e `ADMIN_SENHA` estiverem definidas, cria ou atualiza o administrador automaticamente.
 
 ---
 
@@ -533,6 +538,7 @@ Executado antes do servidor em produção:
 | `ADMIN_EMAIL` | Não | E-mail do administrador (obrigatório se quiser criação automática) |
 | `ADMIN_SENHA` | Não | Senha do administrador (obrigatório se quiser criação automática) |
 | `BASE_URL` | Não | URL base para links em e-mails de recuperação |
+| `DIAGNOSTIC_KEY` | Não | Chave para diagnosticar estado do banco (opcional) |
 | `SMTP_HOST` | Não | Servidor SMTP para envio de e-mails |
 | `SMTP_PORT` | Não | Porta SMTP (default: 587) |
 | `SMTP_USER` | Não | Usuário SMTP |
@@ -553,10 +559,11 @@ bolao/
 ├── render.yaml                       # Configuração de deploy no Render.com
 │
 ├── database/
-│   ├── db.js                         # Adaptador dual SQLite/PostgreSQL (run, get, all)
-│   ├── schema.js                     # Criação das tabelas com sintaxe condicional
+│   ├── db.js                         # Adaptador dual SQLite/PostgreSQL (run, get, all); força TZ=UTC
+│   ├── session-store.js              # Persistência de sessão no banco (evita perda ao reiniciar)
+│   ├── schema.js                     # Criação das tabelas com sintaxe condicional + migrações
 │   ├── seed.js                       # Popula 12 grupos, 48 seleções, 104 jogos e 16 estádios
-│   ├── setup.js                      # Setup automático: schema + seed + admin via env vars
+│   ├── setup.js                      # Setup automático: schema + seed + mata-mata + admin via env vars
 │   └── criar-admin.js                # Script interativo para criar administrador
 │
 ├── routes/
@@ -623,10 +630,13 @@ bolao/
 
 ## 11. Notas Técnicas Adicionais
 
-- **Render free tier**: O banco PostgreSQL e o serviço web休眠 após 15 minutos de inatividade. A primeira requisição após o período de inatividade pode levar alguns segundos (cold start).
-- **Timezone**: Todas as datas de jogos são armazenadas em BRT (`-03:00`). O `seed.js` usa strings no formato `'YYYY-MM-DD HH:mm-03:00'` e converte para UTC (+3h) antes de inserir no banco. As views exibem via `toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })`, que converte de UTC de volta para BRT. A migration do `schema.js` usa `Date.UTC(y, M-1, d, h+3, m)` — mesmo algoritmo.
+- **Render free tier**: O serviço web hiberna após 15 minutos de inatividade. A primeira requisição após o período de inatividade pode levar alguns segundos (cold start). O banco (Neon) também escala a zero após 5 minutos, mas a reconexão é transparente.
+- **Timezone — TZ=UTC no db.js**: O Render roda com TZ=America/Sao_Paulo. O driver node-pg, por padrão, parseia TIMESTAMPTZ usando o fuso local do processo — isso adiciona +3h ao Date retornado. Para corrigir, `process.env.TZ = 'UTC'` é forçado antes do `require('pg')` em `database/db.js`. Com TZ=UTC, o parse devolve o timestamp UTC correto, e as views convertem para BRT com `toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })`.
+- **Timezone — Armazenamento**: Todas as datas de jogos são armazenadas como TIMESTAMPTZ no PostgreSQL (ou DATETIME no SQLite). O seed usa timestamps em UTC. As views convertem para BRT no front-end.
 - **Segurança de sessão**: `sameSite: 'lax'` e `secure: true` em produção. O trust proxy é ativado com `app.set('trust proxy', 1)` para que o Express confie no header `X-Forwarded-Proto` enviado pelo proxy do Render.
 - **Índices**: A constraint UNIQUE em `palpites(usuario_id, jogo_id)` atua como índice para consultas de ranking e recálculo.
+- **Ordenação de jogos**: A view `/jogos` ordena por `j.data, j.id` (não por `j.id`) para garantir que mata-mata apareçam em ordem cronológica.
+- **Rota de diagnóstico**: `/jogos/db-info` expõe o host da DATABASE_URL e um marcador da tabela `config` para confirmar visualmente qual banco está conectado. Útil após migrações.
 
 ---
 
