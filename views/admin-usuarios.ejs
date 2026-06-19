@@ -98,7 +98,7 @@
             </div>
           </details>
         </td>
-        <td class="text-center"><%= new Date(u.criado_em).toLocaleDateString('pt-BR') %></td>
+        <td class="text-center"><%= new Date(u.criado_em).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }) %></td>
         <td class="text-center" style="white-space:nowrap">
           <details style="display:inline-block;vertical-align:middle">
             <summary class="btn btn-sm btn-secondary" style="cursor:pointer">👤 Usuário</summary>

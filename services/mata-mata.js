@@ -138,7 +138,7 @@ async function listarConfrontos() {
     LEFT JOIN selecoes sc ON j.selecao_casa_id = sc.id
     LEFT JOIN selecoes sv ON j.selecao_visitante_id = sv.id
     WHERE j.fase != 'grupo'
-    ORDER BY j.id
+    ORDER BY j.fase, j.data, j.id
   `);
   return jogosMM;
 }

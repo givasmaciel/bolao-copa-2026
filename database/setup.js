@@ -100,7 +100,61 @@ async function setup() {
     for (const [id, data, estadio, cidade, pais] of updates) {
       await run("UPDATE jogos SET data = ?, estadio = ?, cidade = ?, pais = ? WHERE id = ?", [data, estadio, cidade, pais, id]);
     }
-    console.log(`✅ Horários de ${updates.length} jogos atualizados`);
+    console.log(`✅ Horários de ${updates.length} jogos da fase de grupos atualizados`);
+
+    // Mata-mata (R32, R16, QF, SF, 3º lugar, Final) - 32 jogos
+    // Estes não são sobrescritos pelo seed em deploys subsequentes (o seed só roda
+    // se o banco estiver vazio), então mantemos uma migration aqui que alinha com o FIFA.
+    const mataMataUpdates = [
+      // R32 (16 jogos)
+      [73,  dt(2026,6,28,16,0),   'SoFi Stadium',                  'Los Angeles',          'EUA'], // 2A vs 2B
+      [74,  dt(2026,6,29,17,30),  'Gillette Stadium',             'Boston',               'EUA'], // 1E vs 3ABCDF
+      [75,  dt(2026,6,29,22,0),   'Estádio BBVA',                 'Monterrey',            'México'], // 1F vs 2C
+      [76,  dt(2026,6,29,14,0),   'NRG Stadium',                  'Houston',              'EUA'], // 1C vs 2F
+      [77,  dt(2026,6,30,18,0),   'MetLife Stadium',              'Nova York/Nova Jersey','EUA'], // 1I vs 3CDFGH
+      [78,  dt(2026,6,30,14,0),   'AT&T Stadium',                 'Dallas',               'EUA'], // 2E vs 2I
+      [79,  dt(2026,6,30,22,0),   'Estádio Azteca',               'Cidade do México',     'México'], // 1A vs 3CEFHI
+      [80,  dt(2026,7,1,13,0),    'Mercedes-Benz Stadium',        'Atlanta',              'EUA'], // 1L vs 3EHIJK
+      [81,  dt(2026,7,1,21,0),    'Levi\'s Stadium',              'San Francisco',        'EUA'], // 1D vs 3BEFIJ
+      [82,  dt(2026,7,1,17,0),    'Lumen Field',                  'Seattle',              'EUA'], // 1G vs 3AEHIJ
+      [83,  dt(2026,7,2,20,0),    'BMO Field',                    'Toronto',              'Canadá'], // 2K vs 2L
+      [84,  dt(2026,7,2,16,0),    'SoFi Stadium',                 'Los Angeles',          'EUA'], // 1H vs 2J
+      [85,  dt(2026,7,3,0,0),     'BC Place',                     'Vancouver',            'Canadá'], // 1B vs 3EFGIJ
+      [86,  dt(2026,7,3,19,0),    'Hard Rock Stadium',            'Miami',                'EUA'], // 1J vs 2H
+      [87,  dt(2026,7,3,22,30),   'Arrowhead Stadium',            'Kansas City',          'EUA'], // 1K vs 3DEIJL
+      [88,  dt(2026,7,3,15,0),    'AT&T Stadium',                 'Dallas',               'EUA'], // 2D vs 2G
+      // R16 (8 jogos)
+      [89,  dt(2026,7,4,18,0),    'Lincoln Financial Field',      'Filadélfia',           'EUA'], // W74 vs W77
+      [90,  dt(2026,7,4,14,0),    'NRG Stadium',                  'Houston',              'EUA'], // W73 vs W75
+      [91,  dt(2026,7,5,17,0),    'MetLife Stadium',              'Nova York/Nova Jersey','EUA'], // W76 vs W78
+      [92,  dt(2026,7,5,21,0),    'Estádio Azteca',               'Cidade do México',     'México'], // W79 vs W80
+      [93,  dt(2026,7,6,16,0),    'AT&T Stadium',                 'Dallas',               'EUA'], // W83 vs W84
+      [94,  dt(2026,7,6,21,0),    'Lumen Field',                  'Seattle',              'EUA'], // W81 vs W82
+      [95,  dt(2026,7,7,13,0),    'Mercedes-Benz Stadium',        'Atlanta',              'EUA'], // W86 vs W88
+      [96,  dt(2026,7,7,17,0),    'BC Place',                     'Vancouver',            'Canadá'], // W85 vs W87
+      // Quartas (4 jogos)
+      [97,  dt(2026,7,9,17,0),    'Gillette Stadium',             'Boston',               'EUA'], // W89 vs W90
+      [98,  dt(2026,7,10,16,0),   'SoFi Stadium',                 'Los Angeles',          'EUA'], // W93 vs W94
+      [99,  dt(2026,7,11,18,0),   'Hard Rock Stadium',            'Miami',                'EUA'], // W91 vs W92
+      [100, dt(2026,7,11,22,0),   'Arrowhead Stadium',            'Kansas City',          'EUA'], // W95 vs W96
+      // Semifinais (2 jogos)
+      [101, dt(2026,7,14,16,0),   'AT&T Stadium',                 'Dallas',               'EUA'], // W97 vs W98
+      [102, dt(2026,7,15,16,0),   'Mercedes-Benz Stadium',        'Atlanta',              'EUA'], // W99 vs W100
+      // 3º lugar
+      [103, dt(2026,7,18,18,0),   'Hard Rock Stadium',            'Miami',                'EUA'], // RU101 vs RU102
+      // Final
+      [104, dt(2026,7,19,16,0),   'MetLife Stadium',              'Nova York/Nova Jersey','EUA'], // W101 vs W102
+    ];
+    for (const [id, data, estadio, cidade, pais] of mataMataUpdates) {
+      await run("UPDATE jogos SET data = ?, estadio = ?, cidade = ?, pais = ? WHERE id = ?", [data, estadio, cidade, pais, id]);
+    }
+    console.log(`✅ Horários de ${mataMataUpdates.length} jogos do mata-mata atualizados`);
+
+    // Fix: jogos 29 e 30 do Grupo C estavam com os times trocados no banco
+    // (Escócia×Marrocos e Brasil×Haiti tinham selecao_casa_id/visitante_id invertidos)
+    await run("UPDATE jogos SET selecao_casa_id = 12, selecao_visitante_id = 10 WHERE id = 29", []); // Escócia × Marrocos
+    await run("UPDATE jogos SET selecao_casa_id = 9,  selecao_visitante_id = 11 WHERE id = 30", []); // Brasil × Haiti
+    console.log(`✅ Times dos jogos 29 e 30 corrigidos`);
   }
 
   // 4. Cria admin se as env vars estiverem definidas
