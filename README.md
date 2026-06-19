@@ -20,7 +20,9 @@ Deploy no Render (Node.js) com banco Neon PostgreSQL. Localmente usa SQLite.
 - **Placar automático** — busca resultados reais da API 26worldcup.cn a cada 16 minutos; atualiza placar e recalcula pontos automaticamente; acionável manualmente pelo admin em `/admin/placar-automatico`
 - **Pontos bônus** — participantes tardios recebem pontuação do último colocado -1 da rodada de ingresso; cadastro encerra após fechamento dos extras; tooltip no ranking mostra motivo
 - **Rotas administrativas** — resultados dos jogos, recalcular pontos, gerenciar usuários (promover/rebaixar/excluir/resetar senha, resetar palpites individual/massa, alterar username, criar participante), admin extras, admin config
-- **Rota de diagnóstico** — `/jogos/db-info` mostra publicamente qual banco está conectado e host da DATABASE_URL
+- **Rota de diagnóstico** — `/jogos/db-info` retorna JSON com `host`, `marcador` (do `db_marker` da tabela `config`), contagens (`usuarios`, `jogos`, `palpites`, `jogos_finalizados`) e timestamp
+- **Indicador de banco** — `db_marker` lido no boot é exibido discretamente no rodapé (ex.: "🗄️ DB: render-producao-2026-06-19"), evitando confusão quando há mais de um banco em uso (Render, Neon, dev local)
+- **Tratamento de erros sem reload silencioso** — `salvarIndividual` e `salvarGrupo` validam placar antes de enviar, mostram mensagem detalhada em caso de erro HTTP, mantêm o placar que o usuário digitou e re-habilitam o botão
 - **Recuperação de senha** — token por email (SMTP opcional; fallback exibe link na tela)
 - **Ranking** — inclui pontos extras via subquery; exclui admins; desempate hierárquico em 8 níveis (total pontos → placares exatos → resultado+gol → só resultado → 1 gol certo → gols certos → palpites pontuados → nome alfabético); card de regras no topo com tabela `Critério / Pontos / O que conta`; colunas: `Palpites` (total dinâmico de palpites feitos pelo participante, cresce com novos palpites), `🎯 Qualidade dos acertos` (6 sub-colunas: Exatos, Res+Gol, Só Res, 1 Gol, Gols, Pont.) seguindo a cascata do SQL, `Média`, `Aproveit.`, `Pontos`; barra visual proporcional ao líder no total; banner com 🏆 Líder + ✅ Mais palpites pontuados + 🎯 Mais placares exatos + 📊 Média geral
 - **Perfil do participante** — cards horizontais compactos (Palpites, Acertos, Pontos, Aproveit., Média/palpite, Pts disp.); palpites por rodada com resultado real × palpite × pontos
@@ -142,9 +144,15 @@ views/
   404.ejs, 500.ejs
 
 raiz/
-  server.js      — entry point (trust proxy, session, rotas)
+  server.js      — entry point (trust proxy, session, rotas, dbMarker)
   render.yaml    — Blueprint do Render
   .env.example, .node-version, package.json
+
+scripts/
+  daily-snapshot.js     — backup de todas as tabelas com rotação (30 últimos)
+  fix-palpites-futuro.js — substitui palpites não-finalizados do Neon pelos do Render
+  import-render-dump.js  — import full do dump Render para outro banco
+  import-palpites-only.js — import focado só em palpites e palpites_extras
 ```
 
 ## Regras de negócio
@@ -161,8 +169,51 @@ raiz/
 - Resultados dos extras no ranking só aparecem após admin definir em `/admin/extras`
 - Desempate no ranking: cascata de 8 critérios — total de pontos → placares exatos → resultado+gol → só resultado → 1 gol certo → gols certos → palpites pontuados → nome (alfabético)
 - Banner do próximo jogo no dashboard: 3 estados — **fechado** (vermelho claro, "🔒 JOGO FECHADO"), **urgente** ≤ 2h (gradiente amarelo→laranja, "⚠️ PALPITE FECHANDO" em CAIXA ALTA com ícone pulsante, box-shadow amarelo) e **aberto** (amarelo claro, "⚽ PRÓXIMO JOGO")
-- Cards de palpites em layout grid 3 colunas: padding reduzido, metadata (data, estádio, contagem, countdown) consolidada em footer único com border-top dashed
+- Cards de palpites em layout grid 3 colunas: padding reduzido, metadata (data, estádio, contagem, countdown) consolidada em footer único com border-top dashed. Em qualquer viewport (até 360px de largura), o layout se mantém **horizontal** com `grid-template-columns: minmax(80px, 1fr) auto minmax(80px, 1fr)` — nomes de times que excedem 80px quebram em 2 linhas em vez de sumir
+- Touch targets mobile: inputs de placar com mínimo 44×44px, botões `btn-sm` com mínimo 36×36px, links de nav com mínimo 36×36px (Apple HIG / Material Design)
+- iOS Safari: `font-size: 16px` em inputs/selects evita zoom automático ao focar
+- Landscape em celular: media query `(max-height:500px) and (max-width:900px)` esconde subtítulo do logo e comprime nav para caber em altura baixa
 - Trust proxy: `app.set('trust proxy', 1)` para sessão funcionar atrás do proxy HTTPS do Render
 - Sessão: cookie-based, secure em produção, sameSite lax, 30 dias
 - Todos os horários armazenados em BRT (-03:00)
 - **TZ=UTC no db.js**: o driver node-pg parseia TIMESTAMPTZ usando o fuso local do processo. Para evitar shift de +3h (Render roda em America/Sao_Paulo), o `process.env.TZ` é forçado a 'UTC' antes do `require('pg')`. As views convertem para BRT com `toLocaleString({ timeZone: 'America/Sao_Paulo' })`.
+
+## Scripts de manutenção
+
+```bash
+# Backup diário de todas as tabelas (Render ou Neon)
+DATABASE_URL=postgresql://... node scripts/daily-snapshot.js
+
+# Espelhar Render → Neon preservando os jogos finalizados (substitui
+# apenas palpites de jogos não-finalizados pelos do Render)
+DATABASE_URL=postgresql://...neon... node scripts/fix-palpites-futuro.js --dry-run
+DATABASE_URL=postgresql://...neon... node scripts/fix-palpites-futuro.js
+
+# Import full do dump Render para outro banco (limpa e reinsere
+# usuarios, palpites, palpites_extras, resultados_extras, fase_pontuacao,
+# config, pontos_bonus). NÃO mexe em jogos/selecoes/grupos.
+DATABASE_URL=postgresql://...neon... node scripts/import-render-dump.js
+
+# Import focado só em palpites e palpites_extras (clean and reinsert)
+DATABASE_URL=postgresql://...neon... node scripts/import-palpites-only.js
+```
+
+Para agendar o `daily-snapshot.js` no Windows, criar tarefa no Task Scheduler que roda `node scripts\daily-snapshot.js` em `C:\Users\NoteFnde\Downloads\projetos\bolao` com `DATABASE_URL` configurada. Snapshots vão para `data/snapshots/snapshot-YYYY-MM-DD-HHMMSS.json` com **rotação automática** mantendo os últimos 30.
+
+## Migração entre bancos
+
+Recomendação: migrar **somente após o fim da fase de grupos** (27/06), evitando transportar palpites "no futuro" sujeitos a inconsistências. Quando chegar a hora:
+
+1. Dump fresco do Render: `DATABASE_URL=<render> node scripts/daily-snapshot.js`
+2. Trocar `DATABASE_URL` no Render para o novo destino (Neon ou outro)
+3. Importar: `DATABASE_URL=<novo> node scripts/import-render-dump.js`
+4. Verificar `/jogos/db-info` para confirmar conexão e ver contagens
+
+Para evitar confusão quando há mais de um banco em uso, cada banco recebe um `db_marker` único na tabela `config` (chave `db_marker`), exibido no rodapé do site. Exemplo:
+
+```sql
+-- No Render
+INSERT INTO config (chave, valor) VALUES ('db_marker', 'render-producao-2026-06-19');
+-- No Neon
+INSERT INTO config (chave, valor) VALUES ('db_marker', 'neon-producao-2026-06-27');
+```

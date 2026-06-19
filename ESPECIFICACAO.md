@@ -150,7 +150,7 @@ O banco opera de forma transparente com **SQLite** (desenvolvimento local) ou **
 | `chave` | TEXT PRIMARY KEY | Nome da chave |
 | `valor` | TEXT NOT NULL | Valor da configuração |
 
-Armazena configurações do sistema, como o prazo limite dos palpites extras (ex.: `extras_deadline`).
+Armazena configurações do sistema, como o prazo limite dos palpites extras (ex.: `extras_data_limite`) e o marcador do banco (`db_marker`) usado pelo `/jogos/db-info` e exibido no rodapé do site. Exemplo de valores: `db_marker=render-producao-2026-06-19`, `db_marker=neon-producao-2026-06-27`.
 
 ### `fase_pontuacao`
 
@@ -295,13 +295,14 @@ Armazena configurações do sistema, como o prazo limite dos palpites extras (ex
 | Método | Rota | Descrição |
 |---|---|---|
 | GET | `/jogos` | Lista pública de todos os 104 jogos agrupados por fase |
-| GET | `/jogos/db-info` | Diagnóstico público: retorna JSON com host da DATABASE_URL e valor de `config.chave='db_marker'` (útil para confirmar qual banco está conectado) |
+| GET | `/jogos/db-info` | Diagnóstico público: retorna JSON com `host` (da `DATABASE_URL`), `marcador` (do `config.chave='db_marker'`), `contagens` (`usuarios`, `jogos`, `palpites`, `jogos_finalizados`) e `rodando_em` (timestamp ISO) |
 
 **Características:**
 - Página pública (não requer login).
 - Exibe placar real se finalizado, ou "×" se pendente.
 - Fases: grupo, r32, r16, qf, sf, terceiro, final.
 - Mostra bandeira, estádio, cidade, data/hora e grupo (quando aplicável).
+- **`/jogos/db-info`**: o `marcador` permite distinguir Render vs Neon vs dev local. É exibido também no rodapé do site (discreto, opacity 0.5) para evitar confusão quando há mais de um banco em uso.
 
 ### 5.8 Ranking (`routes/ranking.js`)
 
@@ -615,7 +616,11 @@ bolao/
 │       └── style.css                 # CSS responsivo (tema verde/amarelo/azul)
 │
 ├── scripts/
-│   └── verificar-horarios.js         # Script utilitário para verificar horários dos jogos
+│   ├── verificar-horarios.js         # Script utilitário para verificar horários dos jogos
+│   ├── daily-snapshot.js             # Backup completo (todas as tabelas) com rotação automática
+│   ├── fix-palpites-futuro.js        # Espelha Render→Neon preservando jogos finalizados
+│   ├── import-render-dump.js         # Import full do dump Render para outro banco
+│   └── import-palpites-only.js       # Import focado só em palpites e palpites_extras
 │
 ├── data/
 │   └── bolao.db                      # Arquivo do banco SQLite (gitignorado)
@@ -636,7 +641,10 @@ bolao/
 - **Segurança de sessão**: `sameSite: 'lax'` e `secure: true` em produção. O trust proxy é ativado com `app.set('trust proxy', 1)` para que o Express confie no header `X-Forwarded-Proto` enviado pelo proxy do Render.
 - **Índices**: A constraint UNIQUE em `palpites(usuario_id, jogo_id)` atua como índice para consultas de ranking e recálculo.
 - **Ordenação de jogos**: A view `/jogos` ordena por `j.data, j.id` (não por `j.id`) para garantir que mata-mata apareçam em ordem cronológica.
-- **Rota de diagnóstico**: `/jogos/db-info` expõe o host da DATABASE_URL e um marcador da tabela `config` para confirmar visualmente qual banco está conectado. Útil após migrações.
+- **Rota de diagnóstico**: `/jogos/db-info` expõe o host da DATABASE_URL, um marcador da tabela `config` (`db_marker`) e contagens de registros, permitindo confirmar visualmente qual banco está conectado. Útil após migrações. O marcador é exibido também no rodapé do site (opacity 0.5) para que o usuário/admin saiba em qual banco está em cada momento.
+- **Layout mobile**: o card de palpite usa `grid-template-columns: minmax(80px, 1fr) auto minmax(80px, 1fr)` em todos os tamanhos, garantindo que nomes de times nunca somem. Em < 480px, fontes e bandeiras são reduzidas; em landscape em celular (max-height:500px), nav é comprimida e o subtítulo do logo é escondido.
+- **Tratamento de erros no front-end**: `salvarIndividual` e `salvarGrupo` em `views/palpites.ejs` validam placar antes de enviar, mostram mensagem detalhada em caso de erro HTTP (não silenciosamente), preservam o que o usuário digitou e re-habilitam o botão. CSRF inválido retorna 403 com flash "Sessão expirada" em vez de reload silencioso.
+- **Scripts de manutenção**: `scripts/daily-snapshot.js` faz backup completo com rotação (últimos 30 snapshots em `data/snapshots/`). `scripts/fix-palpites-futuro.js` corrige palpites em outro banco preservando os jogos finalizados. `scripts/import-render-dump.js` faz import full do dump. `scripts/import-palpites-only.js` faz import focado em palpites.
 
 ---
 
