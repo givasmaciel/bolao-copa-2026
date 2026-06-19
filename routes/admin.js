@@ -456,6 +456,71 @@ router.post('/jogos/:id/limpar-limite', verificarAdmin, async (req, res) => {
   res.redirect('/admin/jogos');
 });
 
+// Converte string datetime-local (interpretada como BRT pelo browser) para Date UTC
+function brtLocalStringToUTC(value) {
+  // value = "YYYY-MM-DDTHH:MM" (datetime-local)
+  const [dataParte, horaParte] = value.split('T');
+  const [ano, mes, dia] = dataParte.split('-').map(Number);
+  const [hora, min] = horaParte.split(':').map(Number);
+  // Cria Date no fuso BRT (UTC-3) e converte para UTC adicionando 3h
+  const dataBRTMs = Date.UTC(ano, mes - 1, dia, hora, min);
+  return new Date(dataBRTMs + 3 * 60 * 60 * 1000);
+}
+
+// POST /admin/jogos/:id/horario - ajusta horário de início e/ou estádio/cidade/país
+// Usado para correções pontuais (mudança de data, troca de estádio) sem precisar de deploy.
+router.post('/jogos/:id/horario', verificarAdmin, async (req, res) => {
+  const jogoId = parseInt(req.params.id, 10);
+  if (isNaN(jogoId)) return res.redirect('/admin/jogos');
+  const { data, estadio, cidade, pais } = req.body;
+  try {
+    const jogo = await get('SELECT id, finalizado FROM jogos WHERE id = ?', [jogoId]);
+    if (!jogo) {
+      req.flash('erro', 'Jogo não encontrado.');
+      return res.redirect('/admin/jogos');
+    }
+
+    const updates = [];
+    const params = [];
+
+    if (data && data.trim() !== '') {
+      const dataUTC = brtLocalStringToUTC(data);
+      if (isNaN(dataUTC.getTime())) {
+        req.flash('erro', 'Data/hora inválida.');
+        return res.redirect('/admin/jogos');
+      }
+      updates.push('data = ?');
+      params.push(dataUTC);
+    }
+
+    if (typeof estadio === 'string' && estadio.trim() !== '') {
+      updates.push('estadio = ?');
+      params.push(estadio.trim());
+    }
+    if (typeof cidade === 'string' && cidade.trim() !== '') {
+      updates.push('cidade = ?');
+      params.push(cidade.trim());
+    }
+    if (typeof pais === 'string' && pais.trim() !== '') {
+      updates.push('pais = ?');
+      params.push(pais.trim());
+    }
+
+    if (updates.length === 0) {
+      req.flash('aviso', 'Nenhum campo foi alterado.');
+      return res.redirect('/admin/jogos');
+    }
+
+    params.push(jogoId);
+    await run(`UPDATE jogos SET ${updates.join(', ')} WHERE id = ?`, params);
+    req.flash('sucesso', 'Horário/estádio atualizado! Os palpites pendentes revalidam o prazo automaticamente.');
+  } catch (err) {
+    console.error('Erro ao atualizar horário/estádio:', err);
+    req.flash('erro', 'Erro ao atualizar horário/estádio.');
+  }
+  res.redirect('/admin/jogos');
+});
+
 // GET /admin/mata-mata - visualizar e editar confrontos do mata-mata
 router.get('/mata-mata', verificarAdmin, async (req, res) => {
   try {

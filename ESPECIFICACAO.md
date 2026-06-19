@@ -632,5 +632,4 @@ bolao/
 
 ## 12. Referências
 
-- **Clube da Copa** ([clubedacopa.com.br](https://www.clubedacopa.com.br/jogos)) — tabela com horários de Brasília, estádios e análise de jogos passados.
 - **FIFA — Jogos e Resultados** ([fifa.com](https://www.fifa.com/pt/tournaments/mens/worldcup/canadamexicousa2026/scores-fixtures?country=BR&wtw-filter=451)) — site oficial da Copa 2026 com todos os horários em BRT, resultados ao vivo e confrontos confirmados. Fonte primária para validação de dados.
