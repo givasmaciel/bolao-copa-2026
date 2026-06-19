@@ -36,7 +36,7 @@ router.get('/', verificarAutenticado, async (req, res) => {
       req.flash('erro', 'Administradores não podem participar do bolão.');
       return res.redirect('/admin');
     }
-    const selecoes = await all('SELECT id, nome_pt, sigla FROM selecoes ORDER BY nome_pt');
+    const selecoes = await all('SELECT id, nome_pt, sigla, bandeira_url FROM selecoes ORDER BY nome_pt');
     const rows = await all(
       'SELECT categoria, selecao_id FROM palpites_extras WHERE usuario_id = ? ORDER BY categoria',
       [req.session.usuario.id]
@@ -210,7 +210,7 @@ router.post('/:categoria', verificarAutenticado, async (req, res) => {
 
 adminRouter.get('/extras', verificarAdmin, async (req, res) => {
   try {
-    const selecoes = await all('SELECT id, nome_pt, sigla FROM selecoes ORDER BY nome_pt');
+    const selecoes = await all('SELECT id, nome_pt, sigla, bandeira_url FROM selecoes ORDER BY nome_pt');
     const resultados = await all('SELECT * FROM resultados_extras ORDER BY categoria');
     const mapa = {};
     for (const r of resultados) {
