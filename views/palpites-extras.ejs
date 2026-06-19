@@ -167,7 +167,7 @@
             <% const checked = palpites[cat.id] && palpites[cat.id].includes(s.id); %>
             <label class="sel-label" data-categoria="<%= cat.id %>" title="<%= s.sigla %>" style="display:flex;align-items:center;gap:6px;padding:3px 6px;border-radius:4px;cursor:pointer;<%= checked ? 'background:var(--cinza-claro);font-weight:600' : '' %>">
               <input type="checkbox" name="<%= cat.id %>" value="<%= s.id %>" <%= checked ? 'checked' : '' %>>
-              <% if (s.bandeira_url) { %><img src="<%= s.bandeira_url %>" alt="" style="width:18px;height:12px;object-fit:cover;border-radius:2px"><% } %>
+              <% if (s.bandeira_url) { %><img src="<%= s.bandeira_url %>" alt="" style="width:18px;height:12px;object-fit:cover;border-radius:2px" loading="lazy" onerror="flagFallback(this)"><% } %>
               <%= s.nome_pt %>
               <span style="font-size:0.65rem;color:var(--cinza-escuro);opacity:0.5;margin-left:auto"><%= s.sigla %></span>
             </label>

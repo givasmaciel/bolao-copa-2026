@@ -9,7 +9,7 @@
 function jogoCard(j) { var h = '';
 h += '<div class="jogo-card' + (j.finalizado === 1 ? ' finalizado' : '') + '">';
 h += '<div class="jogo-time">';
-if (j.casa_bandeira) { h += '<img src="' + j.casa_bandeira + '" alt="' + (j.casa_pt||'') + '">'; } else { h += '<span style="width:32px;height:24px;background:#e2e8f0;border-radius:3px;display:inline-block"></span>'; }
+if (j.casa_bandeira) { h += '<img src="' + j.casa_bandeira + '" alt="' + (j.casa_pt||'') + '" loading="lazy" onerror="flagFallback(this)">'; } else { h += '<span style="width:32px;height:24px;background:#e2e8f0;border-radius:3px;display:inline-block"></span>'; }
 h += '<span>' + (j.casa_pt || 'A definir') + '</span></div>';
 h += '<div class="jogo-info">';
 if (j.finalizado === 1) { h += '<div class="jogo-placar-display">' + j.gols_casa + ' × ' + j.gols_visitante + '</div>'; } else { h += '<div class="jogo-placar-display" style="color:#aaa">×</div>'; }
@@ -21,7 +21,7 @@ else { h += '<div style="margin-top:4px"><span class="badge badge-knockout">Mata
 if (typeof usuario !== 'undefined' && usuario) { h += '<div style="margin-top:6px"><a href="/jogos/' + j.id + '/palpites" class="btn btn-sm btn-secondary" style="font-size:0.7rem">👥 Ver palpites</a></div>'; }
 h += '</div>';
 h += '<div class="jogo-time visitante"><span>' + (j.visitante_pt || 'A definir') + '</span>';
-if (j.visitante_bandeira) { h += '<img src="' + j.visitante_bandeira + '" alt="' + (j.visitante_pt||'') + '">'; } else { h += '<span style="width:32px;height:24px;background:#e2e8f0;border-radius:3px;display:inline-block"></span>'; }
+if (j.visitante_bandeira) { h += '<img src="' + j.visitante_bandeira + '" alt="' + (j.visitante_pt||'') + '" loading="lazy" onerror="flagFallback(this)">'; } else { h += '<span style="width:32px;height:24px;background:#e2e8f0;border-radius:3px;display:inline-block"></span>'; }
 h += '</div></div>';
 return h; }
 %>

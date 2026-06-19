@@ -85,9 +85,9 @@
               <td style="font-size:0.8rem;color:var(--cinza-escuro)"><%= j.rodada %>ªR</td>
               <td>
                 <span style="display:flex;align-items:center;gap:6px">
-                  <img src="<%= j.casa_bandeira %>" style="width:18px;height:13px;border-radius:2px"><%= j.casa_pt %>
+                  <% if (j.casa_bandeira) { %><img src="<%= j.casa_bandeira %>" alt="<%= j.casa_pt %>" style="width:18px;height:13px;border-radius:2px" loading="lazy" onerror="flagFallback(this)"><% } %><%= j.casa_pt %>
                   ×
-                  <%= j.visitante_pt %><img src="<%= j.visitante_bandeira %>" style="width:18px;height:13px;border-radius:2px">
+                  <%= j.visitante_pt %><% if (j.visitante_bandeira) { %><img src="<%= j.visitante_bandeira %>" alt="<%= j.visitante_pt %>" style="width:18px;height:13px;border-radius:2px" loading="lazy" onerror="flagFallback(this)"><% } %>
                 </span>
               </td>
               <td class="text-center" style="font-weight:700"><%= j.gols_casa %> × <%= j.gols_visitante %></td>

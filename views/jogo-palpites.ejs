@@ -6,7 +6,7 @@
 
 <div class="jogo-card <%= jogo.finalizado === 1 ? 'finalizado' : '' %>" style="max-width:500px;margin:0 auto 24px">
   <div class="jogo-time">
-    <img src="<%= jogo.casa_bandeira %>" alt=""><span><%= jogo.casa_pt %></span>
+    <% if (jogo.casa_bandeira) { %><img src="<%= jogo.casa_bandeira %>" alt="<%= jogo.casa_pt %>" loading="lazy" onerror="flagFallback(this)"><% } %><span><%= jogo.casa_pt %></span>
   </div>
   <div class="jogo-info">
     <% if (jogo.finalizado === 1) { %>
@@ -19,7 +19,7 @@
     <% if (jogo.finalizado === 1) { %><span class="badge badge-finalizado" style="margin-top:4px">Final</span><% } %>
   </div>
   <div class="jogo-time visitante">
-    <span><%= jogo.visitante_pt %></span><img src="<%= jogo.visitante_bandeira %>" alt="">
+    <span><%= jogo.visitante_pt %></span><% if (jogo.visitante_bandeira) { %><img src="<%= jogo.visitante_bandeira %>" alt="<%= jogo.visitante_pt %>" loading="lazy" onerror="flagFallback(this)"><% } %>
   </div>
 </div>
 

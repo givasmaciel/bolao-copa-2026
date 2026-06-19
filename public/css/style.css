@@ -936,6 +936,7 @@ footer a:hover { text-decoration: underline; }
 .sg-positivo { color: #2e7d32; }
 .sg-negativo { color: #c0392b; }
 .bandeira-mini { width: 16px; height: 12px; vertical-align: middle; margin-right: 4px; }
+.flag-fallback { display:inline-flex;align-items:center;justify-content:center;background:#e2e8f0;border:1px solid #cbd5e0;border-radius:3px;font-weight:700;color:#4a5568;font-size:0.55rem;line-height:1; }
 @media (max-width: 768px) {
   .classif-tabela { font-size: 0.72rem !important; }
   .classif-tabela th, .classif-tabela td { padding: 3px 3px; }

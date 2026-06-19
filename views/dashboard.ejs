@@ -172,7 +172,7 @@
         <% const palpiteLimite = j.palpite_limite ? new Date(j.palpite_limite) : null; %>
         <div class="jogo-card" style="margin-bottom:8px">
           <div class="jogo-time">
-            <% if (j.casa_bandeira) { %><img src="<%= j.casa_bandeira %>" alt=""><% } %><span><%= j.casa_pt || 'A definir' %></span>
+            <% if (j.casa_bandeira) { %><img src="<%= j.casa_bandeira %>" alt="" loading="lazy" onerror="flagFallback(this)"><% } %><span><%= j.casa_pt || 'A definir' %></span>
           </div>
           <div class="jogo-info" style="min-width:auto">
             <div style="font-size:0.72rem;color:var(--cinza-escuro)"><%= dataJogo.toLocaleDateString('pt-BR', { weekday:'short', day:'numeric', month:'short', timeZone:'America/Sao_Paulo' }) %> <%= dataJogo.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit', timeZone:'America/Sao_Paulo' }) %></div>
@@ -191,7 +191,7 @@
             <% } %>
           </div>
           <div class="jogo-time visitante">
-            <span><%= j.visitante_pt || 'A definir' %></span><% if (j.visitante_bandeira) { %><img src="<%= j.visitante_bandeira %>" alt=""><% } %>
+            <span><%= j.visitante_pt || 'A definir' %></span><% if (j.visitante_bandeira) { %><img src="<%= j.visitante_bandeira %>" alt="" loading="lazy" onerror="flagFallback(this)"><% } %>
           </div>
         </div>
       <% }); %>

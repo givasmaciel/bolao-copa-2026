@@ -193,11 +193,11 @@
           <% statsConcluidos.jogosConcluidos.forEach(function(j) { %>
             <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:#fff;border-radius:6px;margin-bottom:4px;font-size:0.85rem">
               <span style="background:var(--cinza-claro);color:var(--cinza-escuro);padding:2px 6px;border-radius:8px;font-size:0.7rem;font-weight:600">R<%= j.rodada %></span>
-              <% if (j.casa_bandeira) { %><img src="<%= j.casa_bandeira %>" alt="" style="width:20px;height:14px;object-fit:cover;border-radius:2px"><% } %>
+              <% if (j.casa_bandeira) { %><img src="<%= j.casa_bandeira %>" alt="" style="width:20px;height:14px;object-fit:cover;border-radius:2px" loading="lazy" onerror="flagFallback(this)"><% } %>
               <strong><%= j.casa_sigla %></strong>
               <span style="background:var(--azul);color:#fff;padding:2px 8px;border-radius:4px;font-weight:700"><%= j.gols_casa %> × <%= j.gols_visitante %></span>
               <strong><%= j.visitante_sigla %></strong>
-              <% if (j.visitante_bandeira) { %><img src="<%= j.visitante_bandeira %>" alt="" style="width:20px;height:14px;object-fit:cover;border-radius:2px"><% } %>
+              <% if (j.visitante_bandeira) { %><img src="<%= j.visitante_bandeira %>" alt="" style="width:20px;height:14px;object-fit:cover;border-radius:2px" loading="lazy" onerror="flagFallback(this)"><% } %>
               <span style="margin-left:auto;color:var(--cinza-escuro);font-size:0.75rem"><%= new Date(j.data).toLocaleString('pt-BR', { dateStyle:'short', timeStyle:'short', timeZone:'America/Sao_Paulo' }) %></span>
             </div>
           <% }); %>

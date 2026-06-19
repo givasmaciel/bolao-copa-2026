@@ -19,5 +19,17 @@
     }
   </script>
   <script src="/js/toast.js"></script>
+  <script>
+  function flagFallback(img) {
+    img.onerror=null;
+    var s=document.createElement('span');
+    s.className='flag-fallback';
+    s.textContent=(img.alt||'').substring(0,3).toUpperCase();
+    var r=img.getBoundingClientRect();
+    s.style.width=Math.round(r.width||28)+'px';
+    s.style.height=Math.round(r.height||20)+'px';
+    img.parentNode.replaceChild(s, img);
+  }
+  </script>
 </body>
 </html>

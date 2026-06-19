@@ -28,7 +28,7 @@
             <tr class="<%= idx < 2 ? 'classif-classificado' : (idx === 2 ? 'classif-terceiro' : '') %>">
               <td><strong><%= t.posicao %>º</strong></td>
               <td class="td-time">
-                <% if (t.bandeira_url) { %><img src="<%= t.bandeira_url %>" alt="" class="bandeira-mini"><% } %>
+                <% if (t.bandeira_url) { %><img src="<%= t.bandeira_url %>" alt="" class="bandeira-mini" loading="lazy" onerror="flagFallback(this)"><% } %>
                 <span class="sigla-time"><%= t.sigla %></span>
                 <span class="nome-time-full"><%= t.sigla %> - <%= t.nome_pt %></span>
               </td>

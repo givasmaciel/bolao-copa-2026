@@ -155,7 +155,7 @@
         <div class="selecoes-lista">
           <% grupo.times.forEach(function(time, idx) { %>
             <div class="selecao-item">
-              <img src="https://flagcdn.com/w40/<%= grupo.bandeiras[idx] %>.png" alt="<%= time %>" loading="lazy">
+              <img src="https://flagcdn.com/w40/<%= grupo.bandeiras[idx] %>.png" alt="<%= time %>" loading="lazy" onerror="flagFallback(this)">
               <span><%= time %></span>
             </div>
           <% }); %>
