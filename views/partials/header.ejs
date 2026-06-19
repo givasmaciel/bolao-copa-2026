@@ -9,6 +9,18 @@
   <meta name="apple-mobile-web-app-title" content="Bolão 2026">
   <meta name="description" content="Faça seus palpites da Copa do Mundo FIFA 2026 e concorra com seus amigos">
   <title><%= typeof title !== 'undefined' ? title + ' - Bolão da Copa 2026' : 'Bolão da Copa 2026' %></title>
+  <script>
+    // Aplica tema ANTES do CSS carregar para evitar flash de cor errada
+    (function() {
+      try {
+        var saved = localStorage.getItem('bolao-theme');
+        var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var theme = saved || (prefersDark ? 'dark' : 'light');
+        if (theme === 'dark') document.documentElement.classList.add('dark');
+        else if (saved === 'light') document.documentElement.classList.add('light');
+      } catch (e) { /* localStorage bloqueado em modo privado */ }
+    })();
+  </script>
   <link rel="stylesheet" href="/css/style.css">
   <link rel="manifest" href="/manifest.json">
   <link rel="apple-touch-icon" href="/icon-192.svg">
@@ -38,6 +50,12 @@
             <% if (usuario.is_admin) { %>
               <li><a href="/admin" class="<%= typeof active !== 'undefined' && active === 'admin' ? 'active' : '' %>">⚙ Admin</a></li>
             <% } %>
+            <li>
+              <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Alternar tema" title="Alternar tema claro/escuro">
+                <span class="icon-moon" aria-hidden="true">🌙</span>
+                <span class="icon-sun" aria-hidden="true">☀️</span>
+              </button>
+            </li>
             <li class="user-pill">
               <img src="/foto/<%= usuario.id %>" alt="" style="width:24px;height:24px;border-radius:50%;object-fit:cover" onerror="this.outerHTML='<span style=font-size:1.1rem>👤</span>'">
               <%= usuario.nome %>

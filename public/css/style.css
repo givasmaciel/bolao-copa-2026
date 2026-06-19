@@ -69,8 +69,53 @@
 }
 
 /* ============== Modo Escuro ============== */
+/* Toggle manual (classe .dark no <html>) tem prioridade sobre o @media */
+.dark, .dark body {
+  --verde: #00c853;
+  --amarelo: #ffd600;
+  --azul: #4fc3f7;
+  --cinza-claro: #1a1d23;
+  --cinza: #2d3748;
+  --cinza-escuro: #a0aec0;
+  --texto: #e2e8f0;
+  --erro: #fc8181;
+  --sucesso: #68d391;
+  --aviso: #f6ad55;
+  --sombra: 0 2px 8px rgba(0,0,0,0.4);
+  --sombra-hover: 0 4px 16px rgba(0,0,0,0.5);
+  --bg-page: #121417;
+  --bg-card: #1e2128;
+  --border-soft: #2d3748;
+  --text-muted: #a0aec0;
+}
+.dark body { background: var(--bg-page); color: var(--texto); }
+.dark .card, .dark .jogo-card, .dark .progress-palpites, .dark .stat-card, .dark .auth-container .card {
+  background: var(--bg-card) !important;
+  color: var(--texto);
+  border-color: var(--border-soft);
+}
+.dark .jogo-card.finalizado { background: #1a1d23 !important; }
+.dark .jogo-card.iniciado { background: #181b20 !important; }
+.dark .btn-secondary { background: var(--cinza); color: var(--texto); }
+.dark input, .dark select, .dark textarea {
+  background: var(--bg-card);
+  color: var(--texto);
+  border-color: var(--border-soft);
+}
+.dark .form-control { background: var(--bg-card); color: var(--texto); border-color: var(--border-soft); }
+.dark .classif-tabela th { color: var(--cinza-claro); border-bottom-color: var(--verde); }
+.dark .classif-classificado { background: rgba(46, 125, 50, 0.15) !important; }
+.dark .classif-terceiro { background: rgba(214, 158, 46, 0.15) !important; }
+.dark .progress-bar { background: var(--cinza); }
+.dark .ranking-tabela th { background: var(--bg-card); color: var(--texto); border-color: var(--border-soft); }
+.dark .ranking-tabela tr:nth-child(even) { background: rgba(255,255,255,0.03); }
+.dark .modal-content { background: var(--bg-card); color: var(--texto); }
+.dark .toast { background: var(--cinza); }
+.dark .theme-toggle { background: rgba(255,255,255,0.15); }
+
+/* Fallback automatico: se o SO pedir dark e usuario NAO escolheu, ativa */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not(.light) {
     --verde: #00c853;
     --amarelo: #ffd600;
     --azul: #4fc3f7;
@@ -88,30 +133,35 @@
     --border-soft: #2d3748;
     --text-muted: #a0aec0;
   }
-  body { background: var(--bg-page); color: var(--texto); }
-  .card, .jogo-card, .progress-palpites, .stat-card, .auth-container .card {
-    background: var(--bg-card) !important;
-    color: var(--texto);
-    border-color: var(--border-soft);
-  }
-  .jogo-card.finalizado { background: #1a1d23 !important; }
-  .jogo-card.iniciado { background: #181b20 !important; }
-  .btn-secondary { background: var(--cinza); color: var(--texto); }
-  input, select, textarea {
-    background: var(--bg-card);
-    color: var(--texto);
-    border-color: var(--border-soft);
-  }
-  .form-control { background: var(--bg-card); color: var(--texto); border-color: var(--border-soft); }
-  .classif-tabela th { color: var(--cinza-claro); border-bottom-color: var(--verde); }
-  .classif-classificado { background: rgba(46, 125, 50, 0.15) !important; }
-  .classif-terceiro { background: rgba(214, 158, 46, 0.15) !important; }
-  .progress-bar { background: var(--cinza); }
-  .ranking-tabela th { background: var(--bg-card); color: var(--texto); border-color: var(--border-soft); }
-  .ranking-tabela tr:nth-child(even) { background: rgba(255,255,255,0.03); }
-  .modal-content { background: var(--bg-card); color: var(--texto); }
-  .toast { background: var(--cinza); }
 }
+
+/* Botao de alternar tema */
+.theme-toggle {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: white;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1.1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: background 0.15s, transform 0.2s;
+  margin-left: 6px;
+  flex-shrink: 0;
+}
+.theme-toggle:hover { background: rgba(255,255,255,0.25); transform: scale(1.05); }
+.theme-toggle:active { transform: scale(0.95); }
+.theme-toggle .icon-sun { display: none; }
+.theme-toggle .icon-moon { display: inline; }
+.dark .theme-toggle .icon-sun { display: inline; }
+.dark .theme-toggle .icon-moon { display: none; }
+/* quando o usuario escolheu LIGHT explicitamente, mostra lua (pra ele clicar e ir pra dark) */
+:root:not(.dark) .theme-toggle .icon-moon { display: inline; }
+:root:not(.dark) .theme-toggle .icon-sun { display: none; }
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
