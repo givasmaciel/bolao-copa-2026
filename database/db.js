@@ -1,3 +1,10 @@
+// IMPORTANTE: Forçar TZ=UTC ANTES de carregar o `pg`.
+// O Render roda com TZ=America/Sao_Paulo, e o node-pg por padrão parseia
+// TIMESTAMPTZ usando o fuso local — isso adiciona +3h ao Date retornado
+// e quebra todas as views que convertem para BRT. Com TZ=UTC o parse sai
+// em UTC e a conversão BRT na view fica correta.
+if (!process.env.TZ) process.env.TZ = 'UTC';
+
 const path = require('path');
 const fs = require('fs');
 
