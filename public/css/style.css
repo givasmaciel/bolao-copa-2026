@@ -886,7 +886,11 @@ footer a:hover { text-decoration: underline; }
   .jogo-time { font-size: 0.78rem; gap: 4px; }
   .jogo-time img { width: 22px; height: 16px; }
   .jogo-time.visitante { justify-content: flex-end; text-align: right; }
+  /* garante que cada coluna de time tenha pelo menos 80px (nome não some) */
+  .jogo-card { grid-template-columns: minmax(80px, 1fr) auto minmax(80px, 1fr); }
   .jogo-info { min-width: 0; }
+  /* permite nome quebrar linha se ainda for maior que a coluna */
+  .jogo-time span { white-space: normal; line-height: 1.15; }
   .jogo-placar input { width: 38px; padding: 4px 0; font-size: 0.95rem; }
   .jogo-placar .x { font-size: 0.95rem; }
   .jogo-placar { gap: 3px; margin-bottom: 2px; }
