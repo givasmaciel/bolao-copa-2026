@@ -27,7 +27,6 @@ Deploy no Render (Node.js) com banco Neon PostgreSQL. Localmente usa SQLite.
 - **Health check `/healthz`** — endpoint público que verifica conexão com banco, retorna uptime, latência, marcador e contagens. Retorna 503 se banco offline. Útil para monitoramento do Render e debugging.
 - **Sentry (opcional)** — se `SENTRY_DSN` estiver definido em produção, errors vão automaticamente para o painel do Sentry com contexto da request. `tracesSampleRate=0.1`. Filtra `/healthz`, `/favicon` e `/admin` para evitar ruído.
 - **Toast/snackbar** — substitui `alert()` por notificações modernas (canto inferior, somem sozinhas, com ícones e cores por tipo). Mobile UX muito melhor
-- **Modo escuro automático** — `@media (prefers-color-scheme: dark)` ativa tema escuro se o SO pedir (iOS, Android, macOS, Win11). Variáveis CSS trocam paleta
 - **Confirmação de exclusão** — admin precisa digitar o nome do usuário para excluir (modal). Protege contra cliques acidentais que apagariam participantes
 - **Logs estruturados** — `logger.js` emite JSON para stdout (Render indexa). Busca por `level:error`, `msg:palpites`, etc.
 - **Content-Security-Policy** — header CSP restringe scripts/estilos a origens confiáveis, mais `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`. Defesa contra XSS
@@ -273,10 +272,6 @@ toast('Atenção', 'warning');                 // ⚠️ amarelo
 toast('Info genérica');                       // ℹ️ azul
 ```
 Aparece canto inferior central, com botão × para fechar manualmente. Mobile UX muito melhor que `alert()` nativo.
-
-### Modo escuro (`public/css/style.css`)
-
-`@media (prefers-color-scheme: dark)` ativa tema escuro automaticamente se o SO pedir (iOS, Android, macOS, Windows 11). Cobre cards, inputs, tabelas, ranking, modal e toasts via variáveis CSS (`--bg-page`, `--bg-card`, `--border-soft`, `--text-muted`).
 
 ### Confirmação de exclusão (`views/admin-usuarios.ejs`)
 
