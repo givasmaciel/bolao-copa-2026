@@ -5,6 +5,23 @@ const { PALPITE_MARGEM_MS } = require('../services/palpite-config');
 
 const router = express.Router();
 
+// GET /jogos/db-info - rota publica de debug que mostra qual banco esta conectado
+// Le a 'db_marker' da tabela config (so existe no Neon)
+router.get('/db-info', async (req, res) => {
+  try {
+    const url = process.env.DATABASE_URL || '';
+    const host = url.split('@')[1]?.split('/')[0] || '?';
+    const marker = await get("SELECT valor FROM config WHERE chave = 'db_marker'");
+    res.json({
+      host,
+      marcador: marker?.valor || 'NAO_ENCONTRADO',
+      rodando_em: new Date().toISOString()
+    });
+  } catch (err) {
+    res.status(500).json({ erro: err.message });
+  }
+});
+
 // GET /jogos - lista todos os jogos com placares reais
 router.get('/', async (req, res) => {
   try {
