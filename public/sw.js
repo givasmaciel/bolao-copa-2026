@@ -67,6 +67,9 @@ self.addEventListener('fetch', function(event) {
     return;
   }
 
+  // Só faz cache-first para assets do próprio domínio (não intercepta flagcdn etc)
+  if (url.origin !== self.location.origin) return;
+
   // Cache-first para assets estáticos (CSS/SVG/JS)
   if (
     url.pathname.endsWith('.css') ||
