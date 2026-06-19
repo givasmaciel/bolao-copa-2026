@@ -222,10 +222,10 @@ Retorna `503` se banco estiver offline (Render pode usar isso para restartar o s
 
 ### Sentry (error tracking)
 
-Configurar `SENTRY_DSN` no Render para enviar erros automaticamente. Sem DSN, Sentry fica desligado.
+**Importante**: Sentry só é ativado em produção (`NODE_ENV=production`) E se `SENTRY_DSN` estiver definido. Em dev local é zero overhead.
 
 - `tracesSampleRate: 0.1` em produção (10% das transações)
-- Filtra `/healthz` e `/favicon` para evitar ruído
+- Filtra `/healthz`, `/favicon` e `/admin` para evitar ruído
 - `requestHandler` middleware captura contexto da request
 - `errorHandler` middleware (após as rotas) captura erros não tratados
 

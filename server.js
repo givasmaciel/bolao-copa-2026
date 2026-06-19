@@ -5,6 +5,7 @@ const session = require('express-session');
 const flash = require('connect-flash');
 const methodOverride = require('method-override');
 const Sentry = require('@sentry/node');
+const rateLimit = require('express-rate-limit');
 
 const { criarSchema } = require('./database/schema');
 const authRoutes = require('./routes/auth');
@@ -26,21 +27,23 @@ const { PALPITE_MARGEM_MS } = require('./services/palpite-config');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Sentry — só inicializa se SENTRY_DSN estiver definido (não bloqueia dev)
-if (process.env.SENTRY_DSN) {
+// Sentry — só inicializa em produção E se SENTRY_DSN estiver definido
+if (process.env.NODE_ENV === 'production' && process.env.SENTRY_DSN) {
   Sentry.init({
     dsn: process.env.SENTRY_DSN,
-    environment: process.env.NODE_ENV || 'development',
-    tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 0,
-    // filtra ruído: não reporta 404 do db-info, healthz, robots.txt
+    environment: 'production',
+    tracesSampleRate: 0.1,
+    // filtra ruído: não reporta healthz/favicon/admin
     beforeSend(event) {
       const url = event.request?.url || '';
-      if (url.includes('/healthz') || url.includes('/favicon')) return null;
+      if (url.includes('/healthz') || url.includes('/favicon') || url.includes('/admin')) return null;
       return event;
     }
   });
   app.use(Sentry.Handlers.requestHandler());
-  console.log('[sentry] inicializado (env=' + (process.env.NODE_ENV || 'development') + ')');
+  console.log('[sentry] inicializado em produção');
+} else if (process.env.SENTRY_DSN) {
+  console.log('[sentry] SENTRY_DSN definido mas NODE_ENV != production, ignorando');
 }
 
 // View engine
@@ -156,10 +159,27 @@ app.use(async (req, res, next) => {
 });
 
 // Health check — usado por Render / monitoramento externo
-app.get('/healthz', async (req, res) => {
+// Rate limit: max 60 req/min por IP (protege contra abuso)
+const healthzLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { status: 'rate_limited', erro: 'Muitas requisições. Tente em 1 minuto.' }
+});
+
+// Cache em memória (30s) — evita queries repetidas no banco
+let healthzCache = { data: null, expiresAt: 0 };
+const HEALTHZ_CACHE_MS = 30 * 1000;
+
+app.get('/healthz', healthzLimiter, async (req, res) => {
+  // serve do cache se ainda válido (exceto se banco estava degraded)
+  if (healthzCache.data && Date.now() < healthzCache.expiresAt) {
+    res.set('X-Cache', 'HIT');
+    return res.json(healthzCache.data);
+  }
   const start = Date.now();
   try {
-    // verifica banco
     const dbCheck = await get('SELECT 1 AS ok');
     const dbLatencyMs = Date.now() - start;
     const contagens = {
@@ -168,19 +188,19 @@ app.get('/healthz', async (req, res) => {
       palpites: (await get('SELECT COUNT(*) AS c FROM palpites'))?.c || 0,
       jogos_finalizados: (await get('SELECT COUNT(*) AS c FROM jogos WHERE finalizado = 1'))?.c || 0,
     };
-    res.json({
+    const data = {
       status: 'ok',
       uptime_segundos: Math.round(process.uptime()),
-      db: {
-        conectado: !!dbCheck?.ok,
-        marcador: dbMarker,
-        latencia_ms: dbLatencyMs
-      },
+      db: { conectado: !!dbCheck?.ok, marcador: dbMarker, latencia_ms: dbLatencyMs },
       contagens,
       versao_node: process.version,
       timestamp: new Date().toISOString()
-    });
+    };
+    healthzCache = { data, expiresAt: Date.now() + HEALTHZ_CACHE_MS };
+    res.set('X-Cache', 'MISS');
+    res.json(data);
   } catch (err) {
+    // não cacheia erros — Render precisa ver o 503 imediatamente
     res.status(503).json({
       status: 'degraded',
       erro: err.message,
@@ -300,7 +320,7 @@ app.use((req, res) => {
 });
 
 // Sentry error handler (deve vir DEPOIS das rotas, ANTES do error handler nosso)
-if (process.env.SENTRY_DSN) {
+if (process.env.NODE_ENV === 'production' && process.env.SENTRY_DSN) {
   app.use(Sentry.Handlers.errorHandler());
 }
 
