@@ -6,6 +6,7 @@ const flash = require('connect-flash');
 const methodOverride = require('method-override');
 const Sentry = require('@sentry/node');
 const rateLimit = require('express-rate-limit');
+const logger = require('./logger');
 
 const { criarSchema } = require('./database/schema');
 const authRoutes = require('./routes/auth');
@@ -41,9 +42,9 @@ if (process.env.NODE_ENV === 'production' && process.env.SENTRY_DSN) {
     }
   });
   app.use(Sentry.Handlers.requestHandler());
-  console.log('[sentry] inicializado em produção');
+  logger.info('sentry inicializado em produção');
 } else if (process.env.SENTRY_DSN) {
-  console.log('[sentry] SENTRY_DSN definido mas NODE_ENV != production, ignorando');
+  logger.info('SENTRY_DSN definido mas NODE_ENV != production, ignorando');
 }
 
 // View engine
@@ -52,6 +53,27 @@ app.set('views', path.join(__dirname, 'views'));
 
 // Trust proxy (Render, Heroku, etc)
 app.set('trust proxy', 1);
+
+// Content-Security-Policy — protege contra XSS limitando origens
+app.use((req, res, next) => {
+  // Permite inline styles/scripts (EJS usa) e imagens externas (flagcdn para bandeiras)
+  res.setHeader(
+    'Content-Security-Policy',
+    "default-src 'self'; " +
+    "script-src 'self' 'unsafe-inline'; " +
+    "style-src 'self' 'unsafe-inline'; " +
+    "img-src 'self' data: blob: https://flagcdn.com https://*.flagcdn.com; " +
+    "font-src 'self' data:; " +
+    "connect-src 'self'; " +
+    "object-src 'none'; " +
+    "base-uri 'self'; " +
+    "frame-ancestors 'none'"
+  );
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
+});
 
 // Middlewares
 app.use(express.urlencoded({ extended: true }));
@@ -84,9 +106,9 @@ let dbMarker = 'desconhecido';
       const h = u.split('@')[1]?.split('/')[0] || 'local';
       dbMarker = h;
     }
-    console.log('[boot] dbMarker =', dbMarker);
+    logger.info('boot dbMarker loaded', { dbMarker });
   } catch (e) {
-    console.warn('[boot] erro lendo db_marker:', e.message);
+    logger.warn('boot erro lendo db_marker', { error: e.message });
   }
 })();
 
@@ -326,7 +348,7 @@ if (process.env.NODE_ENV === 'production' && process.env.SENTRY_DSN) {
 
 // Error handler
 app.use((err, req, res, next) => {
-  console.error(err);
+  logger.error('unhandled error', { error: err.message, stack: err.stack, url: req.originalUrl });
   res.locals.usuario = req.session?.usuario || null;
   res.status(500).render('500', { title: 'Erro interno' });
 });

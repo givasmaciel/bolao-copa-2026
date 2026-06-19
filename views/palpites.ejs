@@ -299,7 +299,7 @@ async function salvarGrupo(gid, label, btn) {
   if (!confirm('Salvar todos os palpites ABERTOS de "' + label + '"?')) return;
   const jogos = {};
   const container = document.querySelector('.grupo-jogos[data-grupo="' + gid + '"]');
-  if (!container) { alert('Grupo não encontrado.'); return; }
+  if (!container) { toast('Grupo não encontrado.', 'error'); return; }
   const forms = container.querySelectorAll('.jogo-card form');
   forms.forEach(function(form) {
     const action = form.getAttribute('action');
@@ -313,7 +313,7 @@ async function salvarGrupo(gid, label, btn) {
     }
   });
   if (Object.keys(jogos).length === 0) {
-    alert('Nenhum jogo aberto neste grupo.');
+    toast('Nenhum jogo aberto neste grupo.', 'warning');
     return;
   }
   try {
@@ -332,13 +332,13 @@ async function salvarGrupo(gid, label, btn) {
     if (data.ok) {
       location.reload();
     } else {
-      alert('❌ Erro: ' + (data.erro || 'desconhecido'));
+      toast('Erro: ' + (data.erro || 'desconhecido'), 'error', 6000);
       btn.disabled = false;
       btn.textContent = '💾 Salvar todos';
     }
   } catch (err) {
     console.error('[salvarGrupo]', err);
-    alert('❌ Erro ao salvar grupo.\n\n' + err.message + '\n\nTente novamente em alguns segundos.');
+    toast('Erro ao salvar grupo: ' + err.message + ' — Tente novamente em alguns segundos.', 'error', 6000);
     btn.disabled = false;
     btn.textContent = '💾 Salvar todos';
   }
@@ -382,7 +382,7 @@ function salvarIndividual(ev, form) {
   const visitInput = form.querySelector('input[name="visitante"]');
   // Validação prévia — evita envio de placar vazio/negativo
   if (!casaInput.value || !visitInput.value || Number(casaInput.value) < 0 || Number(visitInput.value) < 0) {
-    alert('⚠️ Preencha os dois placares com números válidos (0 ou maior).');
+    toast('Preencha os dois placares com números válidos (0 ou maior).', 'warning');
     return false;
   }
   const placarOriginal = { casa: casaInput.value, visitante: visitInput.value };
@@ -407,7 +407,7 @@ function salvarIndividual(ev, form) {
     // Restaura o placar que o usuário digitou (caso algum JS tenha mexido)
     casaInput.value = placarOriginal.casa;
     visitInput.value = placarOriginal.visitante;
-    alert('❌ Erro ao salvar palpite.\n\n' + err.message + '\n\nTente novamente em alguns segundos.');
+    toast('Erro ao salvar palpite: ' + err.message + ' — Tente novamente em alguns segundos.', 'error', 6000);
   });
   return false;
 }

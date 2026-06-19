@@ -137,7 +137,7 @@
           </form>
           <form method="POST" action="/admin/usuarios/<%= u.id %>/excluir" style="display:inline">
             <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-            <button type="submit" class="btn btn-sm" style="background:var(--erro);color:white" onclick="return confirm('Excluir <%= u.nome %> e todos os palpites dele?')">Excluir</button>
+            <button type="submit" class="btn btn-sm" style="background:var(--erro);color:white" onclick="return confirmarExclusao(event, '<%= u.nome.replace(/'/g, "\\'") %>', this.form)">Excluir</button>
           </form>
         </td>
       </tr>
@@ -148,5 +148,61 @@
 <p class="texto-aux mt-2">
   <a href="/admin">← Voltar ao painel</a>
 </p>
+
+<!-- Modal de confirmação de exclusão -->
+<div id="modal-excluir" class="modal-overlay" style="display:none">
+  <div class="modal-box">
+    <h3 style="margin:0 0 8px 0;color:var(--erro)">⚠️ Excluir participante?</h3>
+    <p style="margin:0 0 12px 0;color:var(--text-muted);font-size:0.9rem">
+      Esta ação é <strong>irreversível</strong> e remove todos os palpites do usuário.
+    </p>
+    <p style="margin:0 0 12px 0;font-size:0.9rem">
+      Digite <strong id="modal-excluir-nome-esperado"></strong> para confirmar:
+    </p>
+    <input type="text" id="modal-excluir-input" placeholder="Nome do usuário" autocomplete="off" style="width:100%;padding:8px;border:1px solid var(--border-soft);border-radius:6px;font-size:0.95rem">
+    <div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end">
+      <button type="button" class="btn btn-sm btn-secondary" onclick="fecharModalExclusao()">Cancelar</button>
+      <button type="button" id="modal-excluir-btn" class="btn btn-sm" style="background:var(--erro);color:white" onclick="executarExclusao()" disabled>Excluir permanentemente</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let formParaExcluir = null;
+let nomeEsperado = '';
+
+function confirmarExclusao(ev, nome, form) {
+  ev.preventDefault();
+  formParaExcluir = form;
+  nomeEsperado = nome;
+  document.getElementById('modal-excluir-nome-esperado').textContent = nome;
+  document.getElementById('modal-excluir-input').value = '';
+  document.getElementById('modal-excluir-btn').disabled = true;
+  document.getElementById('modal-excluir').style.display = 'flex';
+  setTimeout(function() { document.getElementById('modal-excluir-input').focus(); }, 50);
+  return false;
+}
+
+function fecharModalExclusao() {
+  document.getElementById('modal-excluir').style.display = 'none';
+  formParaExcluir = null;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  const input = document.getElementById('modal-excluir-input');
+  const btn = document.getElementById('modal-excluir-btn');
+  input.addEventListener('input', function() {
+    btn.disabled = input.value.trim() !== nomeEsperado;
+  });
+  input.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !btn.disabled) { e.preventDefault(); executarExclusao(); }
+    if (e.key === 'Escape') { fecharModalExclusao(); }
+  });
+});
+
+function executarExclusao() {
+  if (formParaExcluir) formParaExcluir.submit();
+}
+</script>
 
 <%- include('partials/footer') %>

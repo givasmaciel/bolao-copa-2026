@@ -62,6 +62,55 @@
   --sombra: 0 2px 8px rgba(0,0,0,0.08);
   --sombra-hover: 0 4px 16px rgba(0,0,0,0.12);
   --raio: 10px;
+  --bg-page: var(--cinza-claro);
+  --bg-card: var(--branco);
+  --border-soft: var(--cinza);
+  --text-muted: var(--cinza-escuro);
+}
+
+/* ============== Modo Escuro ============== */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --verde: #00c853;
+    --amarelo: #ffd600;
+    --azul: #4fc3f7;
+    --cinza-claro: #1a1d23;
+    --cinza: #2d3748;
+    --cinza-escuro: #a0aec0;
+    --texto: #e2e8f0;
+    --erro: #fc8181;
+    --sucesso: #68d391;
+    --aviso: #f6ad55;
+    --sombra: 0 2px 8px rgba(0,0,0,0.4);
+    --sombra-hover: 0 4px 16px rgba(0,0,0,0.5);
+    --bg-page: #121417;
+    --bg-card: #1e2128;
+    --border-soft: #2d3748;
+    --text-muted: #a0aec0;
+  }
+  body { background: var(--bg-page); color: var(--texto); }
+  .card, .jogo-card, .progress-palpites, .stat-card, .auth-container .card {
+    background: var(--bg-card) !important;
+    color: var(--texto);
+    border-color: var(--border-soft);
+  }
+  .jogo-card.finalizado { background: #1a1d23 !important; }
+  .jogo-card.iniciado { background: #181b20 !important; }
+  .btn-secondary { background: var(--cinza); color: var(--texto); }
+  input, select, textarea {
+    background: var(--bg-card);
+    color: var(--texto);
+    border-color: var(--border-soft);
+  }
+  .form-control { background: var(--bg-card); color: var(--texto); border-color: var(--border-soft); }
+  .classif-tabela th { color: var(--cinza-claro); border-bottom-color: var(--verde); }
+  .classif-classificado { background: rgba(46, 125, 50, 0.15) !important; }
+  .classif-terceiro { background: rgba(214, 158, 46, 0.15) !important; }
+  .progress-bar { background: var(--cinza); }
+  .ranking-tabela th { background: var(--bg-card); color: var(--texto); border-color: var(--border-soft); }
+  .ranking-tabela tr:nth-child(even) { background: rgba(255,255,255,0.03); }
+  .modal-content { background: var(--bg-card); color: var(--texto); }
+  .toast { background: var(--cinza); }
 }
 
 body {
@@ -894,6 +943,32 @@ footer a:hover { text-decoration: underline; }
   .jogo-placar input { width: 38px; padding: 4px 0; font-size: 0.95rem; }
   .jogo-placar .x { font-size: 0.95rem; }
   .jogo-placar { gap: 3px; margin-bottom: 2px; }
+}
+
+/* ============== Modal de confirmação ============== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 16px;
+}
+.modal-box {
+  background: var(--bg-card);
+  color: var(--texto);
+  padding: 24px;
+  border-radius: 12px;
+  max-width: 440px;
+  width: 100%;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  animation: modalIn 0.2s ease-out;
+}
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 /* ============== Classificação ============== */
