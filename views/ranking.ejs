@@ -322,7 +322,11 @@
             <% rodadas.forEach(function(r) { %>
               <td class="text-center"><%= (rodadaMap[u.id] && rodadaMap[u.id][r]) || '—' %></td>
             <% }); %>
-            <td class="text-center" style="color:var(--cinza-escuro)"><%= (u.extras_pontos || 0) + (u.bonus_pontos || 0) > 0 ? '+' + ((u.extras_pontos || 0) + (u.bonus_pontos || 0)) : '—' %></td>
+<%
+              var bonusInfo = bonusMap && bonusMap[u.id] && bonusMap[u.id].length > 0 ? bonusMap[u.id].map(function(b) { return b.motivo ? b.pontos + ' (' + b.motivo + ')' : '+' + b.pontos; }).join('; ') : '';
+              var extraTotal = (u.extras_pontos || 0) + (u.bonus_pontos || 0);
+            %>
+            <td class="text-center" style="color:var(--cinza-escuro)" title="<%= extraTotal > 0 ? 'Extra: +' + (u.extras_pontos || 0) + (bonusInfo ? ' | Bônus: ' + bonusInfo : '') : '' %>"><%= extraTotal > 0 ? '+' + extraTotal : '—' %></td>
             <td class="text-center pontos"><%= u.total_pontos %></td>
           </tr>
         <% }); %>
