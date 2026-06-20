@@ -49,7 +49,7 @@ router.get('/', async (req, res) => {
     // Agrupa por fase
     const fases = {
       grupo: { nome: 'Fase de Grupos', jogos: [] },
-      r32: { nome: '32-avos de Final', jogos: [] },
+      r32: { nome: '16-avos de Final', jogos: [] },
       r16: { nome: 'Oitavas de Final', jogos: [] },
       qf: { nome: 'Quartas de Final', jogos: [] },
       sf: { nome: 'Semifinais', jogos: [] },

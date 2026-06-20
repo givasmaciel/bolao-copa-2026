@@ -9,7 +9,7 @@ Deploy no Render (Node.js) com banco Neon PostgreSQL. Localmente usa SQLite.
 - **Cadastro aberto** — qualquer pessoa pode criar conta sem código de convite
 - **Palpites em todas as fases** — grupos e mata-mata (r32, r16, qf, sf, terceiro, final); cada jogo tem formulário individual; trava 2 minutos antes do horário BRT; **cards compactos** em grid 3 colunas (casa | placar | visitante) com metadata consolidada em um footer único (data, estádio, palpites, countdown)
 - **Progress bar de palpites** — card verde no topo de `/palpites` mostrando "X/Y jogos (NN%)" + barra de progresso com gradiente; mensagem contextual "Faltam Y palpites" ou "🎉 Você palpitou em todos!"
-- **Palpites salvos agrupados por fase** — card expansível com header por fase (ex.: "Fase de Grupos - Rodada 1", "32 avos de Final") + badge de progresso (feitos/total); primeiros 3 palpites visíveis com ✔; botão "Ver mais N" expande o resto (seção inicia **colapsada** por padrão)
+- **Palpites salvos agrupados por fase** — card expansível com header por fase (ex.: "Fase de Grupos - Rodada 1", "16 avos de Final") + badge de progresso (feitos/total); primeiros 3 palpites visíveis com ✔; botão "Ver mais N" expande o resto (seção inicia **colapsada** por padrão)
 - **Palpites Extras** — campeão, vice, 3º, finalistas, semis, quartas, oitavas, 1/16 avos; salvamento por categoria com contador de seleções ao vivo
 - **Dashboard** (`/dashboard`) — cards de estatísticas, próximos 5 jogos, palpites pendentes, top 5 do ranking, **banner do próximo jogo com 3 estados visuais** (fechado/urgente≤2h com animação pulse + gradiente amarelo→laranja / aberto em amarelo), notificação de palpites extras pendentes
 - **Resumo** (`/resumo`) — estatísticas detalhadas por tipo de ponto, pontos por rodada, racha (comparação head-to-head) com qualquer participante, histórico de jogos finalizados
@@ -41,8 +41,8 @@ Os pontos aumentam conforme a fase avança (configurável pelo admin em `/admin/
 | Fase | Placar exato | Empate | Resultado + 1 gol | Só resultado | 1 gol certo |
 |---|---|---|---|---|---|
 | Grupos | 20 | 14 | 14 | 8 | 3 |
-| 32 avos | 25 | 18 | 18 | 10 | 4 |
-| 16 avos | 30 | 20 | 20 | 12 | 5 |
+| 16 avos | 25 | 18 | 18 | 10 | 4 |
+| Oitavas | 30 | 20 | 20 | 12 | 5 |
 | Quartas | 40 | 28 | 28 | 16 | 6 |
 | Semi | 50 | 35 | 35 | 20 | 8 |
 | 3º lugar | 30 | 20 | 20 | 12 | 5 |

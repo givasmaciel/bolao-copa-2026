@@ -12,7 +12,7 @@
       <select name="fase" class="form-control" onchange="this.form.submit()">
         <option value="">Todas</option>
         <option value="grupo" <%= typeof query !== 'undefined' && query.fase === 'grupo' ? 'selected' : '' %>>Fase de grupos</option>
-        <option value="r32" <%= typeof query !== 'undefined' && query.fase === 'r32' ? 'selected' : '' %>>32-avos</option>
+        <option value="r32" <%= typeof query !== 'undefined' && query.fase === 'r32' ? 'selected' : '' %>>16-avos</option>
         <option value="r16" <%= typeof query !== 'undefined' && query.fase === 'r16' ? 'selected' : '' %>>Oitavas</option>
         <option value="qf" <%= typeof query !== 'undefined' && query.fase === 'qf' ? 'selected' : '' %>>Quartas</option>
         <option value="sf" <%= typeof query !== 'undefined' && query.fase === 'sf' ? 'selected' : '' %>>Semis</option>

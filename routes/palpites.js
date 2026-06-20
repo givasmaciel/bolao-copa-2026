@@ -7,7 +7,7 @@ const router = express.Router();
 
 const FASE_GROUPS = {
   grupo: { label: 'Fase de Grupos', order: 1 },
-  r32: { label: '32 avos de Final', order: 2 },
+  r32: { label: '16 avos de Final', order: 2 },
   r16: { label: 'Oitavas de Final', order: 3 },
   qf: { label: 'Quartas de Final', order: 4 },
   sf: { label: 'Semifinais', order: 5 },

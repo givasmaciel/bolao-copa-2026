@@ -586,7 +586,7 @@ router.post('/mata-mata/:id/editar', verificarAdmin, async (req, res) => {
 router.get('/pontuacao-fases', verificarAdmin, async (req, res) => {
   try {
     const fases = await all('SELECT * FROM fase_pontuacao ORDER BY CASE fase WHEN \'grupo\' THEN 1 WHEN \'r32\' THEN 2 WHEN \'r16\' THEN 3 WHEN \'qf\' THEN 4 WHEN \'sf\' THEN 5 WHEN \'terceiro\' THEN 6 WHEN \'final\' THEN 7 END');
-    const faseLabel = { grupo: 'Fase de Grupos', r32: '32 avos de Final', r16: '16 avos de Final', qf: 'Quartas de Final', sf: 'Semifinal', terceiro: 'Disputa de 3º lugar', final: 'Final' };
+    const faseLabel = { grupo: 'Fase de Grupos', r32: '16 avos de Final', r16: 'Oitavas de Final', qf: 'Quartas de Final', sf: 'Semifinal', terceiro: 'Disputa de 3º lugar', final: 'Final' };
     res.render('admin-pontuacao-fases', { title: 'Pontuação por Fase', fases, faseLabel });
   } catch (err) {
     console.error('Erro:', err);

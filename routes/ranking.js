@@ -106,7 +106,7 @@ router.get('/', async (req, res) => {
       'SELECT DISTINCT rodada, fase FROM jogos WHERE fase IS NOT NULL ORDER BY rodada'
     );
     const rodadas = fasesRodada.map(f => f.rodada);
-    const faseLabel = { grupo: r => 'R' + r, r32: '32av', r16: '16av', qf: 'QF', sf: 'SF', terceiro: '3º', final: 'Final' };
+    const faseLabel = { grupo: r => 'R' + r, r32: '16av', r16: '8av', qf: 'QF', sf: 'SF', terceiro: '3º', final: 'Final' };
     const labels = {};
     fasesRodada.forEach(f => {
       const gen = faseLabel[f.fase];

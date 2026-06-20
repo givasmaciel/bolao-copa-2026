@@ -232,7 +232,7 @@ Armazena configurações do sistema, como o prazo limite dos palpites extras (ex
 
 **Layout da página `/palpites`:**
 - **Progress bar** no topo: card verde com "**X** / Y jogos (NN%)" + barra gradiente verde; mensagem contextual "Faltam Y palpites — continue! ⚽" ou "🎉 Você palpitou em todos os jogos!".
-- **Card "Seus palpites salvos"** (expansível, **inicia colapsado** por padrão): agrupa palpites por fase com header da fase (ex.: "Fase de Grupos - Rodada 1", "32 avos de Final", "Oitavas") + badge "feitos/total". Primeiros 3 palpites visíveis com ✔ verde; botão "Ver mais N ▾" expande o restante (vira "Ocultar ▴"). Pontos inline nos jogos finalizados.
+- **Card "Seus palpites salvos"** (expansível, **inicia colapsado** por padrão): agrupa palpites por fase com header da fase (ex.: "Fase de Grupos - Rodada 1", "16 avos de Final", "Oitavas") + badge "feitos/total". Primeiros 3 palpites visíveis com ✔ verde; botão "Ver mais N ▾" expande o restante (vira "Ocultar ▴"). Pontos inline nos jogos finalizados.
 - **Cards de jogo compactos** (grid 3 colunas `1fr auto 1fr`): casa | placar + botão Salvar | visitante. Metadata (data, estádio, contagem, countdown) consolidada em um footer horizontal separado por `border-top: 1px dashed`.
 - **Por fase**: cada fase agrupa seus jogos. Grupos são subdivididos em rodadas, mata-mata aparece por fase (r32, r16, qf, sf, 3º, final). Botões "⚡ Preencher todos" e "💾 Salvar todos" por agrupamento.
 
@@ -322,7 +322,7 @@ Armazena configurações do sistema, como o prazo limite dos palpites extras (ex
   - `Média` (pts/palpite em finalizados)
   - `Aproveit.` (% do máximo possível em finalizados)
   - `Pontos` (com barra visual proporcional ao líder)
-- Tabela por rodada: pontos acumulados em cada rodada (R1, R2, R3, 32av, 16av, QF, SF, 3º, Final) + coluna "Extra" (soma de extras e bônus) antes do total.
+- Tabela por rodada: pontos acumulados em cada rodada (R1, R2, R3, 16av, 8av, QF, SF, 3º, Final) + coluna "Extra" (soma de extras e bônus) antes do total.
 - Disclaimer explicando a regra de bônus (último colocado -1) e que cadastro encerra após o prazo dos extras.
 - Se houver resultados de extras definidos, seção "Resultados dos Palpites Extras" com acertadores por seleção.
 
@@ -416,8 +416,8 @@ Os valores padrão por fase são:
 | Fase | pts_exato | pts_empate | pts_resultado_gol | pts_resultado | pts_gol |
 |---|---|---|---|---|---|
 | Grupos | 20 | 14 | 14 | 8 | 3 |
-| 32 avos | 25 | 18 | 18 | 10 | 4 |
-| 16 avos | 30 | 20 | 20 | 12 | 5 |
+| 16 avos | 25 | 18 | 18 | 10 | 4 |
+| Oitavas | 30 | 20 | 20 | 12 | 5 |
 | Quartas | 40 | 28 | 28 | 16 | 6 |
 | Semi | 50 | 35 | 35 | 20 | 8 |
 | 3º lugar | 30 | 20 | 20 | 12 | 5 |
