@@ -78,7 +78,7 @@ Prazo dos palpites extras configurável via tabela `config` (chave `extras_data_
 ## Tecnologias
 
 - Node.js 18+, Express 4.21, EJS 3.1
-- SQLite 5 (dev) / PostgreSQL 16 (produção via Neon)
+- SQLite 5 (dev) / PostgreSQL 16 (produção: Render Postgres free; migração para Neon disponível em `docs/MIGRACAO_RENDER_NEON.md`)
 - bcryptjs, express-session, connect-flash, nodemailer
 - CSS puro responsivo (verde/amarelo/azul)
 - Bandeiras via flagcdn.com
@@ -98,8 +98,10 @@ Admin local: `npm run criar-admin` (usuário: `admin@teste.com` / `admin123`)
 
 1. Push do código para o GitHub
 2. Render cria web service (auto-deploy ativado)
-3. Banco: **Neon** (PostgreSQL free tier, 0.5 GB) — configurar `DATABASE_URL` como env var no Render
+3. Banco: **Render Postgres** (Postgres 16 free tier, plano Free Expira em ~90 dias) — gerenciado automaticamente pelo `render.yaml` (blueprint) ou configurado manualmente
 4. Variáveis obrigatórias: `DATABASE_URL`, `SESSION_SECRET`, `ADMIN_EMAIL`, `ADMIN_SENHA`
+
+> **Status atual (jun/2026):** Produção roda no **Render Postgres** (host `dpg-...`, marcador `render-producao-2026-06-19`). O plano Free expira em ~90 dias (~set/2026). Veja [`docs/MIGRACAO_RENDER_NEON.md`](docs/MIGRACAO_RENDER_NEON.md) para migrar para Neon (free permanente) quando quiser.
 
 ## Variáveis de ambiente
 

@@ -16,7 +16,7 @@ Aplicação web full-stack em português do Brasil para cadastro de palpites sob
 | **Framework Web** | Express 4.21 |
 | **Templates** | EJS 3.1 (server-side rendering) |
 | **Banco (dev)** | SQLite 5 via `better-sqlite3` |
-| **Banco (prod)** | PostgreSQL 16 no Neon |
+| **Banco (prod)** | PostgreSQL 16 no **Render Postgres** (Free plan) |
 | **Sessão** | `express-session` (cookie 30 dias, `secure: true` em produção, `sameSite: 'lax'`) |
 | **Hash de senhas** | `bcryptjs` (10 rounds) |
 | **Flash messages** | `connect-flash` |
@@ -30,7 +30,7 @@ Aplicação web full-stack em português do Brasil para cadastro de palpites sob
 
 ## 3. Banco de Dados — Dual SQLite / PostgreSQL
 
-O banco opera de forma transparente com **SQLite** (desenvolvimento local) ou **PostgreSQL** (produção no Neon). A detecção é feita pela presença da variável `DATABASE_URL`:
+O banco opera de forma transparente com **SQLite** (desenvolvimento local) ou **PostgreSQL** (produção). A detecção é feita pela presença da variável `DATABASE_URL`:
 
 - `database/db.js` expõe três funções — `run`, `get`, `all` — que abstraem as diferenças entre os SGBDs.
 - Placeholders `?` são convertidos automaticamente para `$1, $2, ...` no PostgreSQL.
@@ -41,6 +41,10 @@ O banco opera de forma transparente com **SQLite** (desenvolvimento local) ou **
 - **Atenção — dupla fonte de verdade**: O `schema.js` contém uma migration (linhas ~328–407) que sobrescreve os 72 jogos de grupo toda vez que o servidor inicia. O `seed.js` também define esses mesmos jogos. **Ambos os arquivos devem ser mantidos em sincronia** ao alterar horários, estádios ou cidades de jogos da fase de grupos.
 - SQLite: `PRAGMA journal_mode = WAL` e `PRAGMA foreign_keys = ON`.
 - Setup em produção: `node database/setup.js && node server.js`. O `setup.js` cria as tabelas, executa seed se vazio e cria/atualiza admin via variáveis de ambiente.
+
+### 3.1 Banco de produção atual
+
+**Status atual (jun/2026):** produção roda no **Render Postgres** (host `dpg-d8k9g01kh4rs73bbrbpg-a`, marcador `db_marker=render-producao-2026-06-19`). O plano Free expira em ~90 dias (~set/2026). Para migrar para o **Neon** (free permanente), ver [`docs/MIGRACAO_RENDER_NEON.md`](docs/MIGRACAO_RENDER_NEON.md).
 
 ---
 
@@ -505,12 +509,14 @@ A pontuação é fixa por categoria, conforme tabela na seção 5.4. Os pontos s
 | Componente | Serviço |
 |---|---|
 | **Web server** | Render (Node.js) — serviço `bolao_copa_2026` |
-| **Banco de dados** | Neon (PostgreSQL 16, free tier) |
+| **Banco de dados** | Render Postgres (PostgreSQL 16, free tier, **expira em ~90 dias**) |
 | **Repositório** | GitHub (`main` → auto-deploy no Render) |
+
+> **Status atual (jun/2026):** produção roda no **Render Postgres** (host `dpg-d8k9g01kh4rs73bbrbpg-a`, marcador `db_marker=render-producao-2026-06-19`). O plano Free expira em ~90 dias. Para migrar para o **Neon** (free permanente), siga [`docs/MIGRACAO_RENDER_NEON.md`](docs/MIGRACAO_RENDER_NEON.md).
 
 ### 8.2 render.yaml (Blueprint)
 
-O arquivo `render.yaml` define o blueprint original do Render. Atualmente o serviço em uso (`bolao_copa_2026`) foi criado manualmente e usa `DATABASE_URL` do Neon, não do banco gerado pelo blueprint.
+O arquivo `render.yaml` define o blueprint que provisiona o serviço e o banco juntos. O `bolao-db` é um Render Postgres interno, e sua connection string é injetada em `DATABASE_URL` automaticamente.
 
 ```yaml
 services:
@@ -533,11 +539,13 @@ services:
       - key: ADMIN_SENHA
         sync: false
       - key: DATABASE_URL
-        sync: false  # configurada manualmente com a connection string do Neon
+        fromDatabase:
+          name: bolao-db
+          property: connectionString
 ```
 
-- `DATABASE_URL` é configurada manualmente no dashboard do Render com a connection string do Neon.
-- `ADMIN_EMAIL` e `ADMIN_SENHA` devem ser configurados manualmente no dashboard do Render.
+- O blueprint provisiona **automaticamente** o Postgres `bolao-db` e injeta sua connection string em `DATABASE_URL`.
+- `ADMIN_EMAIL` e `ADMIN_SENHA` devem ser configuradas manualmente no dashboard do Render.
 - URL de produção: `https://bolao-copa-2026-zjoi.onrender.com`.
 
 ### 8.3 Script de Setup (`database/setup.js`)
