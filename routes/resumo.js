@@ -22,16 +22,21 @@ router.get('/', verificarAutenticado, async (req, res) => {
                                AND (p.palpite_gols_casa = j.gols_casa OR p.palpite_gols_visitante = j.gols_visitante)
                                AND NOT (p.palpite_gols_casa = j.gols_casa AND p.palpite_gols_visitante = j.gols_visitante)
                           THEN 1 ELSE 0 END), 0) AS resultados_exatos,
-        COALESCE(SUM(CASE WHEN ((j.gols_casa > j.gols_visitante AND p.palpite_gols_casa > p.palpite_gols_visitante)
-                                 OR (j.gols_casa < j.gols_visitante AND p.palpite_gols_casa < p.palpite_gols_visitante))
-                                AND p.palpite_gols_casa <> j.gols_casa
-                                AND p.palpite_gols_visitante <> j.gols_visitante
-                           THEN 1 ELSE 0 END)
-                  +
-                  CASE WHEN j.gols_casa = j.gols_visitante
-                            AND p.palpite_gols_casa = p.palpite_gols_visitante
-                            AND NOT (p.palpite_gols_casa = j.gols_casa AND p.palpite_gols_visitante = j.gols_visitante)
-                       THEN 1 ELSE 0 END, 0) AS so_resultados,
+        -- só_resultado: acertou resultado (vencedor/empate) mas errou os placares parciais.
+        -- Versão única de SUM(CASE WHEN ... THEN 1 ... WHEN ... THEN 1 ... ELSE 0 END)
+        -- para evitar BIGINT+INTEGER+COALESCE que falha em PostgreSQL.
+        COALESCE(SUM(CASE
+          WHEN ((j.gols_casa > j.gols_visitante AND p.palpite_gols_casa > p.palpite_gols_visitante)
+             OR (j.gols_casa < j.gols_visitante AND p.palpite_gols_casa < p.palpite_gols_visitante))
+           AND p.palpite_gols_casa <> j.gols_casa
+           AND p.palpite_gols_visitante <> j.gols_visitante
+             THEN 1
+          WHEN j.gols_casa = j.gols_visitante
+           AND p.palpite_gols_casa = p.palpite_gols_visitante
+           AND NOT (p.palpite_gols_casa = j.gols_casa AND p.palpite_gols_visitante = j.gols_visitante)
+             THEN 1
+          ELSE 0
+        END), 0) AS so_resultados,
         COALESCE(SUM(CASE WHEN NOT (
                                   (j.gols_casa > j.gols_visitante AND p.palpite_gols_casa > p.palpite_gols_visitante)
                                OR (j.gols_casa < j.gols_visitante AND p.palpite_gols_casa < p.palpite_gols_visitante)
