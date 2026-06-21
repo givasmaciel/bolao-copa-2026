@@ -145,6 +145,11 @@ router.get('/', verificarAutenticado, async (req, res) => {
     const pontuacaoFases = await all('SELECT * FROM fase_pontuacao ORDER BY CASE fase WHEN \'grupo\' THEN 1 WHEN \'r32\' THEN 2 WHEN \'r16\' THEN 3 WHEN \'qf\' THEN 4 WHEN \'sf\' THEN 5 WHEN \'terceiro\' THEN 6 WHEN \'final\' THEN 7 END');
     const faseLabel = { grupo: 'Fase de Grupos', r32: '16 avos de Final', r16: 'Oitavas de Final', qf: 'Quartas de Final', sf: 'Semifinal', terceiro: 'Disputa de 3º lugar', final: 'Final' };
 
+    // Premiação (R$ 1º/2º/3º lugar) — lida da tabela config (editável em /admin/premios)
+    const premiosRows = await all("SELECT chave, valor FROM config WHERE chave LIKE 'premio_%'");
+    const premios = { premio_1: '300.00', premio_2: '125.00', premio_3: '75.00' };
+    for (const r of premiosRows) premios[r.chave] = r.valor;
+
     res.render('dashboard', {
       title: 'Painel',
       proximosJogos: proximosAbertos,
@@ -159,7 +164,8 @@ router.get('/', verificarAutenticado, async (req, res) => {
       alertaExtras,
       extrasDataLimite,
       pontuacaoFases,
-      faseLabel
+      faseLabel,
+      premios
     });
   } catch (err) {
     console.error('Erro no dashboard:', err);

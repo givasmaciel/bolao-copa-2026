@@ -104,12 +104,21 @@
 </div>
 
 <details class="card" style="padding:12px 16px;margin-bottom:16px">
-  <summary style="cursor:pointer;font-weight:600;font-size:0.85rem;color:var(--cinza-escuro)">📋 Pontuação e regras</summary>
+  <summary style="cursor:pointer;font-weight:600;font-size:0.95rem;color:var(--texto)">📋 Pontuação e regras — clique para expandir</summary>
+
+  <div style="padding:14px;background:linear-gradient(135deg,var(--amarelo),var(--verde));color:#fff;text-align:center;border-radius:8px;margin:12px 0">
+    <div style="font-size:0.78rem;font-weight:600;letter-spacing:1px;margin-bottom:4px">💰 PREMIAÇÃO 💰</div>
+    <div style="display:flex;justify-content:space-around;font-size:0.9rem;flex-wrap:wrap;gap:8px">
+      <div><div style="font-size:1.4rem">🥇</div><div style="font-weight:700">R$ <%= parseFloat(premios.premio_1).toFixed(2).replace('.', ',') %></div><div style="font-size:0.65rem;opacity:0.9">1º lugar</div></div>
+      <div><div style="font-size:1.2rem">🥈</div><div style="font-weight:700">R$ <%= parseFloat(premios.premio_2).toFixed(2).replace('.', ',') %></div><div style="font-size:0.65rem;opacity:0.9">2º lugar</div></div>
+      <div><div style="font-size:1rem">🥉</div><div style="font-weight:700">R$ <%= parseFloat(premios.premio_3).toFixed(2).replace('.', ',') %></div><div style="font-size:0.65rem;opacity:0.9">3º lugar</div></div>
+    </div>
+  </div>
 
   <h4 style="margin:12px 0 4px">🏅 Pontuação dos jogos</h4>
-  <p class="texto-aux" style="font-size:0.8rem">Os pontos aumentam conforme a fase avança — jogos de mata-mata são mais difíceis de acertar!</p>
+  <p class="texto-aux" style="font-size:0.78rem">Os pontos aumentam conforme a fase avança — jogos de mata-mata são mais difíceis de acertar!</p>
   <div style="overflow-x:auto">
-  <table class="ranking-tabela" style="font-size:0.8rem;min-width:500px">
+  <table class="ranking-tabela" style="font-size:0.78rem;min-width:500px">
     <thead>
       <tr>
         <th>Fase</th>
@@ -144,9 +153,30 @@
   </table>
   </div>
 
+  <h4 style="margin:16px 0 4px">📖 O que conta como cada acerto</h4>
+  <ul style="font-size:0.78rem;margin:4px 0;padding-left:20px;line-height:1.5">
+    <li><strong>Placar exato</strong> — acertou o placar certinho (ex: palpitou 2×1, jogo foi 2×1)</li>
+    <li><strong>Empate</strong> — jogo terminou empatado e você palpitou empate (qualquer placar de empate conta)</li>
+    <li><strong>Resultado + 1 gol</strong> — acertou quem ganhou/perdeu <em>e</em> o gol de pelo menos um time</li>
+    <li><strong>Só resultado</strong> — acertou quem ganhou mas errou os gols dos dois times</li>
+    <li><strong>1 gol certo</strong> — errou quem ganhou, mas acertou o gol de um time</li>
+  </ul>
+
+  <h4 style="margin:16px 0 4px">⚡ Mata-mata (prorrogação / pênaltis)</h4>
+  <p style="font-size:0.78rem;line-height:1.55;margin:4px 0">
+    As regras da fase de grupos continuam valendo igual para o mata-mata: você palpite o placar dos <strong>90 minutos</strong> e pontua normalmente (exato, empate, resultado+gol, etc.).
+  </p>
+  <p style="font-size:0.78rem;line-height:1.55;margin:4px 0">
+    A única diferença é o <strong>bônus "+ Prór.+Pên."</strong>: se o jogo terminar empatado nos 90 min e você acertar <em>quem avançou</em> na prorrogação/pênaltis, ganha a metade do "Só resultado" da fase. <strong>Se o jogo for decidido nos 90 min, esse bônus não se aplica.</strong>
+  </p>
+  <div style="background:var(--cinza-claro);padding:8px 12px;border-radius:6px;font-size:0.74rem;margin-top:6px;line-height:1.5">
+    <strong>💡 Exemplo (quartas):</strong> placar 1×1 (empate) + quem classifica: Brasil → <strong>40</strong> (exato) <strong>+ 8</strong> (classificado) = <strong>48 pts</strong>.
+    Se tivesse palpitado outro empate (0×0, 2×2), seriam <strong>28</strong> + <strong>8</strong> = <strong>36 pts</strong>.
+  </div>
+
   <h4 style="margin:16px 0 4px">🏆 Palpites Extras</h4>
-  <p style="font-size:0.85rem;margin:4px 0">Você também pode palpitar nos resultados do torneio:</p>
-  <ul style="font-size:0.8rem;margin:4px 0;padding-left:20px">
+  <p style="font-size:0.85rem;margin:4px 0">Você também pode palpitar nos resultados do torneio (categorias independentes — pode escolher um campeão sem tê-lo colocado como finalista):</p>
+  <ul style="font-size:0.78rem;margin:4px 0;padding-left:20px;line-height:1.5">
     <li><strong>Campeão</strong> — 200 pts</li>
     <li><strong>Vice-campeão</strong> — 150 pts</li>
     <li><strong>Terceiro lugar</strong> — 100 pts</li>
@@ -156,16 +186,26 @@
     <li><strong>Oitavas</strong> (16) — 10 pts cada</li>
     <li><strong>1/16 avos</strong> (32) — 5 pts cada</li>
   </ul>
-  <p class="texto-aux" style="font-size:0.75rem">Categorias independentes: você pode eleger um campeão sem tê-lo colocado como finalista.</p>
+
+  <h4 style="margin:16px 0 4px">🥇 Critérios de desempate</h4>
+  <p style="font-size:0.78rem;margin:4px 0">Quando dois ou mais participantes têm a mesma pontuação, o desempate é feito nesta ordem:</p>
+  <ol style="font-size:0.78rem;margin:4px 0;padding-left:20px;line-height:1.5">
+    <li>Maior <strong>total de pontos</strong> (jogos finalizados + extras + bônus)</li>
+    <li>Maior número de <strong>placares exatos</strong></li>
+    <li>Maior número de <strong>resultado + 1 gol certo</strong></li>
+    <li>Maior número de <strong>resultados corretos</strong> (sem acertar gol)</li>
+    <li>Maior número de <strong>gols acertados</strong> (soma de gols da casa e visitante)</li>
+    <li>Maior número de <strong>1 gol certo</strong> (errou quem ganhou mas acertou gol de 1 time)</li>
+    <li>Maior número de <strong>palpites que pontuaram</strong> (&gt; 0)</li>
+    <li>Ordem alfabética do nome</li>
+  </ol>
 
   <h4 style="margin:16px 0 4px">📋 Regras gerais</h4>
-  <ul style="font-size:0.8rem;margin:4px 0;padding-left:20px">
+  <ul style="font-size:0.78rem;margin:4px 0;padding-left:20px;line-height:1.5">
     <li>Os palpites podem ser editados <strong>até 2 minutos antes</strong> do jogo começar.</li>
     <li>Após esse prazo, o palpite daquele jogo é bloqueado.</li>
     <li>Cada jogo vale pontos <strong>uma única vez</strong>, conforme a tabela acima.</li>
     <li>O placar dos jogos é inserido pelo administrador. Os pontos são calculados automaticamente.</li>
-    <li>Em caso de empate no ranking, os critérios de desempate (em ordem) são: total de pontos → placares exatos → resultado+gol → resultado → gols certos → 1 gol certo → palpites pontuados → nome. Detalhes no <a href="/ranking">/ranking</a>.</li>
-    <li><strong>Mata-mata (prorrogação/pênaltis):</strong> as regras dos grupos continuam valendo normalmente. A única diferença é um <strong>bônus</strong> na coluna "+ Prór.+Pên.": se o jogo terminar empatado nos 90 min e você acertar quem avançou, ganha a metade do "Só resultado" da fase. Se o jogo for decidido nos 90 min, o bônus não se aplica.</li>
     <li><strong>Pontos bônus:</strong> para evitar vantagem ou desvantagem excessiva, participantes que ingressarem após o início da competição iniciam com pontuação igual à do último colocado da rodada de ingresso, reduzida em 1 ponto. Após o encerramento dos palpites extras, não serão aceitas novas inscrições.</li>
     <li><strong>Cadastro encerrado:</strong> não é permitido criar nova conta após o fechamento dos palpites extras.</li>
   </ul>

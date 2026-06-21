@@ -286,12 +286,16 @@ router.get('/', async (req, res) => {
     const premios = { premio_1: '300.00', premio_2: '125.00', premio_3: '75.00' };
     for (const r of premiosRows) premios[r.chave] = r.valor;
 
+    // Pontuação por fase (para o card de regras do ranking)
+    const pontuacaoFases = await all('SELECT * FROM fase_pontuacao ORDER BY CASE fase WHEN \'grupo\' THEN 1 WHEN \'r32\' THEN 2 WHEN \'r16\' THEN 3 WHEN \'qf\' THEN 4 WHEN \'sf\' THEN 5 WHEN \'terceiro\' THEN 6 WHEN \'final\' THEN 7 END');
+    const faseLabelCompleto = { grupo: 'Fase de Grupos', r32: '16 avos de Final', r16: 'Oitavas de Final', qf: 'Quartas de Final', sf: 'Semifinal', terceiro: 'Disputa de 3º lugar', final: 'Final' };
+
     res.render('ranking', {
       title: 'Ranking do Bolão',
       ranking, totais, rodadaMap, rodadas, labels,
       extrasResultados, extrasPorCategoria, CATEGORIAS,
       totalDisputado, bonusMap, statsConcluidos,
-      premios
+      premios, pontuacaoFases, faseLabelCompleto
     });
   } catch (err) {
     console.error('Erro ao listar ranking:', err);
