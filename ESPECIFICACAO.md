@@ -90,11 +90,18 @@ O banco opera de forma transparente com **SQLite** (desenvolvimento local) ou **
 | `selecao_casa_id` | INTEGER FK → selecoes | Time da casa (null no mata-mata) |
 | `selecao_visitante_id` | INTEGER FK → selecoes | Time visitante (null no mata-mata) |
 | `data` | TIMESTAMPTZ / DATETIME | Data/hora armazenada com offset -03:00 (BRT); PG converte para UTC internamente |
+| `palpite_limite` | TIMESTAMPTZ / DATETIME | Prazo customizado de palpites (admin pode alterar). Se null, usa a regra padrão de 2 min antes do jogo. |
 | `estadio` | TEXT | Nome do estádio |
 | `cidade` | TEXT | Cidade-sede |
 | `pais` | TEXT | País-sede |
-| `gols_casa` | INTEGER | Gols reais (preenchido pelo admin; nullable) |
-| `gols_visitante` | INTEGER | Gols reais (preenchido pelo admin; nullable) |
+| `gols_casa` | INTEGER | Gols reais nos 90 min (preenchido pelo admin; nullable) |
+| `gols_visitante` | INTEGER | Gols reais nos 90 min (preenchido pelo admin; nullable) |
+| `gols_casa_pror` | INTEGER | Gols na prorrogação (nullable; só mata-mata) |
+| `gols_visitante_pror` | INTEGER | Gols na prorrogação (nullable; só mata-mata) |
+| `placar_penaltis_casa` | INTEGER | Gols na disputa de pênaltis (nullable; só mata-mata) |
+| `placar_penaltis_visitante` | INTEGER | Gols na disputa de pênaltis (nullable; só mata-mata) |
+| `classificado_id` | INTEGER FK → selecoes | Quem avançou no mata-mata (nullable; preenchido quando vai para pró./pên.) |
+| `descricao` | TEXT | Texto descritivo do confronto mata-mata (ex.: "1ºA vs 3ºC/E/F/H/I") |
 | `finalizado` | INTEGER DEFAULT 0 | 1 = jogo encerrado |
 
 ### `palpites`
@@ -104,9 +111,10 @@ O banco opera de forma transparente com **SQLite** (desenvolvimento local) ou **
 | `id` | SERIAL / INTEGER PK | ID único |
 | `usuario_id` | INTEGER FK → usuarios | Quem palpitou |
 | `jogo_id` | INTEGER FK → jogos | Qual jogo |
-| `palpite_gols_casa` | INTEGER NOT NULL | Palpite do usuário (gols da casa) |
-| `palpite_gols_visitante` | INTEGER NOT NULL | Palpite do usuário (gols visitante) |
-| `pontos_obtidos` | INTEGER DEFAULT 0 | Pontuação calculada |
+| `palpite_gols_casa` | INTEGER NOT NULL | Palpite do usuário (gols da casa nos 90 min) |
+| `palpite_gols_visitante` | INTEGER NOT NULL | Palpite do usuário (gols visitante nos 90 min) |
+| `palpite_classificado_id` | INTEGER FK → selecoes | Quem o usuário acha que avança no mata-mata (nullable; só mata-mata). Se acertar e o jogo foi para pró./pên., ganha o bônus `pts_classificado`. |
+| `pontos_obtidos` | INTEGER DEFAULT 0 | Pontuação calculada (pts dos 90 min + bônus classificado) |
 | `criado_em` | TIMESTAMP / DATETIME DEFAULT | Data de criação |
 | `atualizado_em` | TIMESTAMP / DATETIME DEFAULT | Data da última edição |
 | UNIQUE | `(usuario_id, jogo_id)` | Um palpite por jogo por usuário |
@@ -157,11 +165,12 @@ Armazena configurações do sistema, como o prazo limite dos palpites extras (ex
 | Coluna | Tipo | Descrição |
 |---|---|---|
 | `fase` | TEXT PRIMARY KEY | `grupo`, `r32`, `r16`, `qf`, `sf`, `terceiro`, `final` |
-| `pts_exato` | INTEGER DEFAULT 20 | Pontos por placar exato |
+| `pts_exato` | INTEGER DEFAULT 20 | Pontos por placar exato (90 min) |
 | `pts_empate` | INTEGER DEFAULT 14 | Pontos por acertar empate (qualquer placar) |
 | `pts_resultado_gol` | INTEGER DEFAULT 14 | Pontos por resultado + 1 gol certo |
 | `pts_resultado` | INTEGER DEFAULT 8 | Pontos por resultado correto sem gols |
 | `pts_gol` | INTEGER DEFAULT 3 | Pontos por 1 gol certo mas resultado errado |
+| `pts_classificado` | INTEGER DEFAULT 0 | Bônus por acertar quem classificou na prorrogação/pênaltis (só mata-mata). Default = metade do `pts_resultado`; configurável em `/admin/pontuacao-fases`. |
 
 ### `pontos_bonus`
 
@@ -415,18 +424,31 @@ Os valores padrão por fase são:
 
 | Fase | pts_exato | pts_empate | pts_resultado_gol | pts_resultado | pts_gol |
 |---|---|---|---|---|---|
-| Grupos | 20 | 14 | 14 | 8 | 3 |
-| 16 avos | 25 | 18 | 18 | 10 | 4 |
-| Oitavas | 30 | 20 | 20 | 12 | 5 |
-| Quartas | 40 | 28 | 28 | 16 | 6 |
-| Semi | 50 | 35 | 35 | 20 | 8 |
-| 3º lugar | 65 | 45 | 45 | 25 | 9 |
-| Final | 80 | 50 | 50 | 30 | 10 |
+| Grupos | 20 | 14 | 14 | 8 | 3 | 0 |
+| 16 avos | 25 | 18 | 18 | 10 | 4 | 5 |
+| Oitavas | 30 | 20 | 20 | 12 | 5 | 6 |
+| Quartas | 40 | 28 | 28 | 16 | 6 | 8 |
+| Semi | 50 | 35 | 35 | 20 | 8 | 10 |
+| 3º lugar | 65 | 45 | 45 | 25 | 9 | 12 |
+| Final | 80 | 50 | 50 | 30 | 10 | 15 |
 
 Progressão dos saltos de placar exato: `+5, +5, +10, +10, +15, +15` — cresce até chegar ao campeão.
-3º lugar fica entre Semi e Final (65 entre 50 e 80).
+3º lugar fica entre Semi e Final (65 entre 50 e 80). A coluna **+ Prór.+Pên.** mostra o bônus por acertar quem classificou (só mata-mata, default = ½ do `pts_resultado`).
 
-### 6.2 Pontuação dos Palpites Extras
+### 6.2 Bônus de Prorrogação / Pênaltis (mata-mata)
+
+No futebol real, o empate nos 90 minutos não define vencedor — a partida vai para prorrogação (30 min) e, se necessário, pênaltis. O bolão reflete essa realidade com um bônus:
+
+- O usuário palpite o placar dos **90 minutos** e pontua normalmente (exato, empate, res+gol, etc.) — as regras dos grupos continuam valendo.
+- **Adicionalmente**, em jogos de mata-mata, o usuário marca **qual time acha que avança** (`palpite_classificado_id`).
+- Se o jogo terminar empatado nos 90 min **E** o admin marcar `classificado_id` (prorrogação/pênaltis aconteceram), o usuário ganha um bônus de `pts_classificado` **se acertou quem avançou**.
+- Se o jogo foi decidido nos 90 min, o bônus **não se aplica** (mesmo que o usuário tenha marcado um palpite de classificado).
+
+**Exemplo (quartas):** placar 1×1 (empate, 28 pts) + quem classifica: Brasil (correto, +8 pts) = **36 pts**. Se tivesse palpitado 1×1 exato (40 pts) + Brasil avança (+8 pts) = **48 pts**.
+
+**Função:** `services/pontuacao.js::calcularPontosMataMata(jogo, palpiteCasa, palpiteVisitante, palpiteClassificadoId, pts)`. Soma `placarBase + bonus` onde `bonus = (houveEmpateNos90 && jogo.classificado_id && palpiteClassificadoId === jogo.classificado_id) ? pts_classificado : 0`.
+
+### 6.3 Pontuação dos Palpites Extras
 
 A pontuação é fixa por categoria, conforme tabela na seção 5.4. Os pontos são somados ao total do ranking via subquery na consulta de ranking.
 

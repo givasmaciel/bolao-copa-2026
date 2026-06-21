@@ -38,18 +38,20 @@ Deploy no Render (Node.js) com banco Neon PostgreSQL. Localmente usa SQLite.
 
 Os pontos aumentam conforme a fase avança (configurável pelo admin em `/admin/pontuacao-fases`).
 
-| Fase | Placar exato | Empate | Resultado + 1 gol | Só resultado | 1 gol certo |
-|---|---|---|---|---|---|
-| Grupos | 20 | 14 | 14 | 8 | 3 |
-| 16 avos | 25 | 18 | 18 | 10 | 4 |
-| Oitavas | 30 | 20 | 20 | 12 | 5 |
-| Quartas | 40 | 28 | 28 | 16 | 6 |
-| Semi | 50 | 35 | 35 | 20 | 8 |
-| 3º lugar | 65 | 45 | 45 | 25 | 9 |
-| Final | 80 | 50 | 50 | 30 | 10 |
+| Fase | Placar exato | Empate | Resultado + 1 gol | Só resultado | 1 gol certo | + Prór.+Pên. |
+|---|---|---|---|---|---|---|
+| Grupos | 20 | 14 | 14 | 8 | 3 | — |
+| 16 avos | 25 | 18 | 18 | 10 | 4 | 5 |
+| Oitavas | 30 | 20 | 20 | 12 | 5 | 6 |
+| Quartas | 40 | 28 | 28 | 16 | 6 | 8 |
+| Semi | 50 | 35 | 35 | 20 | 8 | 10 |
+| 3º lugar | 65 | 45 | 45 | 25 | 9 | 12 |
+| Final | 80 | 50 | 50 | 30 | 10 | 15 |
 
 Progressão dos saltos de placar exato: `+5, +5, +10, +10, +15, +15` — cresce até chegar ao campeão.
 3º lugar fica entre Semi e Final, mantendo a lógica anterior de aumento fase a fase.
+
+A coluna **+ Prór.+Pên.** é o bônus por acertar **quem classificou** na prorrogação/pênaltis (só mata-mata). Vale a metade do "Só resultado" da fase, é configurável em `/admin/pontuacao-fases`, e **só se aplica quando os 90 min terminaram empatados**. Se o jogo for decidido nos 90 min, o bônus não se aplica — mesmo que o usuário tenha marcado um palpite de classificado.
 
 ## Pontuação — Extras
 
