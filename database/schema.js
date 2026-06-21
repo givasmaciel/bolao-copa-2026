@@ -513,7 +513,9 @@ async function criarSchema() {
         ['r16', 30, 20, 20, 12, 5],
         ['qf', 40, 28, 28, 16, 6],
         ['sf', 50, 35, 35, 20, 8],
-        ['terceiro', 30, 20, 20, 12, 5],
+        // 3º lugar: entre Semi (50) e Final (80), progressão simétrica +15/+15
+        // (antes era 30/20/20/12/5, igual a Oitavas — regredia sem lógica)
+        ['terceiro', 65, 45, 45, 25, 9],
         ['final', 80, 50, 50, 30, 10]
       ];
       for (const f of fases) {
@@ -541,6 +543,42 @@ async function criarSchema() {
     }
   } catch (e) {
     console.warn('Aviso: não foi possível adicionar pts_classificado:', e.message);
+  }
+
+  // Fix 2026-06-21: recalcula pts_classificado pela metade do pts_resultado
+  // (o DEFAULT 5 da migration anterior impediu o WHERE IS NULL de funcionar)
+  try {
+    const fixRows = await all('SELECT fase, pts_resultado, pts_classificado FROM fase_pontuacao');
+    for (const row of fixRows) {
+      const pts = row.fase === 'grupo' ? 0 : Math.floor(Number(row.pts_resultado) / 2);
+      if (Number(row.pts_classificado) !== pts) {
+        await run('UPDATE fase_pontuacao SET pts_classificado = ? WHERE fase = ?', [pts, row.fase]);
+      }
+    }
+  } catch (e) {
+    console.warn('Aviso: não foi possível recalcular pts_classificado:', e.message);
+  }
+
+  // Migração 2026-06-21: corrige pontuação do 3º lugar (estava igual a Oitavas: bug).
+  // Idempotente: só atualiza se os valores ainda forem os antigos (30/20/20/12/5).
+  // Novos valores: 65/45/45/25/9 — progressão simétrica +15/+15 entre Semi (50) e Final (80).
+  // pts_classificado = Math.floor(25/2) = 12 (mesma fórmula das outras fases).
+  try {
+    const terceiroRow = await get("SELECT pts_exato, pts_empate, pts_resultado_gol, pts_resultado, pts_gol FROM fase_pontuacao WHERE fase = 'terceiro'");
+    if (terceiroRow
+      && Number(terceiroRow.pts_exato) === 30
+      && Number(terceiroRow.pts_empate) === 20
+      && Number(terceiroRow.pts_resultado_gol) === 20
+      && Number(terceiroRow.pts_resultado) === 12
+      && Number(terceiroRow.pts_gol) === 5) {
+      await run(
+        "UPDATE fase_pontuacao SET pts_exato = ?, pts_empate = ?, pts_resultado_gol = ?, pts_resultado = ?, pts_gol = ?, pts_classificado = ? WHERE fase = 'terceiro'",
+        [65, 45, 45, 25, 9, 12]
+      );
+      console.log('✅ Pontuação do 3º lugar corrigida: 30/20/20/12/5 → 65/45/45/25/9 (pts_classificado 6 → 12)');
+    }
+  } catch (e) {
+    console.warn('Aviso: não foi possível ajustar pontuação do 3º lugar:', e.message);
   }
 
   // Índices para performance

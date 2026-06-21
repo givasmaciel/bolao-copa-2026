@@ -178,8 +178,11 @@ router.get('/', verificarAutenticado, async (req, res) => {
     });
   } catch (err) {
     console.error('Erro no resumo:', err);
-    req.flash('erro', 'Erro ao carregar resumo.');
-    res.redirect('/');
+    req.flash('erro', 'Erro ao carregar resumo. Tente novamente em alguns instantes.');
+    // Direciona direto ao /dashboard — o redirect para '/' também levaria
+    // ao dashboard (porque o usuário está logado), mas passando por '/'
+    // o flash some e a UX fica pior.
+    res.redirect('/dashboard');
   }
 });
 

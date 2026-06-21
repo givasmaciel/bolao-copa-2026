@@ -31,7 +31,7 @@ Deploy no Render (Node.js) com banco Neon PostgreSQL. Localmente usa SQLite.
 - **Logs estruturados** — `logger.js` emite JSON para stdout (Render indexa). Busca por `level:error`, `msg:palpites`, etc.
 - **Content-Security-Policy** — header CSP restringe scripts/estilos a origens confiáveis, mais `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`. Defesa contra XSS
 - **Recuperação de senha** — token por email (SMTP opcional; fallback exibe link na tela)
-- **Ranking** — inclui pontos extras via subquery; exclui admins; desempate hierárquico em 8 níveis (total pontos → placares exatos → resultado+gol → só resultado → 1 gol certo → gols certos → palpites pontuados → nome alfabético); card de regras no topo com tabela `Critério / Pontos / O que conta`; colunas: `Palpites` (total dinâmico de palpites feitos pelo participante, cresce com novos palpites), `🎯 Qualidade dos acertos` (6 sub-colunas: Exatos, Res+Gol, Só Res, 1 Gol, Gols, Pont.) seguindo a cascata do SQL, `Média`, `Aproveit.`, `Pontos`; barra visual proporcional ao líder no total; banner com 🏆 Líder + ✅ Mais palpites pontuados + 🎯 Mais placares exatos + 📊 Média geral
+- **Ranking** — inclui pontos extras via subquery; exclui admins; desempate hierárquico em 8 níveis (total pontos → placares exatos → resultado+gol → só resultado → gols certos → 1 gol certo → palpites pontuados → nome alfabético); card de regras no topo com tabela `Critério / Pontos / O que conta`; colunas: `Palpites` (total dinâmico de palpites feitos pelo participante, cresce com novos palpites), `🎯 Qualidade dos acertos` (6 sub-colunas: Exatos, Res+Gol, Só Res, 1 Gol, Gols, Pont.) seguindo a cascata do SQL, `Média`, `Aproveit.`, `Pontos`; barra visual proporcional ao líder no total; banner com 🏆 Líder + ✅ Mais palpites pontuados + 🎯 Mais placares exatos + 📊 Média geral
 - **Perfil do participante** — cards horizontais compactos (Palpites, Acertos, Pontos, Aproveit., Média/palpite, Pts disp.); palpites por rodada com resultado real × palpite × pontos
 
 ## Pontuação — Jogos
@@ -45,8 +45,11 @@ Os pontos aumentam conforme a fase avança (configurável pelo admin em `/admin/
 | Oitavas | 30 | 20 | 20 | 12 | 5 |
 | Quartas | 40 | 28 | 28 | 16 | 6 |
 | Semi | 50 | 35 | 35 | 20 | 8 |
-| 3º lugar | 30 | 20 | 20 | 12 | 5 |
+| 3º lugar | 65 | 45 | 45 | 25 | 9 |
 | Final | 80 | 50 | 50 | 30 | 10 |
+
+Progressão dos saltos de placar exato: `+5, +5, +10, +10, +15, +15` — cresce até chegar ao campeão.
+3º lugar fica entre Semi e Final, mantendo a lógica anterior de aumento fase a fase.
 
 ## Pontuação — Extras
 
@@ -174,7 +177,7 @@ scripts/
 - Pontuação por fase configurável pelo admin em `/admin/pontuacao-fases`
 - Aproveitamento percentual exibido no ranking e perfil do usuário
 - Resultados dos extras no ranking só aparecem após admin definir em `/admin/extras`
-- Desempate no ranking: cascata de 8 critérios — total de pontos → placares exatos → resultado+gol → só resultado → 1 gol certo → gols certos → palpites pontuados → nome (alfabético)
+- Desempate no ranking: cascata de 8 critérios — total de pontos → placares exatos → resultado+gol → só resultado → gols certos → 1 gol certo → palpites pontuados → nome (alfabético)
 - Banner do próximo jogo no dashboard: 3 estados — **fechado** (vermelho claro, "🔒 JOGO FECHADO"), **urgente** ≤ 2h (gradiente amarelo→laranja, "⚠️ PALPITE FECHANDO" em CAIXA ALTA com ícone pulsante, box-shadow amarelo) e **aberto** (amarelo claro, "⚽ PRÓXIMO JOGO")
 - Cards de palpites em layout grid 3 colunas: padding reduzido, metadata (data, estádio, contagem, countdown) consolidada em footer único com border-top dashed. Em qualquer viewport (até 360px de largura), o layout se mantém **horizontal** com `grid-template-columns: minmax(80px, 1fr) auto minmax(80px, 1fr)` — nomes de times que excedem 80px quebram em 2 linhas em vez de sumir
 - Touch targets mobile: inputs de placar com mínimo 44×44px, botões `btn-sm` com mínimo 36×36px, links de nav com mínimo 36×36px (Apple HIG / Material Design)

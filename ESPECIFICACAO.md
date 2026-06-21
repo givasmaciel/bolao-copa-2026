@@ -337,8 +337,8 @@ Armazena configurações do sistema, como o prazo limite dos palpites extras (ex
   | 2 | Placares exatos | `placares_exatos` | 20 pts |
   | 3 | Resultado + gol | `acertos_resultado_gol` | 14 pts |
   | 4 | Só resultado | `acertos_resultado` | 8 pts |
-  | 5 | 1 gol certo | `acertos_gol` | 3 pts |
-  | 6 | Gols certos | `gols_acertados` (soma dos placares parciais) | +1 / gol |
+  | 5 | Gols certos | `gols_acertados` (soma dos placares parciais) | +1 / gol |
+  | 6 | 1 gol certo | `acertos_gol` | 3 pts |
   | 7 | Palpites pontuados | `palpites_com_pontos` | qtd |
   | 8 | Nome | `u.nome` | alfabético |
 
@@ -420,8 +420,11 @@ Os valores padrão por fase são:
 | Oitavas | 30 | 20 | 20 | 12 | 5 |
 | Quartas | 40 | 28 | 28 | 16 | 6 |
 | Semi | 50 | 35 | 35 | 20 | 8 |
-| 3º lugar | 30 | 20 | 20 | 12 | 5 |
+| 3º lugar | 65 | 45 | 45 | 25 | 9 |
 | Final | 80 | 50 | 50 | 30 | 10 |
+
+Progressão dos saltos de placar exato: `+5, +5, +10, +10, +15, +15` — cresce até chegar ao campeão.
+3º lugar fica entre Semi e Final (65 entre 50 e 80).
 
 ### 6.2 Pontuação dos Palpites Extras
 
