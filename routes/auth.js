@@ -55,7 +55,7 @@ router.post('/cadastro', jaLogado, authLimiter, async (req, res) => {
 
   try {
     // Verifica se o cadastro ainda está aberto (prazo dos extras)
-    const deadlineRow = await get("SELECT valor FROM config WHERE chave = 'extras_deadline'");
+    const deadlineRow = await get("SELECT valor FROM config WHERE chave = 'extras_data_limite'");
     if (deadlineRow && deadlineRow.valor) {
       const deadline = new Date(deadlineRow.valor);
       if (!isNaN(deadline.getTime()) && new Date() > deadline) {

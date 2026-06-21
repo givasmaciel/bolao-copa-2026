@@ -4,7 +4,7 @@ const bcrypt = require('bcryptjs');
 const { run, get, all } = require('../database/db');
 const { verificarAdmin } = require('../middleware/auth');
 const { gerarMataMata, listarConfrontos, limparMataMata } = require('../services/mata-mata');
-const { calcularPontos } = require('../services/pontuacao');
+const { calcularPontos, calcularPontosMataMata } = require('../services/pontuacao');
 
 const router = express.Router();
 
@@ -106,6 +106,9 @@ router.get('/jogos', verificarAdmin, async (req, res) => {
   try {
     const jogos = await all(`
       SELECT j.id, j.fase, j.rodada, j.data, j.finalizado, j.gols_casa, j.gols_visitante, j.palpite_limite,
+             j.gols_casa_pror, j.gols_visitante_pror,
+             j.placar_penaltis_casa, j.placar_penaltis_visitante,
+             j.selecao_casa_id, j.selecao_visitante_id, j.classificado_id,
              g.letra AS grupo_letra,
              sc.nome_pt AS casa_pt, sc.sigla AS casa_sigla,
              sv.nome_pt AS visitante_pt, sv.sigla AS visitante_sigla
@@ -147,20 +150,65 @@ router.post('/jogos/:id', verificarAdmin, async (req, res) => {
       return res.redirect('/admin/jogos');
     }
 
+    // Mata-mata: processa prorrogação, pênaltis e classificado
+    const ehMataMata = jogo.fase !== 'grupo';
+    let gcPror = null, gvPror = null, penCasa = null, penVisit = null, classificadoId = null;
+
+    if (ehMataMata) {
+      gcPror = req.body.gols_casa_pror === '' || req.body.gols_casa_pror == null ? null : parseInt(req.body.gols_casa_pror, 10);
+      gvPror = req.body.gols_visitante_pror === '' || req.body.gols_visitante_pror == null ? null : parseInt(req.body.gols_visitante_pror, 10);
+      penCasa = req.body.placar_penaltis_casa === '' || req.body.placar_penaltis_casa == null ? null : parseInt(req.body.placar_penaltis_casa, 10);
+      penVisit = req.body.placar_penaltis_visitante === '' || req.body.placar_penaltis_visitante == null ? null : parseInt(req.body.placar_penaltis_visitante, 10);
+      classificadoId = req.body.classificado_id && req.body.classificado_id !== '' ? parseInt(req.body.classificado_id, 10) : null;
+
+      // Validação: placar 90 min empatado em mata-mata exige classificado definido
+      const placarEmpate = gc !== null && gv !== null && gc === gv;
+      if (fin === 1 && placarEmpate && !classificadoId) {
+        req.flash('erro', 'Mata-mata com placar empatado: informe quem classificou (prorrogação/pênaltis).');
+        return res.redirect('/admin/jogos');
+      }
+      // Jogo decidido nos 90 minutos não usa classificado/prorrogação/pênaltis.
+      const temDadosDesempate = classificadoId
+        || gcPror !== null || gvPror !== null
+        || penCasa !== null || penVisit !== null;
+      if (fin === 1 && !placarEmpate && temDadosDesempate) {
+        req.flash('erro', 'Jogo decidido nos 90 minutos: não informe prorrogação, pênaltis ou classificado.');
+        return res.redirect('/admin/jogos');
+      }
+
+      // Sanity check: classificado deve ser um dos dois times
+      if (classificadoId && classificadoId !== jogo.selecao_casa_id && classificadoId !== jogo.selecao_visitante_id) {
+        req.flash('erro', 'Quem classificou deve ser um dos dois times do confronto.');
+        return res.redirect('/admin/jogos');
+      }
+    }
+
     await run(
-      'UPDATE jogos SET gols_casa = ?, gols_visitante = ?, finalizado = ? WHERE id = ?',
-      [gc, gv, fin, jogoId]
+      `UPDATE jogos
+       SET gols_casa = ?, gols_visitante = ?, finalizado = ?,
+           gols_casa_pror = ?, gols_visitante_pror = ?,
+           placar_penaltis_casa = ?, placar_penaltis_visitante = ?,
+           classificado_id = ?
+       WHERE id = ?`,
+      [gc, gv, fin, gcPror, gvPror, penCasa, penVisit, classificadoId, jogoId]
     );
 
     // Recalcula pontos dos palpites desse jogo
     if (fin === 1 && gc !== null && gv !== null) {
       const ptsConfig = await getPontosFase(jogo.fase);
       const palpites = await all(
-        'SELECT id, palpite_gols_casa, palpite_gols_visitante FROM palpites WHERE jogo_id = ?',
+        'SELECT id, palpite_gols_casa, palpite_gols_visitante, palpite_classificado_id FROM palpites WHERE jogo_id = ?',
         [jogoId]
       );
+      const isMataMata = jogo.fase !== 'grupo';
+      const jogoComResultado = { ...jogo, gols_casa: gc, gols_visitante: gv, classificado_id: classificadoId };
       for (const p of palpites) {
-        const pontos = calcularPontos(gc, gv, p.palpite_gols_casa, p.palpite_gols_visitante, ptsConfig);
+        let pontos;
+        if (isMataMata) {
+          pontos = calcularPontosMataMata(jogoComResultado, p.palpite_gols_casa, p.palpite_gols_visitante, p.palpite_classificado_id, ptsConfig);
+        } else {
+          pontos = calcularPontos(gc, gv, p.palpite_gols_casa, p.palpite_gols_visitante, ptsConfig);
+        }
         await run('UPDATE palpites SET pontos_obtidos = ? WHERE id = ?', [pontos, p.id]);
       }
     } else {
@@ -181,7 +229,7 @@ router.post('/jogos/:id', verificarAdmin, async (req, res) => {
 router.post('/recalcular', verificarAdmin, async (req, res) => {
   try {
     const [jogos, todasFases] = await Promise.all([
-      all('SELECT id, fase, gols_casa, gols_visitante FROM jogos WHERE finalizado = 1'),
+      all('SELECT id, fase, gols_casa, gols_visitante, classificado_id FROM jogos WHERE finalizado = 1'),
       all('SELECT * FROM fase_pontuacao')
     ]);
     const ptsCache = {};
@@ -192,7 +240,7 @@ router.post('/recalcular', verificarAdmin, async (req, res) => {
       return res.redirect('/admin');
     }
     const todosPalpites = await all(
-      `SELECT id, jogo_id, palpite_gols_casa, palpite_gols_visitante FROM palpites WHERE jogo_id IN (${ids.map(() => '?').join(',')})`,
+      `SELECT id, jogo_id, palpite_gols_casa, palpite_gols_visitante, palpite_classificado_id FROM palpites WHERE jogo_id IN (${ids.map(() => '?').join(',')})`,
       ids
     );
     const palpitesPorJogo = {};
@@ -202,10 +250,16 @@ router.post('/recalcular', verificarAdmin, async (req, res) => {
     }
     let total = 0;
     for (const j of jogos) {
-      const ptsConfig = ptsCache[j.fase] || { pts_exato: 20, pts_empate: 14, pts_resultado_gol: 14, pts_resultado: 8, pts_gol: 3 };
+      const ptsConfig = ptsCache[j.fase] || { pts_exato: 20, pts_empate: 14, pts_resultado_gol: 14, pts_resultado: 8, pts_gol: 3, pts_classificado: 0 };
       const palpites = palpitesPorJogo[j.id] || [];
+      const isMataMata = j.fase !== 'grupo';
       for (const p of palpites) {
-        const pontos = calcularPontos(j.gols_casa, j.gols_visitante, p.palpite_gols_casa, p.palpite_gols_visitante, ptsConfig);
+        let pontos;
+        if (isMataMata) {
+          pontos = calcularPontosMataMata(j, p.palpite_gols_casa, p.palpite_gols_visitante, p.palpite_classificado_id, ptsConfig);
+        } else {
+          pontos = calcularPontos(j.gols_casa, j.gols_visitante, p.palpite_gols_casa, p.palpite_gols_visitante, ptsConfig);
+        }
         await run('UPDATE palpites SET pontos_obtidos = ? WHERE id = ?', [pontos, p.id]);
         total++;
       }
@@ -605,10 +659,13 @@ router.post('/pontuacao-fases', verificarAdmin, async (req, res) => {
       const resultadoGol = parseInt(req.body[fase + '_resultado_gol'], 10);
       const resultado = parseInt(req.body[fase + '_resultado'], 10);
       const gol = parseInt(req.body[fase + '_gol'], 10);
+      const classificado = req.body[fase + '_classificado'] !== undefined
+        ? parseInt(req.body[fase + '_classificado'], 10)
+        : 0;
       if ([exato, empate, resultadoGol, resultado, gol].some(isNaN)) continue;
       await run(
-        'UPDATE fase_pontuacao SET pts_exato = ?, pts_empate = ?, pts_resultado_gol = ?, pts_resultado = ?, pts_gol = ? WHERE fase = ?',
-        [exato, empate, resultadoGol, resultado, gol, fase]
+        'UPDATE fase_pontuacao SET pts_exato = ?, pts_empate = ?, pts_resultado_gol = ?, pts_resultado = ?, pts_gol = ?, pts_classificado = ? WHERE fase = ?',
+        [exato, empate, resultadoGol, resultado, gol, isNaN(classificado) ? 0 : classificado, fase]
       );
     }
     req.flash('sucesso', 'Pontuação das fases atualizada!');
@@ -617,6 +674,47 @@ router.post('/pontuacao-fases', verificarAdmin, async (req, res) => {
     console.error('Erro:', err);
     req.flash('erro', 'Erro ao salvar.');
     res.redirect('/admin/pontuacao-fases');
+  }
+});
+
+// GET /admin/premios - editar premiações do bolão
+router.get('/premios', verificarAdmin, async (req, res) => {
+  try {
+    const rows = await all("SELECT chave, valor FROM config WHERE chave LIKE 'premio_%'");
+    const premios = { premio_1: '300.00', premio_2: '125.00', premio_3: '75.00' };
+    for (const r of rows) premios[r.chave] = r.valor;
+    res.render('admin-premios', { title: 'Premiações', premios });
+  } catch (err) {
+    console.error('Erro ao carregar premiações:', err);
+    req.flash('erro', 'Erro ao carregar.');
+    res.redirect('/admin');
+  }
+});
+
+// POST /admin/premios - salva premiações
+router.post('/premios', verificarAdmin, async (req, res) => {
+  try {
+    const chaves = ['premio_1', 'premio_2', 'premio_3'];
+    for (const chave of chaves) {
+      const valor = (req.body[chave] || '').toString().replace(',', '.');
+      const num = parseFloat(valor);
+      if (isNaN(num) || num < 0) {
+        req.flash('erro', `Valor inválido para ${chave}.`);
+        return res.redirect('/admin/premios');
+      }
+      const existe = await get('SELECT chave FROM config WHERE chave = ?', [chave]);
+      if (existe) {
+        await run('UPDATE config SET valor = ? WHERE chave = ?', [num.toFixed(2), chave]);
+      } else {
+        await run('INSERT INTO config (chave, valor) VALUES (?, ?)', [chave, num.toFixed(2)]);
+      }
+    }
+    req.flash('sucesso', 'Premiações atualizadas!');
+    res.redirect('/admin/premios');
+  } catch (err) {
+    console.error('Erro ao salvar premiações:', err);
+    req.flash('erro', 'Erro ao salvar.');
+    res.redirect('/admin/premios');
   }
 });
 

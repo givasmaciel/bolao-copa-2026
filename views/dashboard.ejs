@@ -118,6 +118,7 @@
         <th class="text-center">Resultado + 1 gol</th>
         <th class="text-center">Só resultado</th>
         <th class="text-center">1 gol certo</th>
+        <th class="text-center" title="Bônus por acertar quem classifica se o jogo for para prorrogação/pênaltis">+ Classif.<br><span style="font-weight:400;font-size:0.68rem">(½ do Só res.)</span></th>
       </tr>
     </thead>
     <tbody>
@@ -129,6 +130,14 @@
           <td class="text-center"><span class="pontos-badge"><%= f.pts_resultado_gol %></span></td>
           <td class="text-center"><span class="pontos-badge"><%= f.pts_resultado %></span></td>
           <td class="text-center"><span class="pontos-badge"><%= f.pts_gol %></span></td>
+          <td class="text-center">
+            <% if (f.fase === 'grupo') { %>
+              <span style="color:var(--cinza-escuro)">—</span>
+            <% } else { %>
+              <span class="pontos-badge" style="background:var(--verde)">+<%= f.pts_classificado %></span>
+              <br><span style="font-size:0.7rem;color:var(--cinza-escuro)">½ de <%= f.pts_resultado %></span>
+            <% } %>
+          </td>
         </tr>
       <% }); %>
     </tbody>
@@ -156,6 +165,7 @@
     <li>Cada jogo vale pontos <strong>uma única vez</strong>, conforme a tabela acima.</li>
     <li>O placar dos jogos é inserido pelo administrador. Os pontos são calculados automaticamente.</li>
     <li>Em caso de empate no ranking, os critérios de desempate (em ordem) são: placares exatos → resultado+gol → resultado → gols certos → 1 gol certo → palpites pontuados → nome. Detalhes no <a href="/ranking">/ranking</a>.</li>
+    <li><strong>Mata-mata (prorrogação/pênaltis):</strong> as regras dos grupos continuam valendo normalmente. A única diferença é um <strong>bônus</strong> na coluna "+ Classif.": se o jogo terminar empatado nos 90 min e você acertar quem avançou, ganha a metade do "Só resultado" da fase. Se o jogo for decidido nos 90 min, o bônus não se aplica.</li>
     <li><strong>Pontos bônus:</strong> para evitar vantagem ou desvantagem excessiva, participantes que ingressarem após o início da competição iniciam com pontuação igual à do último colocado da rodada de ingresso, reduzida em 1 ponto. Após o encerramento dos palpites extras, não serão aceitas novas inscrições.</li>
     <li><strong>Cadastro encerrado:</strong> não é permitido criar nova conta após o fechamento dos palpites extras.</li>
   </ul>

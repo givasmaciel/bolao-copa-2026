@@ -1,0 +1,154 @@
+<%- include('partials/header', { active: 'regras' }) %>
+
+<%- include('partials/flash') %>
+
+<h1>📜 Regras do Bolão</h1>
+<p class="subtitulo">Tudo que você precisa saber para participar do Bolão da Copa do Mundo FIFA 2026.</p>
+
+<div class="card" style="padding:14px;background:linear-gradient(135deg,var(--amarelo),var(--verde));color:#fff;text-align:center;margin-bottom:16px">
+  <div style="font-size:0.85rem;font-weight:600;letter-spacing:1px;margin-bottom:6px">💰 PREMIAÇÃO 💰</div>
+  <div style="display:flex;justify-content:space-around;font-size:0.95rem">
+    <div>
+      <div style="font-size:1.5rem">🥇</div>
+      <div style="font-weight:700;font-size:1.1rem">R$ <%= parseFloat(premios.premio_1).toFixed(2).replace('.', ',') %></div>
+      <div style="font-size:0.7rem;opacity:0.85">1º lugar</div>
+    </div>
+    <div>
+      <div style="font-size:1.3rem">🥈</div>
+      <div style="font-weight:700;font-size:1.1rem">R$ <%= parseFloat(premios.premio_2).toFixed(2).replace('.', ',') %></div>
+      <div style="font-size:0.7rem;opacity:0.85">2º lugar</div>
+    </div>
+    <div>
+      <div style="font-size:1.1rem">🥉</div>
+      <div style="font-weight:700;font-size:1.1rem">R$ <%= parseFloat(premios.premio_3).toFixed(2).replace('.', ',') %></div>
+      <div style="font-size:0.7rem;opacity:0.85">3º lugar</div>
+    </div>
+  </div>
+  <div style="margin-top:8px;font-size:0.75rem;font-style:italic;opacity:0.9">Pagamento feito manualmente pelo administrador após o término da Copa.</div>
+</div>
+
+<div class="card">
+  <h2 style="margin-top:0">⚽ Como funciona</h2>
+  <ol style="line-height:1.6;font-size:0.95rem">
+    <li><strong>Cadastre-se</strong> gratuitamente com e-mail e senha.</li>
+    <li><strong>Faça seus palpites</strong> antes do início de cada jogo (prazo: 2 min antes da partida).</li>
+    <li><strong>Acompanhe</strong> o ranking atualizado em tempo real conforme os jogos acontecem.</li>
+    <li><strong>Os 3 primeiros</strong> recebem a premiação ao final da Copa.</li>
+  </ol>
+</div>
+
+<div class="card mt-2">
+  <h2 style="margin-top:0">🏆 Pontuação por fase</h2>
+  <p>Quanto mais avançada a fase, mais pontos você ganha. A pontuação é progressiva:</p>
+  <div style="overflow-x:auto">
+    <table class="ranking-tabela" style="min-width:600px;font-size:0.85rem">
+      <thead>
+        <tr>
+          <th>Fase</th>
+          <th class="text-center">Exato</th>
+          <th class="text-center">Empate</th>
+          <th class="text-center">Res + 1 gol</th>
+          <th class="text-center">Só resultado</th>
+          <th class="text-center">1 gol</th>
+          <th class="text-center" title="Bônus por acertar quem classifica no mata-mata (prorrogação/pênaltis)">+ Classif.<br><span style="font-weight:400;font-size:0.68rem">(½ do Só res.)</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% fases.forEach(function(f) { %>
+          <tr>
+            <td><strong><%= f.label %></strong></td>
+            <td class="text-center"><%= f.pts_exato %></td>
+            <td class="text-center"><%= f.pts_empate %></td>
+            <td class="text-center"><%= f.pts_resultado_gol %></td>
+            <td class="text-center"><%= f.pts_resultado %></td>
+            <td class="text-center"><%= f.pts_gol %></td>
+            <td class="text-center">
+              <% if (f.fase === 'grupo') { %>
+                <span style="color:var(--cinza-escuro)">—</span>
+              <% } else { %>
+                <strong style="color:var(--verde)">+<%= f.pts_classificado %></strong>
+                <br><span style="font-size:0.7rem;color:var(--cinza-escuro)">½ de <%= f.pts_resultado %></span>
+              <% } %>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card mt-2">
+  <h2 style="margin-top:0">📋 Explicação dos acertos</h2>
+  <ul style="line-height:1.6;font-size:0.92rem">
+    <li><strong>Placar exato</strong> — acertou o placar certinho (ex: palpitou 2×1, jogo foi 2×1)</li>
+    <li><strong>Empate</strong> — jogo terminou empatado e você palpitou empate (qualquer placar, ex: palpitou 2×2, jogo foi 1×1)</li>
+    <li><strong>Resultado + 1 gol</strong> — acertou quem ganhou/perdeu e acertou o gol de pelo menos um time</li>
+    <li><strong>Só resultado</strong> — acertou quem ganhou mas errou os gols dos dois times</li>
+    <li><strong>1 gol certo</strong> — errou quem ganhou mas acertou o gol de um time</li>
+  </ul>
+</div>
+
+<div class="card mt-2">
+  <h2 style="margin-top:0">⚡ Regra extra do mata-mata (prorrogação/pênaltis)</h2>
+  <p style="font-size:0.92rem;line-height:1.6">
+    <strong>As regras da fase de grupos continuam valendo igual para o mata-mata.</strong>
+    Você palpite o placar dos 90 minutos e pontua da mesma forma (exato, empate, resultado+gol, etc.).
+  </p>
+  <p style="font-size:0.92rem;line-height:1.6">
+    A única diferença é que, <strong>se o jogo for para prorrogação ou pênaltis</strong>,
+    você pode ganhar pontos extras acertando <strong>quem avançou de fase</strong>.
+    Isso porque, no futebol real, o empate nos 90 minutos não define um vencedor —
+    a partida segue para prorrogação (30 min) e, se necessário, pênaltis.
+  </p>
+  <p style="font-size:0.92rem;line-height:1.6">Na prática, são duas coisas independentes:</p>
+  <ol style="line-height:1.6;font-size:0.92rem">
+    <li><strong>Placar dos 90 min (base)</strong> — você palpite o placar <em>do tempo regulamentar</em>. Acertando, leva os pontos normalmente (exato, empate, resultado+gol, etc.). <strong>É a mesma regra dos grupos.</strong></li>
+    <li><strong>Quem classifica (bônus)</strong> — você também marca <em>qual time avança</em>. <strong>Só vale se o jogo foi para prorrogação/pênaltis</strong> (ou seja, se os 90 min terminaram empatados). Se o jogo for decidido nos 90 min, esse bônus não se aplica — mesmo que você tenha marcado um palpite de classificado.</li>
+  </ol>
+  <p style="font-size:0.92rem;line-height:1.6">
+    O bônus é de <strong><code>pts_classificado</code></strong>, que equivale à metade dos pontos de
+    <em>"só resultado"</em> da fase. Esse valor é somado aos pontos que você já ganhou com o placar dos 90 min.
+  </p>
+
+  <div class="card mt-2" style="background:var(--cinza-claro);padding:12px;font-size:0.88rem;line-height:1.6">
+    <strong>💡 Exemplo (quartas de final):</strong><br>
+    • Placar dos 90 min: <strong>1×1</strong> (empate)<br>
+    • Quem classifica: <strong>Brasil</strong><br>
+    • Resultado real: 1×1 (90 min), prorrogação 1×0, Brasil avança<br><br>
+    <strong>Pontuação:</strong><br>
+    • Placar 1×1 exato = <strong>pts_exato</strong> (40 pts nas quartas)<br>
+    • + Classificou Brasil = <strong>+ pts_classificado</strong> (8 pts)<br>
+    • <strong>Total: 48 pts</strong><br><br>
+    Se tivesse palpitado outro empate, como 0×0 ou 2×2, receberia <strong>pts_empate</strong> (28 pts)
+    + 8 pts pelo classificado, totalizando <strong>36 pts</strong>. Se errasse o placar (por exemplo, 2×0),
+    mas acertasse que o Brasil classificou, ainda ganharia <strong>8 pts</strong> pelo bônus.
+  </div>
+</div>
+
+<div class="card mt-2">
+  <h2 style="margin-top:0">🥇 Critérios de desempate</h2>
+  <p>Quando dois ou mais participantes têm a mesma pontuação, o desempate é feito <strong>nesta ordem</strong>:</p>
+  <ol style="line-height:1.6;font-size:0.92rem">
+    <li>Maior número de <strong>placares exatos</strong></li>
+    <li>Maior número de <strong>resultado + 1 gol certo</strong></li>
+    <li>Maior número de <strong>resultados corretos</strong> (sem acertar gol)</li>
+    <li>Maior número de <strong>gols acertados</strong> (soma de gols da casa e visitante)</li>
+    <li>Maior número de <strong>palpites que pontuaram</strong> (&gt; 0)</li>
+    <li>Ordem alfabética do nome</li>
+  </ol>
+</div>
+
+<div class="card mt-2">
+  <h2 style="margin-top:0">⏰ Prazos</h2>
+  <ul style="line-height:1.6;font-size:0.92rem">
+    <li>Palpites da fase de grupos podem ser feitos até <strong>2 minutos antes</strong> do início de cada jogo.</li>
+    <li>O administrador pode definir prazos personalizados para jogos específicos.</li>
+    <li>Palpites extras (campeão, vice, etc.) têm prazo único antes da Copa começar.</li>
+  </ul>
+</div>
+
+<p class="texto-aux mt-3 text-center">
+  <a href="/">← Voltar para a home</a>
+</p>
+
+<%- include('partials/footer') %>

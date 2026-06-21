@@ -14,14 +14,14 @@
 
 <% if (stats) { %>
   <%
-    var totalPts = (stats.pontos || 0) + bonusPontos;
-    var mediaPalpite = (stats.total || 0) > 0 ? (totalPts / stats.total).toFixed(1) : '—';
+    var totalPts = (stats.pontos || 0) + extrasPontos + bonusPontos;
+    var mediaPalpite = (stats.total || 0) > 0 ? ((stats.pontos || 0) / stats.total).toFixed(1) : '—';
   %>
   <div class="card mb-2" style="padding:8px 12px">
     <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:4px;text-align:center">
       <div><div style="font-size:1.2rem;font-weight:800"><%= stats.total || 0 %></div><div style="font-size:0.7rem;color:var(--cinza-escuro)">Palpites</div></div>
       <div><div style="font-size:1.2rem;font-weight:800"><%= stats.acertos || 0 %></div><div style="font-size:0.7rem;color:var(--cinza-escuro)">Pontuados</div></div>
-      <div><div style="font-size:1.2rem;font-weight:800"><%= totalPts %></div><div style="font-size:0.7rem;color:var(--cinza-escuro)">Pontos<% if (bonusPontos > 0) { %> <span style="color:var(--verde)">(+<%= bonusPontos %>)</span><% } %></div></div>
+      <div><div style="font-size:1.2rem;font-weight:800"><%= totalPts %></div><div style="font-size:0.7rem;color:var(--cinza-escuro)">Pontos<% if (extrasPontos > 0) { %> <span style="color:var(--cinza-escuro)">(+<%= extrasPontos %> extras)</span><% } %><% if (bonusPontos > 0) { %> <span style="color:var(--verde)">(+<%= bonusPontos %> bônus)</span><% } %></div></div>
       <div><div style="font-size:1.2rem;font-weight:800"><%= aproveitamento %>%</div><div style="font-size:0.7rem;color:var(--cinza-escuro)">Aproveit.</div></div>
       <div><div style="font-size:1.2rem;font-weight:800"><%= mediaPalpite %></div><div style="font-size:0.7rem;color:var(--cinza-escuro)">Média/palpite</div></div>
       <div><div style="font-size:1rem;font-weight:700;color:var(--cinza-escuro)"><%= totalDisputado %></div><div style="font-size:0.7rem;color:var(--cinza-escuro)">Pts disp.</div></div>
@@ -57,6 +57,17 @@
       <div class="jogo-info">
         <% if (p.finalizado === 1) { %>
           <div class="jogo-placar-display"><%= p.gols_casa %> × <%= p.gols_visitante %></div>
+          <% if (p.fase !== 'grupo') { %>
+            <% if (p.gols_casa_pror !== null && p.gols_casa_pror !== undefined) { %>
+              <div style="font-size:0.7rem;color:var(--cinza-escuro);margin-top:2px">⏱ Prorrogação: <%= p.gols_casa_pror %> × <%= p.gols_visitante_pror %></div>
+            <% } %>
+            <% if (p.placar_penaltis_casa !== null && p.placar_penaltis_casa !== undefined) { %>
+              <div style="font-size:0.7rem;color:var(--cinza-escuro);margin-top:2px">🎯 Pênaltis: <%= p.placar_penaltis_casa %> × <%= p.placar_penaltis_visitante %></div>
+            <% } %>
+            <% if (p.classificado_pt) { %>
+              <div style="font-size:0.7rem;color:var(--verde);font-weight:600;margin-top:2px">✅ <%= p.classificado_pt %> classificou</div>
+            <% } %>
+          <% } %>
         <% } else { %>
           <div class="jogo-placar-display" style="color:#aaa">×</div>
         <% } %>
@@ -64,6 +75,11 @@
           <% if (fechado) { %>
             <strong>Palpite:</strong>
             <%= p.palpite_gols_casa %> × <%= p.palpite_gols_visitante %>
+            <% if (p.fase !== 'grupo' && p.palpite_classificado_id) { %>
+              <span style="font-size:0.72rem;color:var(--cinza-escuro);margin-left:4px">
+                / <%= p.palpite_classificado_id === p.selecao_casa_id ? p.casa_sigla : p.visitante_sigla %> classifica
+              </span>
+            <% } %>
           <% } else { %>
             <span style="color:var(--cinza-escuro);font-size:0.85rem">🔒 Palpite bloqueado até o fechamento do jogo</span>
           <% } %>

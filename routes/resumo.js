@@ -14,11 +14,47 @@ router.get('/', verificarAutenticado, async (req, res) => {
         COUNT(p.id) AS total_palpites,
         COALESCE(SUM(p.pontos_obtidos), 0) AS total_pontos,
         COALESCE(SUM(CASE WHEN p.pontos_obtidos > 0 THEN 1 ELSE 0 END), 0) AS palpites_certos,
-        COALESCE(SUM(CASE WHEN p.pontos_obtidos = 20 THEN 1 ELSE 0 END), 0) AS placares_exatos,
-        COALESCE(SUM(CASE WHEN p.pontos_obtidos = 14 THEN 1 ELSE 0 END), 0) AS resultados_exatos,
-        COALESCE(SUM(CASE WHEN p.pontos_obtidos = 8 THEN 1 ELSE 0 END), 0) AS so_resultados,
-        COALESCE(SUM(CASE WHEN p.pontos_obtidos = 3 THEN 1 ELSE 0 END), 0) AS acertou_um_gol,
-        COALESCE(SUM(CASE WHEN p.pontos_obtidos = 0 THEN 1 ELSE 0 END), 0) AS errou_tudo
+        COALESCE(SUM(CASE WHEN p.palpite_gols_casa = j.gols_casa
+                           AND p.palpite_gols_visitante = j.gols_visitante
+                          THEN 1 ELSE 0 END), 0) AS placares_exatos,
+        COALESCE(SUM(CASE WHEN ((j.gols_casa > j.gols_visitante AND p.palpite_gols_casa > p.palpite_gols_visitante)
+                                OR (j.gols_casa < j.gols_visitante AND p.palpite_gols_casa < p.palpite_gols_visitante))
+                               AND (p.palpite_gols_casa = j.gols_casa OR p.palpite_gols_visitante = j.gols_visitante)
+                               AND NOT (p.palpite_gols_casa = j.gols_casa AND p.palpite_gols_visitante = j.gols_visitante)
+                          THEN 1 ELSE 0 END), 0) AS resultados_exatos,
+        COALESCE(SUM(CASE WHEN ((j.gols_casa > j.gols_visitante AND p.palpite_gols_casa > p.palpite_gols_visitante)
+                                 OR (j.gols_casa < j.gols_visitante AND p.palpite_gols_casa < p.palpite_gols_visitante))
+                                AND p.palpite_gols_casa <> j.gols_casa
+                                AND p.palpite_gols_visitante <> j.gols_visitante
+                           THEN 1 ELSE 0 END)
+                  +
+                  CASE WHEN j.gols_casa = j.gols_visitante
+                            AND p.palpite_gols_casa = p.palpite_gols_visitante
+                            AND NOT (p.palpite_gols_casa = j.gols_casa AND p.palpite_gols_visitante = j.gols_visitante)
+                       THEN 1 ELSE 0 END, 0) AS so_resultados,
+        COALESCE(SUM(CASE WHEN NOT (
+                                  (j.gols_casa > j.gols_visitante AND p.palpite_gols_casa > p.palpite_gols_visitante)
+                               OR (j.gols_casa < j.gols_visitante AND p.palpite_gols_casa < p.palpite_gols_visitante)
+                               OR (j.gols_casa = j.gols_visitante AND p.palpite_gols_casa = p.palpite_gols_visitante)
+                             )
+                               AND (p.palpite_gols_casa = j.gols_casa OR p.palpite_gols_visitante = j.gols_visitante)
+                          THEN 1 ELSE 0 END), 0) AS acertou_um_gol,
+        COALESCE(SUM(CASE WHEN NOT (
+                                   p.palpite_gols_casa = j.gols_casa
+                               AND p.palpite_gols_visitante = j.gols_visitante
+                              )
+                                AND NOT (j.gols_casa = j.gols_visitante
+                                     AND p.palpite_gols_casa = p.palpite_gols_visitante)
+                                AND NOT (
+                                   (j.gols_casa > j.gols_visitante AND p.palpite_gols_casa > p.palpite_gols_visitante)
+                                OR (j.gols_casa < j.gols_visitante AND p.palpite_gols_casa < p.palpite_gols_visitante)
+                              )
+                                AND p.palpite_gols_casa <> j.gols_casa
+                                AND p.palpite_gols_visitante <> j.gols_visitante
+                           THEN 1 ELSE 0 END), 0) AS errou_tudo,
+        COALESCE(SUM(CASE WHEN j.gols_casa = j.gols_visitante
+                            AND p.palpite_gols_casa = p.palpite_gols_visitante
+                           THEN 1 ELSE 0 END), 0) AS acertou_empate
       FROM palpites p
       JOIN jogos j ON j.id = p.jogo_id
       WHERE p.usuario_id = ? AND j.finalizado = 1
@@ -34,18 +70,23 @@ router.get('/', verificarAutenticado, async (req, res) => {
       ORDER BY j.rodada
     `, [userId]);
 
-    // Jogos finalizados com resultados reais e palpites do usuário
+    // Jogos finalizados com resultados reais e palpites do usuário (todas as fases)
     const jogosFinalizados = await all(`
-      SELECT j.id, j.rodada, j.data, j.gols_casa, j.gols_visitante,
+      SELECT j.id, j.rodada, j.data, j.fase, j.gols_casa, j.gols_visitante,
+        j.gols_casa_pror, j.gols_visitante_pror,
+        j.placar_penaltis_casa, j.placar_penaltis_visitante,
+        j.selecao_casa_id, j.selecao_visitante_id, j.classificado_id,
         sc.nome_pt AS casa_pt, sc.sigla AS casa_sigla, sc.bandeira_url AS casa_bandeira,
         sv.nome_pt AS visitante_pt, sv.sigla AS visitante_sigla, sv.bandeira_url AS visitante_bandeira,
-        p.palpite_gols_casa, p.palpite_gols_visitante, p.pontos_obtidos
+        p.palpite_gols_casa, p.palpite_gols_visitante, p.palpite_classificado_id, p.pontos_obtidos,
+        cc.nome_pt AS classificado_pt
       FROM jogos j
       LEFT JOIN selecoes sc ON j.selecao_casa_id = sc.id
       LEFT JOIN selecoes sv ON j.selecao_visitante_id = sv.id
+      LEFT JOIN selecoes cc ON j.classificado_id = cc.id
       LEFT JOIN palpites p ON p.jogo_id = j.id AND p.usuario_id = ?
-      WHERE j.fase = 'grupo' AND j.finalizado = 1
-      ORDER BY j.rodada, j.data
+      WHERE j.finalizado = 1
+      ORDER BY j.fase, j.rodada, j.data
     `, [userId]);
 
     // Lista de participantes para racha

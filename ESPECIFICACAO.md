@@ -191,7 +191,7 @@ Armazena configurações do sistema, como o prazo limite dos palpites extras (ex
 - Usuários já logados são redirecionados para `/dashboard`.
 - E-mail normalizado para minúsculas antes de salvar/buscar.
 - Senha mínima de 4 caracteres.
-- Cadastro aberto, sem necessidade de código de convite (bloqueado após o fechamento dos palpites extras, verificado pela chave `extras_deadline` na tabela `config`).
+- Cadastro aberto, sem necessidade de código de convite (bloqueado após o fechamento dos palpites extras, verificado pela chave `extras_data_limite` na tabela `config`).
 - Após cadastro bem-sucedido, o usuário é logado automaticamente.
 
 ### 5.2 Dashboard (`routes/dashboard.js`)
@@ -259,7 +259,7 @@ Armazena configurações do sistema, como o prazo limite dos palpites extras (ex
 | `r32` | 32 | 5 |
 
 **Regras:**
-- Prazo configurável via tabela `config` (chave `extras_deadline`).
+- Prazo configurável via tabela `config` (chave `extras_data_limite`).
 - Categorias com múltiplas seleções usam checkboxes; as demais usam select.
 - Cada categoria possui seu próprio botão de salvar (salvamento individual por categoria).
 - Administradores são bloqueados (redirecionados para `/admin`).
@@ -463,7 +463,7 @@ A pontuação é fixa por categoria, conforme tabela na seção 5.4. Os pontos s
 
 16. **Pontos bônus** — Para evitar vantagem ou desvantagem excessiva, participantes que ingressarem após o início da competição iniciam com pontuação igual à do último colocado da rodada de ingresso, reduzida em 1 ponto. Após o encerramento dos palpites extras, não serão aceitas novas inscrições. Os bônus são armazenados na tabela `pontos_bonus` com motivo e podem ser removidos individualmente pelo admin.
 
-17. **Extras deadline configurável** — O prazo para palpites extras é armazenado na tabela `config` (chave `extras_deadline`) e verificado no servidor.
+17. **Extras deadline configurável** — O prazo para palpites extras é armazenado na tabela `config` (chave `extras_data_limite`) e verificado no servidor.
 
 18. **Pontuação por fase configurável** — O admin pode definir a pontuação de cada fase em `/admin/pontuacao-fases`. A função `calcularPontos` lê os valores da tabela `fase_pontuacao`.
 

@@ -79,6 +79,21 @@
           <div class="jogo-placar-display">
             <%= jogo.gols_casa %> × <%= jogo.gols_visitante %>
           </div>
+          <% if ((jogo.gols_casa_pror !== null && jogo.gols_casa_pror !== undefined) || (jogo.gols_visitante_pror !== null && jogo.gols_visitante_pror !== undefined)) { %>
+            <div style="font-size:0.7rem;color:var(--cinza-escuro);margin-top:2px">
+              Prorrogação: <%= jogo.gols_casa_pror || 0 %> × <%= jogo.gols_visitante_pror || 0 %>
+            </div>
+          <% } %>
+          <% if (jogo.placar_penaltis_casa !== null && jogo.placar_penaltis_casa !== undefined) { %>
+            <div style="font-size:0.7rem;color:var(--cinza-escuro);margin-top:2px">
+              Pênaltis: <%= jogo.placar_penaltis_casa %> × <%= jogo.placar_penaltis_visitante %>
+            </div>
+          <% } %>
+          <% if (jogo.classificado_pt) { %>
+            <div style="font-size:0.7rem;color:var(--verde);font-weight:600;margin-top:2px">
+              ✅ <%= jogo.classificado_pt %> classificou
+            </div>
+          <% } %>
           <% if (temPalpite) { %>
             <div class="pontos-badge <%= pontos === 0 ? 'zero' : '' %>">
               <%= pontos %> pts
@@ -102,6 +117,7 @@
                 value="<%= temPalpite ? jogo.palpite_gols_casa : '0' %>"
                 min="0" max="99"
                 required
+                oninput="autoClassificado(this)"
               >
               <span class="x">×</span>
               <input
@@ -111,8 +127,25 @@
                 value="<%= temPalpite ? jogo.palpite_gols_visitante : '0' %>"
                 min="0" max="99"
                 required
+                oninput="autoClassificado(this)"
               >
             </div>
+            <% if (jogo.fase !== 'grupo') { %>
+              <div class="jogo-classifica" style="margin-top:4px;font-size:0.72rem;display:flex;gap:8px;justify-content:center;align-items:center"
+                   data-casa-id="<%= jogo.selecao_casa_id %>" data-visitante-id="<%= jogo.selecao_visitante_id %>">
+                <span style="color:var(--cinza-escuro);font-weight:600">Quem classifica:</span>
+                <label style="cursor:pointer">
+                  <input type="radio" name="palpite_classificado_id" value="<%= jogo.selecao_casa_id %>"
+                    <%= jogo.palpite_classificado_id === jogo.selecao_casa_id ? 'checked' : '' %>>
+                  <%= jogo.casa_sigla %>
+                </label>
+                <label style="cursor:pointer">
+                  <input type="radio" name="palpite_classificado_id" value="<%= jogo.selecao_visitante_id %>"
+                    <%= jogo.palpite_classificado_id === jogo.selecao_visitante_id ? 'checked' : '' %>>
+                  <%= jogo.visitante_sigla %>
+                </label>
+              </div>
+            <% } %>
             <button type="submit" class="btn btn-sm btn-primary salvar-btn" style="margin-top:2px">💾 Salvar</button>
           </form>
         <% } %>
@@ -375,6 +408,25 @@ function fecharPreencherGrupo(gid) {
   document.getElementById('grupo-' + gid + '-preencher').style.display = 'none';
 }
 
+function autoClassificado(input) {
+  var form = input.closest('form');
+  if (!form) return;
+  var casa = parseInt(form.querySelector('input[name="casa"]').value, 10);
+  var visit = parseInt(form.querySelector('input[name="visitante"]').value, 10);
+  if (isNaN(casa) || isNaN(visit)) return;
+  var classDiv = form.querySelector('.jogo-classifica');
+  if (!classDiv) return;
+  var casaId = classDiv.dataset.casaId;
+  var visitId = classDiv.dataset.visitanteId;
+  var radios = form.querySelectorAll('input[name="palpite_classificado_id"]');
+  for (var i = 0; i < radios.length; i++) radios[i].checked = false;
+  if (casa > visit) {
+    for (var i = 0; i < radios.length; i++) { if (radios[i].value === casaId) radios[i].checked = true; }
+  } else if (visit > casa) {
+    for (var i = 0; i < radios.length; i++) { if (radios[i].value === visitId) radios[i].checked = true; }
+  }
+}
+
 function salvarIndividual(ev, form) {
   ev.preventDefault();
   const btn = form.querySelector('.salvar-btn');
@@ -417,8 +469,8 @@ function preencherGrupo(ev, gid) {
   const casa = document.getElementById('grp-casa-' + gid).value;
   const visit = document.getElementById('grp-visit-' + gid).value;
   if (casa === '' || visit === '') return false;
-  document.querySelectorAll('.input-grp-' + gid).forEach(function(inp) { inp.value = casa; });
-  document.querySelectorAll('.input-visit-grp-' + gid).forEach(function(inp) { inp.value = visit; });
+  document.querySelectorAll('.input-grp-' + gid).forEach(function(inp) { inp.value = casa; autoClassificado(inp); });
+  document.querySelectorAll('.input-visit-grp-' + gid).forEach(function(inp) { inp.value = visit; autoClassificado(inp); });
   fecharPreencherGrupo(gid);
   return false;
 }

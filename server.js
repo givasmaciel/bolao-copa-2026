@@ -17,6 +17,7 @@ const senhaRoutes = require('./routes/senha');
 const extrasRoutes = require('./routes/extras');
 const { router: adminRoutes } = require('./routes/admin');
 const configRoutes = require('./routes/config');
+const regrasRoutes = require('./routes/regras');
 const DbSessionStore = require('./database/session-store');
 const sessionStore = new DbSessionStore();
 const dashboardRoutes = require('./routes/dashboard');
@@ -260,6 +261,7 @@ app.use('/config', configRoutes);
 app.use('/dashboard', dashboardRoutes);
 app.use('/resumo', resumoRoutes);
 app.use('/classificacao', classificacaoRoutes);
+app.use('/regras', regrasRoutes);
 
 // GET /foto/:id — serve a foto do usuário com fallback SVG (iniciais) se o arquivo sumiu (deploy Render)
 app.get('/foto/:id', async (req, res) => {
@@ -306,6 +308,7 @@ app.get('/foto/:id', async (req, res) => {
 app.get('/api/proximo-jogo', async (req, res) => {
   try {
     const { get, all } = require('./database/db');
+    const agora = new Date();
     const jogo = await get(`
       SELECT j.id, j.data, j.palpite_limite,
         sc.nome_pt AS casa_pt, sc.sigla AS casa_sigla, sc.bandeira_url AS casa_bandeira,
@@ -313,11 +316,10 @@ app.get('/api/proximo-jogo', async (req, res) => {
       FROM jogos j
       LEFT JOIN selecoes sc ON j.selecao_casa_id = sc.id
       LEFT JOIN selecoes sv ON j.selecao_visitante_id = sv.id
-      WHERE j.finalizado = 0 AND j.selecao_casa_id IS NOT NULL
+      WHERE j.finalizado = 0 AND j.selecao_casa_id IS NOT NULL AND j.data > ?
       ORDER BY j.data ASC LIMIT 1
-    `);
+    `, [agora]);
     if (!jogo) return res.json({ ok: false });
-    const agora = new Date();
     const dataJogo = new Date(jogo.data);
     const limite = jogo.palpite_limite ? new Date(jogo.palpite_limite) : null;
     const margem = limite || new Date(dataJogo.getTime() - PALPITE_MARGEM_MS);

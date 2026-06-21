@@ -36,13 +36,17 @@ router.get('/', async (req, res) => {
       SELECT
         j.id, j.fase, j.rodada, j.data, j.estadio, j.cidade, j.pais,
         j.finalizado, j.gols_casa, j.gols_visitante,
+        j.gols_casa_pror, j.gols_visitante_pror,
+        j.placar_penaltis_casa, j.placar_penaltis_visitante,
         g.letra AS grupo_letra,
         sc.nome_pt AS casa_pt, sc.sigla AS casa_sigla, sc.bandeira_url AS casa_bandeira,
-        sv.nome_pt AS visitante_pt, sv.sigla AS visitante_sigla, sv.bandeira_url AS visitante_bandeira
+        sv.nome_pt AS visitante_pt, sv.sigla AS visitante_sigla, sv.bandeira_url AS visitante_bandeira,
+        cc.nome_pt AS classificado_pt, cc.sigla AS classificado_sigla
       FROM jogos j
       LEFT JOIN grupos g ON j.grupo_id = g.id
       LEFT JOIN selecoes sc ON j.selecao_casa_id = sc.id
       LEFT JOIN selecoes sv ON j.selecao_visitante_id = sv.id
+      LEFT JOIN selecoes cc ON j.classificado_id = cc.id
       ORDER BY j.data, j.id
     `);
 
@@ -82,13 +86,17 @@ router.get('/:id/palpites', verificarAutenticado, async (req, res) => {
       SELECT
         j.id, j.fase, j.rodada, j.data, j.estadio, j.cidade, j.pais,
         j.finalizado, j.gols_casa, j.gols_visitante, j.palpite_limite,
+        j.gols_casa_pror, j.gols_visitante_pror,
+        j.placar_penaltis_casa, j.placar_penaltis_visitante,
         g.letra AS grupo_letra,
         sc.nome_pt AS casa_pt, sc.sigla AS casa_sigla, sc.bandeira_url AS casa_bandeira,
-        sv.nome_pt AS visitante_pt, sv.sigla AS visitante_sigla, sv.bandeira_url AS visitante_bandeira
+        sv.nome_pt AS visitante_pt, sv.sigla AS visitante_sigla, sv.bandeira_url AS visitante_bandeira,
+        cc.nome_pt AS classificado_pt, cc.sigla AS classificado_sigla
       FROM jogos j
       LEFT JOIN grupos g ON j.grupo_id = g.id
       LEFT JOIN selecoes sc ON j.selecao_casa_id = sc.id
       LEFT JOIN selecoes sv ON j.selecao_visitante_id = sv.id
+      LEFT JOIN selecoes cc ON j.classificado_id = cc.id
       WHERE j.id = ?
     `, [jogoId]);
     if (!row) {

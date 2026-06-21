@@ -143,25 +143,31 @@ async function terceirosColocados() {
 
 async function obterVencedor(jogoId) {
   const jogo = await get(
-    'SELECT selecao_casa_id, selecao_visitante_id, gols_casa, gols_visitante, finalizado FROM jogos WHERE id = ?',
+    'SELECT selecao_casa_id, selecao_visitante_id, gols_casa, gols_visitante, finalizado, classificado_id FROM jogos WHERE id = ?',
     [jogoId]
   );
   if (!jogo || !jogo.finalizado) return null;
   if (jogo.gols_casa === null || jogo.gols_visitante === null) return null;
   if (jogo.gols_casa > jogo.gols_visitante) return jogo.selecao_casa_id;
   if (jogo.gols_visitante > jogo.gols_casa) return jogo.selecao_visitante_id;
-  return null;
+  // Empate no tempo regulamentar: classificado_id decide (definido pelo admin se houve prorrogação/pênaltis)
+  return jogo.classificado_id || null;
 }
 
 async function obterPerdedor(jogoId) {
   const jogo = await get(
-    'SELECT selecao_casa_id, selecao_visitante_id, gols_casa, gols_visitante, finalizado FROM jogos WHERE id = ?',
+    'SELECT selecao_casa_id, selecao_visitante_id, gols_casa, gols_visitante, finalizado, classificado_id FROM jogos WHERE id = ?',
     [jogoId]
   );
   if (!jogo || !jogo.finalizado) return null;
   if (jogo.gols_casa === null || jogo.gols_visitante === null) return null;
   if (jogo.gols_casa < jogo.gols_visitante) return jogo.selecao_casa_id;
   if (jogo.gols_visitante < jogo.gols_casa) return jogo.selecao_visitante_id;
+  // Empate: classificado_id indica quem avançou, perdedor é o outro
+  if (jogo.classificado_id) {
+    if (jogo.classificado_id === jogo.selecao_casa_id) return jogo.selecao_visitante_id;
+    if (jogo.classificado_id === jogo.selecao_visitante_id) return jogo.selecao_casa_id;
+  }
   return null;
 }
 

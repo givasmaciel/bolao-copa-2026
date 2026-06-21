@@ -12,7 +12,21 @@ h += '<div class="jogo-time">';
 if (j.casa_bandeira) { h += '<img src="' + j.casa_bandeira + '" alt="' + (j.casa_pt||'') + '" loading="lazy" onerror="flagFallback(this)">'; } else { h += '<span style="width:32px;height:24px;background:#e2e8f0;border-radius:3px;display:inline-block"></span>'; }
 h += '<span>' + (j.casa_pt || 'A definir') + '</span></div>';
 h += '<div class="jogo-info">';
-if (j.finalizado === 1) { h += '<div class="jogo-placar-display">' + j.gols_casa + ' × ' + j.gols_visitante + '</div>'; } else { h += '<div class="jogo-placar-display" style="color:#aaa">×</div>'; }
+if (j.finalizado === 1) {
+  h += '<div class="jogo-placar-display">' + j.gols_casa + ' × ' + j.gols_visitante + '</div>';
+  // Mata-mata: prorrogação, pênaltis e classificado
+  if (j.fase !== 'grupo') {
+    if (j.gols_casa_pror !== null && j.gols_casa_pror !== undefined) {
+      h += '<div style="font-size:0.7rem;color:var(--cinza-escuro);margin-top:2px">⏱ Prorrogação: ' + j.gols_casa_pror + ' × ' + j.gols_visitante_pror + '</div>';
+    }
+    if (j.placar_penaltis_casa !== null && j.placar_penaltis_casa !== undefined) {
+      h += '<div style="font-size:0.7rem;color:var(--cinza-escuro);margin-top:2px">🎯 Pênaltis: ' + j.placar_penaltis_casa + ' × ' + j.placar_penaltis_visitante + '</div>';
+    }
+    if (j.classificado_sigla) {
+      h += '<div style="font-size:0.7rem;color:var(--verde);font-weight:600;margin-top:2px">✅ ' + j.classificado_sigla + ' classificou</div>';
+    }
+  }
+} else { h += '<div class="jogo-placar-display" style="color:#aaa">×</div>'; }
 h += '<div class="jogo-data">📅 ' + new Date(j.data).toLocaleString('pt-BR', { dateStyle:'short', timeStyle:'short', timeZone:'America/Sao_Paulo' }) + '</div>';
 h += '<div class="jogo-estadio">📍 ' + (j.estadio||'') + ', ' + (j.cidade||'') + '</div>';
 if (j.grupo_letra) { h += '<div style="margin-top:4px"><span class="badge" style="background:var(--verde);color:white">Grupo ' + j.grupo_letra + '</span></div>'; }

@@ -7,3 +7,4 @@ node_modules
 data/
 .claude/
 MANUAL_LOCAL.md
+backups/

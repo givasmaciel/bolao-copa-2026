@@ -4,6 +4,26 @@
 
 <h1>🏆 Ranking do Bolão</h1>
 <p class="subtitulo">⚽ Confira quem está liderando o Bolão da Copa 2026 e acompanhe a evolução dos participantes rodada a rodada.</p>
+
+<div class="card mb-2" style="padding:12px;background:linear-gradient(135deg,var(--amarelo),var(--verde));color:#fff;text-align:center">
+  <div style="font-size:0.85rem;font-weight:600;letter-spacing:1px;margin-bottom:6px">💰 PREMIAÇÃO 💰</div>
+  <div style="display:flex;justify-content:space-around;font-size:0.95rem">
+    <div>
+      <div style="font-size:1.5rem">🥇</div>
+      <div style="font-weight:700;font-size:1.1rem">R$ <%= parseFloat(premios.premio_1).toFixed(2).replace('.', ',') %></div>
+    </div>
+    <div>
+      <div style="font-size:1.3rem">🥈</div>
+      <div style="font-weight:700;font-size:1.1rem">R$ <%= parseFloat(premios.premio_2).toFixed(2).replace('.', ',') %></div>
+    </div>
+    <div>
+      <div style="font-size:1.1rem">🥉</div>
+      <div style="font-weight:700;font-size:1.1rem">R$ <%= parseFloat(premios.premio_3).toFixed(2).replace('.', ',') %></div>
+    </div>
+  </div>
+  <div style="margin-top:6px;font-size:0.75rem;font-style:italic"><a href="/regras" style="color:#fff;text-decoration:underline">ver regras completas</a></div>
+</div>
+
 <p class="texto-aux" style="font-size:0.8rem;margin:0 0 12px">
   ⓘ <em>Palpites</em> mostra o total de palpites <strong>feitos até o momento</strong> pelo participante (cresce conforme ele palita novos jogos). As métricas de qualidade, <em>Média</em> e <em>Aproveitamento</em> referem-se apenas a jogos <strong>finalizados</strong>. <em>Pontos</em> = jogos finalizados + extras + bônus. <em>Pont.</em> é a soma de <em>Exatos + Res+Gol + Só Res + 1 Gol</em> (quantos palpites pontuaram &gt; 0).
 </p>

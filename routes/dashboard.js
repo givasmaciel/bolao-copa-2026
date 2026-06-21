@@ -21,8 +21,13 @@ router.get('/', verificarAutenticado, async (req, res) => {
       LEFT JOIN palpites p ON p.jogo_id = j.id AND p.usuario_id = ?
       WHERE j.finalizado = 0 AND j.selecao_casa_id IS NOT NULL
       ORDER BY j.data ASC
-      LIMIT 5
     `, [userId]);
+
+    // Remove jogos já iniciados que ainda não foram marcados como finalizados.
+    const agoraDashboard = new Date();
+    const proximosAbertos = proximosJogos
+      .filter(j => new Date(j.data) > agoraDashboard)
+      .slice(0, 5);
 
     // Jogos sem palpite do usuário (pendentes)
     const pendentesArr = await all(`
@@ -56,7 +61,9 @@ router.get('/', verificarAutenticado, async (req, res) => {
         COUNT(p.id) AS total_palpites,
         COALESCE(SUM(p.pontos_obtidos), 0) AS total_pontos,
         SUM(CASE WHEN p.pontos_obtidos > 0 THEN 1 ELSE 0 END) AS palpites_certos,
-        SUM(CASE WHEN p.pontos_obtidos = 20 THEN 1 ELSE 0 END) AS placares_exatos
+        SUM(CASE WHEN p.palpite_gols_casa = j.gols_casa
+                  AND p.palpite_gols_visitante = j.gols_visitante
+                 THEN 1 ELSE 0 END) AS placares_exatos
       FROM palpites p
       JOIN jogos j ON j.id = p.jogo_id
       WHERE p.usuario_id = ? AND j.finalizado = 1
@@ -105,8 +112,8 @@ router.get('/', verificarAutenticado, async (req, res) => {
 
     // Processa próximo jogo para alerta
     let nextGame = null;
-    if (proximosJogos.length > 0) {
-      const j = proximosJogos[0];
+    if (proximosAbertos.length > 0) {
+      const j = proximosAbertos[0];
       const agora = new Date();
       const dataJogo = new Date(j.data);
       const palpiteLimite = j.palpite_limite ? new Date(j.palpite_limite) : null;
@@ -140,7 +147,7 @@ router.get('/', verificarAutenticado, async (req, res) => {
 
     res.render('dashboard', {
       title: 'Painel',
-      proximosJogos,
+      proximosJogos: proximosAbertos,
       nextGame,
       pendentes: pendentesArr[0]?.total || 0,
       top5,

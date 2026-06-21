@@ -45,7 +45,7 @@ router.post('/salvar-rodada', verificarAutenticado, async (req, res) => {
   }
 
   const places = jogoIds.map(() => '?').join(',');
-  let sql = 'SELECT id, data, finalizado, palpite_limite FROM jogos WHERE id IN (' + places + ')';
+  let sql = 'SELECT id, data, finalizado, palpite_limite, fase, selecao_casa_id, selecao_visitante_id FROM jogos WHERE id IN (' + places + ')';
   const params = [...jogoIds];
   if (fase) { sql += ' AND fase = ?'; params.push(fase); }
   if (rodada) { sql += ' AND rodada = ?'; params.push(rodada); }
@@ -79,15 +79,24 @@ router.post('/salvar-rodada', verificarAutenticado, async (req, res) => {
     const visitante = parseInt(placar.visitante, 10);
     if (isNaN(casa) || isNaN(visitante) || casa < 0 || casa > 99 || visitante < 0 || visitante > 99) continue;
 
+    // Mata-mata: valida palpite_classificado_id (deve ser um dos dois times)
+    let palpiteClassificadoId = null;
+    if (jogo.fase !== 'grupo' && placar.classificado_id !== undefined && placar.classificado_id !== '' && placar.classificado_id !== null) {
+      const cid = parseInt(placar.classificado_id, 10);
+      if (cid === jogo.selecao_casa_id || cid === jogo.selecao_visitante_id) {
+        palpiteClassificadoId = cid;
+      }
+    }
+
     if (existeMap[jogo.id]) {
       await run(
-        'UPDATE palpites SET palpite_gols_casa = ?, palpite_gols_visitante = ?, atualizado_em = CURRENT_TIMESTAMP WHERE id = ?',
-        [casa, visitante, existeMap[jogo.id]]
+        'UPDATE palpites SET palpite_gols_casa = ?, palpite_gols_visitante = ?, palpite_classificado_id = ?, atualizado_em = CURRENT_TIMESTAMP WHERE id = ?',
+        [casa, visitante, palpiteClassificadoId, existeMap[jogo.id]]
       );
     } else {
       await run(
-        'INSERT INTO palpites (usuario_id, jogo_id, palpite_gols_casa, palpite_gols_visitante) VALUES (?, ?, ?, ?)',
-        [usuarioId, jogo.id, casa, visitante]
+        'INSERT INTO palpites (usuario_id, jogo_id, palpite_gols_casa, palpite_gols_visitante, palpite_classificado_id) VALUES (?, ?, ?, ?, ?)',
+        [usuarioId, jogo.id, casa, visitante, palpiteClassificadoId]
       );
     }
     salvos++;
@@ -108,16 +117,21 @@ router.get('/', verificarAutenticado, async (req, res) => {
       SELECT
         j.id, j.fase, j.rodada, j.data, j.estadio, j.cidade, j.pais,
         j.finalizado, j.gols_casa, j.gols_visitante, j.palpite_limite, j.descricao,
+        j.gols_casa_pror, j.gols_visitante_pror,
+        j.placar_penaltis_casa, j.placar_penaltis_visitante,
+        j.selecao_casa_id, j.selecao_visitante_id, j.classificado_id,
         g.letra AS grupo_letra,
         sc.nome AS casa_nome, sc.nome_pt AS casa_pt, sc.sigla AS casa_sigla, sc.bandeira_url AS casa_bandeira,
         sv.nome AS visitante_nome, sv.nome_pt AS visitante_pt, sv.sigla AS visitante_sigla, sv.bandeira_url AS visitante_bandeira,
-        p.palpite_gols_casa, p.palpite_gols_visitante, p.pontos_obtidos,
+        p.palpite_gols_casa, p.palpite_gols_visitante, p.palpite_classificado_id, p.pontos_obtidos,
+        cc.nome_pt AS classificado_pt,
         (SELECT COUNT(*) FROM palpites WHERE jogo_id = j.id) AS total_bets
       FROM jogos j
       LEFT JOIN grupos g ON j.grupo_id = g.id
       LEFT JOIN selecoes sc ON j.selecao_casa_id = sc.id
       LEFT JOIN selecoes sv ON j.selecao_visitante_id = sv.id
       LEFT JOIN palpites p ON p.jogo_id = j.id AND p.usuario_id = ?
+      LEFT JOIN selecoes cc ON j.classificado_id = cc.id
       ORDER BY j.data, j.id
     `, [req.session.usuario.id]);
 
@@ -208,7 +222,7 @@ router.post('/:jogoId', verificarAutenticado, async (req, res) => {
   try {
     // Verifica se o jogo existe e ainda não começou
     const jogo = await get(
-      "SELECT id, data, finalizado, palpite_limite FROM jogos WHERE id = ?",
+      "SELECT id, data, finalizado, palpite_limite, fase, selecao_casa_id, selecao_visitante_id FROM jogos WHERE id = ?",
       [jogoId]
     );
     if (!jogo) {
@@ -227,6 +241,20 @@ router.post('/:jogoId', verificarAutenticado, async (req, res) => {
       return res.redirect('/palpites');
     }
 
+    // Mata-mata: valida palpite_classificado_id (deve ser um dos dois times)
+    let palpiteClassificadoId = null;
+    if (jogo.fase !== 'grupo') {
+      const raw = req.body.palpite_classificado_id;
+      if (raw !== undefined && raw !== '' && raw !== null) {
+        const cid = parseInt(raw, 10);
+        if (cid !== jogo.selecao_casa_id && cid !== jogo.selecao_visitante_id) {
+          req.flash('erro', 'Quem classifica deve ser um dos dois times.');
+          return res.redirect('/palpites');
+        }
+        palpiteClassificadoId = cid;
+      }
+    }
+
     // Faz upsert
     const existe = await get(
       'SELECT id FROM palpites WHERE usuario_id = ? AND jogo_id = ?',
@@ -236,15 +264,15 @@ router.post('/:jogoId', verificarAutenticado, async (req, res) => {
     if (existe) {
       await run(
         `UPDATE palpites
-         SET palpite_gols_casa = ?, palpite_gols_visitante = ?, atualizado_em = CURRENT_TIMESTAMP
+         SET palpite_gols_casa = ?, palpite_gols_visitante = ?, palpite_classificado_id = ?, atualizado_em = CURRENT_TIMESTAMP
          WHERE id = ?`,
-        [casa, visitante, existe.id]
+        [casa, visitante, palpiteClassificadoId, existe.id]
       );
     } else {
       await run(
-        `INSERT INTO palpites (usuario_id, jogo_id, palpite_gols_casa, palpite_gols_visitante)
-         VALUES (?, ?, ?, ?)`,
-        [usuarioId, jogoId, casa, visitante]
+        `INSERT INTO palpites (usuario_id, jogo_id, palpite_gols_casa, palpite_gols_visitante, palpite_classificado_id)
+         VALUES (?, ?, ?, ?, ?)`,
+        [usuarioId, jogoId, casa, visitante, palpiteClassificadoId]
       );
     }
 
@@ -265,12 +293,17 @@ router.get('/jogo/:id', verificarAutenticado, async (req, res) => {
   try {
     const jogo = await get(`
       SELECT j.id, j.data, j.palpite_limite, j.finalizado, j.gols_casa, j.gols_visitante,
+        j.gols_casa_pror, j.gols_visitante_pror,
+        j.placar_penaltis_casa, j.placar_penaltis_visitante,
         j.estadio, j.cidade, j.fase, j.rodada,
+        j.selecao_casa_id, j.selecao_visitante_id, j.classificado_id,
         sc.nome_pt AS casa_pt, sc.sigla AS casa_sigla, sc.bandeira_url AS casa_bandeira,
-        sv.nome_pt AS visitante_pt, sv.sigla AS visitante_sigla, sv.bandeira_url AS visitante_bandeira
+        sv.nome_pt AS visitante_pt, sv.sigla AS visitante_sigla, sv.bandeira_url AS visitante_bandeira,
+        cc.nome_pt AS classificado_pt
       FROM jogos j
       LEFT JOIN selecoes sc ON j.selecao_casa_id = sc.id
       LEFT JOIN selecoes sv ON j.selecao_visitante_id = sv.id
+      LEFT JOIN selecoes cc ON j.classificado_id = cc.id
       WHERE j.id = ?
     `, [jogoId]);
     if (!jogo) { req.flash('erro', 'Jogo não encontrado.'); return res.redirect('/palpites'); }

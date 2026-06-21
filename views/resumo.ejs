@@ -44,6 +44,13 @@
     <div class="stat-valor"><%= stats.errou_tudo %></div>
     <div class="stat-label">Errou tudo (0pt)</div>
   </div>
+</div>
+
+<div class="grid grid-4 mb-2">
+  <div class="stat-card">
+    <div class="stat-valor"><%= stats.acertou_empate %></div>
+    <div class="stat-label">Empates acertados</div>
+  </div>
   <div class="stat-card">
     <div class="stat-valor"><%= aproveitamento %>%</div>
     <div class="stat-label">Aproveitamento</div>
@@ -82,7 +89,10 @@
         <tbody>
           <% jogosFinalizados.forEach(function(j) { %>
             <tr class="<%= j.pontos_obtidos > 0 ? '' : 'erro' %>">
-              <td style="font-size:0.8rem;color:var(--cinza-escuro)"><%= j.rodada %>ªR</td>
+              <td style="font-size:0.7rem;color:var(--cinza-escuro);white-space:nowrap">
+                <% const faseLabelCurto = {grupo: 'G', r32: '16', r16: '8', qf: 'QF', sf: 'SF', terceiro: '3°', final: 'F'}; %>
+                <%= faseLabelCurto[j.fase] || j.fase %><%= j.rodada ? '·' + j.rodada : '' %>
+              </td>
               <td>
                 <span style="display:flex;align-items:center;gap:6px">
                   <% if (j.casa_bandeira) { %><img src="<%= j.casa_bandeira %>" alt="<%= j.casa_pt %>" style="width:18px;height:13px;border-radius:2px" loading="lazy" onerror="flagFallback(this)"><% } %><%= j.casa_pt %>
@@ -90,10 +100,25 @@
                   <%= j.visitante_pt %><% if (j.visitante_bandeira) { %><img src="<%= j.visitante_bandeira %>" alt="<%= j.visitante_pt %>" style="width:18px;height:13px;border-radius:2px" loading="lazy" onerror="flagFallback(this)"><% } %>
                 </span>
               </td>
-              <td class="text-center" style="font-weight:700"><%= j.gols_casa %> × <%= j.gols_visitante %></td>
+              <td class="text-center" style="font-weight:700">
+                <%= j.gols_casa %> × <%= j.gols_visitante %>
+                <% if (j.fase !== 'grupo') { %>
+                  <% if (j.gols_casa_pror !== null && j.gols_casa_pror !== undefined) { %>
+                    <div style="font-size:0.65rem;color:var(--cinza-escuro);font-weight:400">⏱ <%= j.gols_casa_pror %> × <%= j.gols_visitante_pror %></div>
+                  <% } %>
+                  <% if (j.placar_penaltis_casa !== null && j.placar_penaltis_casa !== undefined) { %>
+                    <div style="font-size:0.65rem;color:var(--cinza-escuro);font-weight:400">🎯 <%= j.placar_penaltis_casa %> × <%= j.placar_penaltis_visitante %></div>
+                  <% } %>
+                <% } %>
+              </td>
               <td class="text-center">
                 <% if (j.palpite_gols_casa !== null) { %>
                   <%= j.palpite_gols_casa %> × <%= j.palpite_gols_visitante %>
+                  <% if (j.fase !== 'grupo' && j.palpite_classificado_id) { %>
+                    <div style="font-size:0.65rem;color:var(--cinza-escuro)">
+                      <%= j.palpite_classificado_id === j.selecao_casa_id ? j.casa_sigla : j.visitante_sigla %>
+                    </div>
+                  <% } %>
                 <% } else { %>
                   <span class="texto-aux">—</span>
                 <% } %>

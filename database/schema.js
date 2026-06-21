@@ -322,6 +322,55 @@ async function criarSchema() {
     }
   } catch (e) { /* Coluna já existe ou erro */ }
 
+  // Migração 2026-06-21: premiações padrão (1º/2º/3º lugar) na tabela config
+  // Admin pode editar em /admin/premios
+  try {
+    const premiosDefault = [
+      ['premio_1', '300.00'],
+      ['premio_2', '125.00'],
+      ['premio_3', '75.00']
+    ];
+    for (const [chave, valor] of premiosDefault) {
+      const existe = await get('SELECT valor FROM config WHERE chave = ?', [chave]);
+      if (!existe) {
+        await run('INSERT INTO config (chave, valor) VALUES (?, ?)', [chave, valor]);
+      }
+    }
+  } catch (e) {
+    console.warn('Aviso: não foi possível popular premiações:', e.message);
+  }
+
+  // Migração 2026-06-21: suporte a prorrogação e pênaltis no mata-mata
+  // Colunas nullable: placar prorrogação, placar pênaltis e classificado (quem avançou)
+  try {
+    if (usandoPG) {
+      await run("ALTER TABLE jogos ADD COLUMN IF NOT EXISTS gols_casa_pror INTEGER");
+      await run("ALTER TABLE jogos ADD COLUMN IF NOT EXISTS gols_visitante_pror INTEGER");
+      await run("ALTER TABLE jogos ADD COLUMN IF NOT EXISTS placar_penaltis_casa INTEGER");
+      await run("ALTER TABLE jogos ADD COLUMN IF NOT EXISTS placar_penaltis_visitante INTEGER");
+      await run("ALTER TABLE jogos ADD COLUMN IF NOT EXISTS classificado_id INTEGER REFERENCES selecoes(id)");
+    } else {
+      try { await run("ALTER TABLE jogos ADD COLUMN gols_casa_pror INTEGER"); } catch (e) { /* já existe */ }
+      try { await run("ALTER TABLE jogos ADD COLUMN gols_visitante_pror INTEGER"); } catch (e) { /* já existe */ }
+      try { await run("ALTER TABLE jogos ADD COLUMN placar_penaltis_casa INTEGER"); } catch (e) { /* já existe */ }
+      try { await run("ALTER TABLE jogos ADD COLUMN placar_penaltis_visitante INTEGER"); } catch (e) { /* já existe */ }
+      try { await run("ALTER TABLE jogos ADD COLUMN classificado_id INTEGER REFERENCES selecoes(id)"); } catch (e) { /* já existe */ }
+    }
+  } catch (e) {
+    console.warn('Aviso: não foi possível adicionar colunas de prorrogação/pênaltis:', e.message);
+  }
+
+  // Migração 2026-06-21: coluna palpite_classificado_id em palpites (usuário chuta quem classifica)
+  try {
+    if (usandoPG) {
+      await run("ALTER TABLE palpites ADD COLUMN IF NOT EXISTS palpite_classificado_id INTEGER REFERENCES selecoes(id)");
+    } else {
+      try { await run("ALTER TABLE palpites ADD COLUMN palpite_classificado_id INTEGER REFERENCES selecoes(id)"); } catch (e) { /* já existe */ }
+    }
+  } catch (e) {
+    console.warn('Aviso: não foi possível adicionar palpite_classificado_id:', e.message);
+  }
+
   // Migração 2026-06-10: corrige todos os horários BRT e estádios dos 72 jogos de grupo
   // NOTA: usar Date() em vez de string para compatibilidade com PostgreSQL (pg serializa Date como TIMESTAMPTZ)
   const dt = (y, M, d, h, m) => new Date(Date.UTC(y, M-1, d, h+3, m));
@@ -473,6 +522,25 @@ async function criarSchema() {
     }
   } catch (e) {
     console.warn('Aviso: não foi possível popular fase_pontuacao:', e.message);
+  }
+
+  // Migração 2026-06-21: coluna pts_classificado em fase_pontuacao (bônus por acertar quem classifica nos mata-mata)
+  // Default = metade do pts_resultado de cada fase (configurável em /admin/pontuacao-fases)
+  try {
+    if (usandoPG) {
+      await run("ALTER TABLE fase_pontuacao ADD COLUMN IF NOT EXISTS pts_classificado INTEGER NOT NULL DEFAULT 5");
+    } else {
+      try { await run("ALTER TABLE fase_pontuacao ADD COLUMN pts_classificado INTEGER NOT NULL DEFAULT 5"); } catch (e) { /* coluna já existe */ }
+    }
+    // Atualiza valores de pts_classificado para quem ainda está NULL (coluna adicionada agora)
+    // pts_classificado = metade do pts_resultado (arredondado para baixo), exceto grupo (0)
+    const rows = await all('SELECT fase, pts_resultado FROM fase_pontuacao WHERE pts_classificado IS NULL');
+    for (const row of rows) {
+      const pts = row.fase === 'grupo' ? 0 : Math.floor(row.pts_resultado / 2);
+      await run('UPDATE fase_pontuacao SET pts_classificado = ? WHERE fase = ?', [pts, row.fase]);
+    }
+  } catch (e) {
+    console.warn('Aviso: não foi possível adicionar pts_classificado:', e.message);
   }
 
   // Índices para performance

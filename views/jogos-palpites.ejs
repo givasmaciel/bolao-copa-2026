@@ -16,6 +16,17 @@
   <div class="jogo-info">
     <% if (jogo.finalizado === 1) { %>
       <div class="jogo-placar-display"><%= jogo.gols_casa %> × <%= jogo.gols_visitante %></div>
+      <% if (jogo.fase !== 'grupo') { %>
+        <% if (jogo.gols_casa_pror !== null && jogo.gols_casa_pror !== undefined) { %>
+          <div style="font-size:0.72rem;color:var(--cinza-escuro);margin-top:2px">⏱ Prorrogação: <%= jogo.gols_casa_pror %> × <%= jogo.gols_visitante_pror %></div>
+        <% } %>
+        <% if (jogo.placar_penaltis_casa !== null && jogo.placar_penaltis_casa !== undefined) { %>
+          <div style="font-size:0.72rem;color:var(--cinza-escuro);margin-top:2px">🎯 Pênaltis: <%= jogo.placar_penaltis_casa %> × <%= jogo.placar_penaltis_visitante %></div>
+        <% } %>
+        <% if (jogo.classificado_pt) { %>
+          <div style="font-size:0.72rem;color:var(--verde);font-weight:600;margin-top:2px">✅ <%= jogo.classificado_pt %> classificou</div>
+        <% } %>
+      <% } %>
     <% } else { %>
       <div class="jogo-placar-display" style="color:#aaa">×</div>
     <% } %>

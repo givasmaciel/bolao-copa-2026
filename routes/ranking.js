@@ -33,11 +33,31 @@ router.get('/', async (req, res) => {
         COALESCE((SELECT SUM(pontos) FROM pontos_bonus WHERE usuario_id = u.id), 0) AS bonus_pontos,
         SUM(CASE WHEN p.pontos_obtidos > 0 THEN 1 ELSE 0 END) AS palpites_com_pontos,
         COALESCE(MAX(p.pontos_obtidos), 0) AS maior_palpite,
-        -- Métricas por faixa de pontuação (apenas jogos finalizados)
-        SUM(CASE WHEN j.finalizado = 1 AND p.pontos_obtidos = fp.pts_exato THEN 1 ELSE 0 END) AS placares_exatos,
-        SUM(CASE WHEN j.finalizado = 1 AND p.pontos_obtidos = fp.pts_resultado_gol THEN 1 ELSE 0 END) AS acertos_resultado_gol,
-        SUM(CASE WHEN j.finalizado = 1 AND p.pontos_obtidos = fp.pts_resultado THEN 1 ELSE 0 END) AS acertos_resultado,
-        SUM(CASE WHEN j.finalizado = 1 AND p.pontos_obtidos = fp.pts_gol THEN 1 ELSE 0 END) AS acertos_gol,
+        -- Tipo de acerto calculado pelos placares, sem depender do total que pode incluir bônus.
+        SUM(CASE WHEN j.finalizado = 1
+                  AND p.palpite_gols_casa = j.gols_casa
+                  AND p.palpite_gols_visitante = j.gols_visitante
+                 THEN 1 ELSE 0 END) AS placares_exatos,
+        SUM(CASE WHEN j.finalizado = 1
+                  AND ((j.gols_casa > j.gols_visitante AND p.palpite_gols_casa > p.palpite_gols_visitante)
+                    OR (j.gols_casa < j.gols_visitante AND p.palpite_gols_casa < p.palpite_gols_visitante))
+                  AND (p.palpite_gols_casa = j.gols_casa OR p.palpite_gols_visitante = j.gols_visitante)
+                  AND NOT (p.palpite_gols_casa = j.gols_casa AND p.palpite_gols_visitante = j.gols_visitante)
+                 THEN 1 ELSE 0 END) AS acertos_resultado_gol,
+        SUM(CASE WHEN j.finalizado = 1
+                  AND ((j.gols_casa > j.gols_visitante AND p.palpite_gols_casa > p.palpite_gols_visitante)
+                    OR (j.gols_casa < j.gols_visitante AND p.palpite_gols_casa < p.palpite_gols_visitante))
+                  AND p.palpite_gols_casa <> j.gols_casa
+                  AND p.palpite_gols_visitante <> j.gols_visitante
+                 THEN 1 ELSE 0 END) AS acertos_resultado,
+        SUM(CASE WHEN j.finalizado = 1
+                  AND NOT (
+                    (j.gols_casa > j.gols_visitante AND p.palpite_gols_casa > p.palpite_gols_visitante)
+                    OR (j.gols_casa < j.gols_visitante AND p.palpite_gols_casa < p.palpite_gols_visitante)
+                    OR (j.gols_casa = j.gols_visitante AND p.palpite_gols_casa = p.palpite_gols_visitante)
+                  )
+                  AND (p.palpite_gols_casa = j.gols_casa OR p.palpite_gols_visitante = j.gols_visitante)
+                 THEN 1 ELSE 0 END) AS acertos_gol,
         -- Gols certos: +1 por gol de cada time que o palpite acertou exatamente
         SUM(CASE WHEN j.finalizado = 1 AND p.palpite_gols_casa = j.gols_casa THEN 1 ELSE 0 END) +
         SUM(CASE WHEN j.finalizado = 1 AND p.palpite_gols_visitante = j.gols_visitante THEN 1 ELSE 0 END) AS gols_acertados
@@ -60,17 +80,10 @@ router.get('/', async (req, res) => {
                u.nome ASC
     `);
 
-    // Adiciona posição
-    let posicao = 0;
-    let pontosAnterior = null;
-    let qtd = 0;
+    // A consulta já está ordenada por todos os critérios de desempate.
+    // Portanto, cada participante recebe sua posição final nessa ordem.
     ranking.forEach((u, idx) => {
-      qtd++;
-      if (u.total_pontos !== pontosAnterior) {
-        posicao = qtd;
-        pontosAnterior = u.total_pontos;
-      }
-      u.posicao = posicao;
+      u.posicao = idx + 1;
     });
 
     // Calcula totais
@@ -151,7 +164,16 @@ router.get('/', async (req, res) => {
 
     // Calcula total de pontos disputados (soma dos pts_exato dos jogos finalizados)
     const totalJogos = await get(`
-      SELECT COALESCE(SUM(fp.pts_exato), 0) AS total
+      SELECT COALESCE(SUM(
+        fp.pts_exato +
+        CASE
+          WHEN j.fase <> 'grupo'
+           AND j.gols_casa = j.gols_visitante
+           AND j.classificado_id IS NOT NULL
+          THEN fp.pts_classificado
+          ELSE 0
+        END
+      ), 0) AS total
       FROM jogos j
       JOIN fase_pontuacao fp ON fp.fase = j.fase
       WHERE j.finalizado = 1
@@ -175,20 +197,31 @@ router.get('/', async (req, res) => {
       WHERE j.finalizado = 1
     `);
 
-    // Distribuição por faixa de pontuação (placar exato / empate / resultado+gol / resultado / 1 gol)
+    // Distribuição pelo placar-base; o bônus de classificado não altera o tipo do acerto.
     const tiersFinalizados = await all(`
-      SELECT p.pontos_obtidos,
-             CASE
-               WHEN p.pontos_obtidos = fp.pts_exato THEN 'exato'
-               WHEN p.pontos_obtidos = fp.pts_empate THEN 'empate'
-               WHEN p.pontos_obtidos = fp.pts_resultado_gol THEN 'resultado_gol'
-               WHEN p.pontos_obtidos = fp.pts_resultado THEN 'resultado'
-               WHEN p.pontos_obtidos = fp.pts_gol THEN 'gol'
+      SELECT CASE
+               WHEN p.palpite_gols_casa = j.gols_casa
+                AND p.palpite_gols_visitante = j.gols_visitante
+                 THEN 'exato'
+               WHEN j.gols_casa = j.gols_visitante
+                AND p.palpite_gols_casa = p.palpite_gols_visitante
+                 THEN 'empate'
+               WHEN (
+                    (j.gols_casa > j.gols_visitante AND p.palpite_gols_casa > p.palpite_gols_visitante)
+                 OR (j.gols_casa < j.gols_visitante AND p.palpite_gols_casa < p.palpite_gols_visitante)
+               ) AND (p.palpite_gols_casa = j.gols_casa OR p.palpite_gols_visitante = j.gols_visitante)
+                 THEN 'resultado_gol'
+               WHEN (
+                    (j.gols_casa > j.gols_visitante AND p.palpite_gols_casa > p.palpite_gols_visitante)
+                 OR (j.gols_casa < j.gols_visitante AND p.palpite_gols_casa < p.palpite_gols_visitante)
+               )
+                 THEN 'resultado'
+               WHEN p.palpite_gols_casa = j.gols_casa OR p.palpite_gols_visitante = j.gols_visitante
+                 THEN 'gol'
                ELSE 'zero'
              END AS tier
       FROM palpites p
       JOIN jogos j ON j.id = p.jogo_id
-      JOIN fase_pontuacao fp ON fp.fase = j.fase
       WHERE j.finalizado = 1
     `);
     const tierCount = { exato: 0, empate: 0, resultado_gol: 0, resultado: 0, gol: 0, zero: 0 };
@@ -248,11 +281,17 @@ router.get('/', async (req, res) => {
       bonusMap[b.usuario_id].push(b);
     }
 
+    // Busca premiações (1º/2º/3º lugar)
+    const premiosRows = await all("SELECT chave, valor FROM config WHERE chave LIKE 'premio_%'");
+    const premios = { premio_1: '300.00', premio_2: '125.00', premio_3: '75.00' };
+    for (const r of premiosRows) premios[r.chave] = r.valor;
+
     res.render('ranking', {
       title: 'Ranking do Bolão',
       ranking, totais, rodadaMap, rodadas, labels,
       extrasResultados, extrasPorCategoria, CATEGORIAS,
-      totalDisputado, bonusMap, statsConcluidos
+      totalDisputado, bonusMap, statsConcluidos,
+      premios
     });
   } catch (err) {
     console.error('Erro ao listar ranking:', err);
@@ -275,15 +314,20 @@ router.get('/usuario/:id', async (req, res) => {
 
     const palpites = await all(`
       SELECT
-        j.id, j.rodada, j.data, j.finalizado, j.gols_casa, j.gols_visitante,
+        j.id, j.rodada, j.data, j.finalizado, j.gols_casa, j.gols_visitante, j.fase,
         j.palpite_limite,
+        j.gols_casa_pror, j.gols_visitante_pror,
+        j.placar_penaltis_casa, j.placar_penaltis_visitante,
+        j.selecao_casa_id, j.selecao_visitante_id, j.classificado_id,
         sc.nome_pt AS casa_pt, sc.sigla AS casa_sigla,
         sv.nome_pt AS visitante_pt, sv.sigla AS visitante_sigla,
-        p.palpite_gols_casa, p.palpite_gols_visitante, p.pontos_obtidos
+        p.palpite_gols_casa, p.palpite_gols_visitante, p.palpite_classificado_id, p.pontos_obtidos,
+        cc.nome_pt AS classificado_pt
       FROM palpites p
       JOIN jogos j ON j.id = p.jogo_id
       LEFT JOIN selecoes sc ON j.selecao_casa_id = sc.id
       LEFT JOIN selecoes sv ON j.selecao_visitante_id = sv.id
+      LEFT JOIN selecoes cc ON j.classificado_id = cc.id
       WHERE p.usuario_id = ?
       ORDER BY j.rodada, j.data, j.id
     `, [usuarioId]);
@@ -297,6 +341,12 @@ router.get('/usuario/:id', async (req, res) => {
     `, [usuarioId]);
 
     const bonusRow = await get('SELECT COALESCE(SUM(pontos), 0) AS total FROM pontos_bonus WHERE usuario_id = ?', [usuarioId]);
+    const extrasPontosRow = await get(`
+      SELECT COALESCE(SUM(r.pontos), 0) AS total
+      FROM palpites_extras pe
+      JOIN resultados_extras r ON r.categoria = pe.categoria AND r.selecao_id = pe.selecao_id
+      WHERE pe.usuario_id = ?
+    `, [usuarioId]);
 
     // Busca palpites extras (só passa pro view se tiver)
     const extras = await all(
@@ -310,20 +360,33 @@ router.get('/usuario/:id', async (req, res) => {
 
     // Calcula aproveitamento
     const totalJogos = await get(`
-      SELECT COALESCE(SUM(fp.pts_exato), 0) AS total
+      SELECT COALESCE(SUM(
+        fp.pts_exato +
+        CASE
+          WHEN j.fase <> 'grupo'
+           AND j.gols_casa = j.gols_visitante
+           AND j.classificado_id IS NOT NULL
+          THEN fp.pts_classificado
+          ELSE 0
+        END
+      ), 0) AS total
       FROM jogos j
       JOIN fase_pontuacao fp ON fp.fase = j.fase
       WHERE j.finalizado = 1
     `);
     const totalExtras = await get('SELECT COALESCE(SUM(pontos), 0) AS total FROM resultados_extras');
     const totalDisputado = (totalJogos?.total || 0) + (totalExtras?.total || 0);
-    const totalUsuario = (stats?.pontos || 0) + (bonusRow?.total || 0);
-    const aproveitamento = totalDisputado > 0 ? Math.round((totalUsuario / totalDisputado) * 100) : 0;
+    // Aproveitamento mede somente pontos competitivos: jogos + extras. Bônus administrativos ficam fora.
+    const totalUsuarioCompetitivo = (stats?.pontos || 0) + (extrasPontosRow?.total || 0);
+    const aproveitamento = totalDisputado > 0
+      ? Math.max(0, Math.min(100, Math.round((totalUsuarioCompetitivo / totalDisputado) * 100)))
+      : 0;
 
     res.render('palpites-usuario', {
       title: `Palpites de ${usuario.nome}`,
       usuario, palpites, stats,
       bonusPontos: bonusRow?.total || 0,
+      extrasPontos: extrasPontosRow?.total || 0,
       totalDisputado,
       aproveitamento,
       agora: new Date(),
