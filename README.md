@@ -1,13 +1,13 @@
 # ⚽ Bolão da Copa do Mundo 2026
 
 Aplicação full-stack em português do Brasil para bolão de palpites da Copa 2026.  
-Deploy no Render (Node.js) com banco Neon PostgreSQL. Localmente usa SQLite.
+Deploy no Render (Node.js) com Render Postgres. Localmente usa SQLite. Neon está previsto apenas como migração futura.
 
 ## Funcionalidades
 
 - **Login por email, username ou nome** — qualquer um dos três é aceito
 - **Cadastro aberto** — qualquer pessoa pode criar conta sem código de convite
-- **Palpites em todas as fases** — grupos e mata-mata (r32, r16, qf, sf, terceiro, final); cada jogo tem formulário individual; trava 2 minutos antes do horário BRT; **cards compactos** em grid 3 colunas (casa | placar | visitante) com metadata consolidada em um footer único (data, estádio, palpites, countdown)
+- **Palpites em todas as fases** — grupos e mata-mata (r32, r16, qf, sf, terceiro, final); salvamento individual ou em lote por agrupamento; trava 2 minutos antes do horário BRT; **cards compactos** em grid 3 colunas (casa | placar | visitante) com metadata consolidada em um footer único (data, estádio, palpites, countdown)
 - **Progress bar de palpites** — card verde no topo de `/palpites` mostrando "X/Y jogos (NN%)" + barra de progresso com gradiente; mensagem contextual "Faltam Y palpites" ou "🎉 Você palpitou em todos!"
 - **Palpites salvos agrupados por fase** — card expansível com header por fase (ex.: "Fase de Grupos - Rodada 1", "16 avos de Final") + badge de progresso (feitos/total); primeiros 3 palpites visíveis com ✔; botão "Ver mais N" expande o resto (seção inicia **colapsada** por padrão)
 - **Palpites Extras** — campeão, vice, 3º, finalistas, semis, quartas, oitavas, 1/16 avos; salvamento por categoria com contador de seleções ao vivo
@@ -51,7 +51,7 @@ Os pontos aumentam conforme a fase avança (configurável pelo admin em `/admin/
 Progressão dos saltos de placar exato: `+5, +5, +10, +10, +15, +15` — cresce até chegar ao campeão.
 3º lugar fica entre Semi e Final, mantendo a lógica anterior de aumento fase a fase.
 
-A coluna **+ Prór.+Pên.** é o bônus por acertar **quem classificou** na prorrogação/pênaltis (só mata-mata). Vale a metade do "Só resultado" da fase, é configurável em `/admin/pontuacao-fases`, e **só se aplica quando os 90 min terminaram empatados**. Se o jogo for decidido nos 90 min, o bônus não se aplica — mesmo que o usuário tenha marcado um palpite de classificado.
+A coluna **+ Prór.+Pên.** é o bônus por acertar **quem classificou** na prorrogação/pênaltis (só mata-mata). Vale a metade do "Só resultado" da fase, é calculado automaticamente como `Math.floor(pts_resultado / 2)` e **só se aplica quando os 90 min terminaram empatados**. Se o jogo for decidido nos 90 min, o bônus não se aplica — mesmo que o usuário tenha marcado um palpite de classificado.
 
 ## Pontuação — Extras
 
@@ -144,7 +144,7 @@ views/
   login.ejs      — formulário de login (email/username/nome)
   cadastro.ejs   — cadastro aberto
   dashboard.ejs  — painel do participante
-  palpites.ejs   — formulários por jogo com botão salvar individual
+  palpites.ejs   — formulários por jogo com salvamento individual e botão "Salvar todos" por agrupamento
   palpites-extras.ejs — formulários por categoria com grid, busca, bandeiras, progresso, preview pts
   jogos-palpites.ejs — palpites públicos de um jogo (3 níveis, agrupado por pontos)
   palpites-usuario.ejs — detalhe dos palpites de um participante
@@ -178,7 +178,7 @@ scripts/
 - Cadastro aberto — qualquer pessoa pode criar conta livremente (até o fechamento dos palpites extras)
 - Admin pode conceder pontos bônus a participantes tardios (último colocado -1 da rodada de ingresso; cadastro encerra após fechamento dos extras)
 - Admin pode editar data/hora e estádio de qualquer jogo via botão "🕐 Horário/Estádio" em `/admin/jogos` — útil para correções pontuais sem deploy
-- Pontuação por fase configurável pelo admin em `/admin/pontuacao-fases`
+- Pontuação-base por fase configurável pelo admin em `/admin/pontuacao-fases`; o bônus por classificado é sempre calculado automaticamente como metade inteira de "Só resultado"
 - Aproveitamento percentual exibido no ranking e perfil do usuário
 - Resultados dos extras no ranking só aparecem após admin definir em `/admin/extras`
 - Desempate no ranking: cascata de 8 critérios — total de pontos → placares exatos → resultado+gol → só resultado → gols certos → 1 gol certo → palpites pontuados → nome (alfabético)

@@ -93,8 +93,8 @@
     <div class="stat-label">Palpites dados</div>
   </div>
   <div class="stat-card">
-    <div class="stat-valor">
-      <%= stats.total_palpites > 0 ? Math.round(stats.palpites_certos / stats.total_palpites * 100) : 0 %>%</div>
+    <div class="stat-valor"><%= aproveitamento %>%</div>
+
     <div class="stat-label">Aproveitamento</div>
   </div>
   <div class="stat-card">

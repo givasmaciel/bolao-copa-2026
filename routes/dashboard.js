@@ -84,6 +84,26 @@ router.get('/', verificarAutenticado, async (req, res) => {
       SELECT COUNT(*) AS total FROM jogos WHERE finalizado = 1 AND selecao_casa_id IS NOT NULL
     `);
 
+    const totalDisputado = await get(`
+      SELECT COALESCE(SUM(
+        fp.pts_exato +
+        CASE
+          WHEN j.fase <> 'grupo'
+           AND j.gols_casa = j.gols_visitante
+           AND j.classificado_id IS NOT NULL
+          THEN fp.pts_classificado
+          ELSE 0
+        END
+      ), 0) AS total
+      FROM jogos j
+      JOIN fase_pontuacao fp ON fp.fase = j.fase
+      WHERE j.finalizado = 1
+    `);
+    const maximoJogos = Number(totalDisputado?.total) || 0;
+    const aproveitamento = maximoJogos > 0
+      ? Math.max(0, Math.min(100, Math.round(((Number(stats?.total_pontos) || 0) / maximoJogos) * 100)))
+      : 0;
+
     // Últimos 5 jogos finalizados com o palpite do usuário
     const recentes = await all(`
       SELECT j.id, j.data, j.gols_casa, j.gols_visitante,
@@ -160,6 +180,7 @@ router.get('/', verificarAutenticado, async (req, res) => {
       bonusPontos: bonusRow?.total || 0,
       extrasPontos: extrasRowPts?.total || 0,
       totalFinalizados: totalFinalizados?.total || 0,
+      aproveitamento,
       recentes,
       alertaExtras,
       extrasDataLimite,

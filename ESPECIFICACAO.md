@@ -15,7 +15,7 @@ Aplicação web full-stack em português do Brasil para cadastro de palpites sob
 | **Runtime** | Node.js 18+ |
 | **Framework Web** | Express 4.21 |
 | **Templates** | EJS 3.1 (server-side rendering) |
-| **Banco (dev)** | SQLite 5 via `better-sqlite3` |
+| **Banco (dev)** | SQLite 5 via `sqlite3` |
 | **Banco (prod)** | PostgreSQL 16 no **Render Postgres** (Free plan) |
 | **Sessão** | `express-session` (cookie 30 dias, `secure: true` em produção, `sameSite: 'lax'`) |
 | **Hash de senhas** | `bcryptjs` (10 rounds) |
@@ -174,7 +174,7 @@ Armazena configurações do sistema, como o prazo limite dos palpites extras (ex
 | `pts_resultado_gol` | INTEGER DEFAULT 14 | Pontos por resultado + 1 gol certo |
 | `pts_resultado` | INTEGER DEFAULT 8 | Pontos por resultado correto sem gols |
 | `pts_gol` | INTEGER DEFAULT 3 | Pontos por 1 gol certo mas resultado errado |
-| `pts_classificado` | INTEGER DEFAULT 0 | Bônus por acertar quem classificou na prorrogação/pênaltis (só mata-mata). Default = metade do `pts_resultado`; configurável em `/admin/pontuacao-fases`. |
+| `pts_classificado` | INTEGER DEFAULT 0 | Bônus por acertar quem classificou na prorrogação/pênaltis (só mata-mata). Calculado automaticamente como `Math.floor(pts_resultado / 2)`; não é editável separadamente. |
 
 ### `pontos_bonus`
 
@@ -230,12 +230,13 @@ Armazena configurações do sistema, como o prazo limite dos palpites extras (ex
 | Método | Rota | Descrição |
 |---|---|---|
 | GET | `/palpites` | Lista todos os jogos (grupos + mata-mata) com formulário individual por jogo |
-| POST | `/palpites/salvar/:jogoId` | Salva ou atualiza o palpite de UM jogo específico |
+| POST | `/palpites/:jogoId` | Salva ou atualiza o palpite de um jogo específico |
+| POST | `/palpites/salvar-rodada` | Salva os palpites abertos de uma rodada/fase em lote |
 
 **Regras:**
 - Jogos de todas as fases são exibidos: grupos e mata-mata (r32, r16, qf, sf, terceiro, final).
 - Jogos de mata-mata sem times definidos (`selecao_casa_id` nulo) são ocultados até o admin gerar os confrontos.
-- Cada jogo possui seu próprio formulário e botão "Salvar" individual (NÃO é salvamento em lote).
+- Cada jogo possui botão "Salvar" individual; cada agrupamento também oferece "Salvar todos" para os jogos ainda abertos.
 - Cada jogo é bloqueado 2 minutos antes do seu horário (horário de Brasília).
 - Jogos finalizados (`finalizado = 1`) são bloqueados independentemente do horário.
 - Administradores são redirecionados para `/admin` com mensagem flash.
@@ -356,8 +357,8 @@ Armazena configurações do sistema, como o prazo limite dos palpites extras (ex
   | 8 | Nome | `u.nome` | alfabético |
 
   Critérios 2–6 consideram apenas **jogos finalizados**. Extras e bônus entram no total mas não no desempate de qualidade. Os pesos exatos por acerto vêm da tabela `fase_pontuacao` e podem variar por fase.
-- Posição calculada no servidor: muda apenas quando o total de pontos difere do participante anterior.
-- Aproveitamento = (pontos do participante / totalDisputado) × 100, onde totalDisputado = soma dos pts_exato dos jogos finalizados + soma dos pontos dos resultados_extras.
+- Posição calculada no servidor após aplicar todos os critérios de desempate; cada participante recebe uma posição sequencial.
+- No ranking geral, aproveitamento = pontos dos jogos / máximo possível nos jogos finalizados. No perfil, inclui jogos + extras no numerador e no máximo possível; bônus administrativos ficam fora.
 
 ### 5.9 Recuperação de Senha (`routes/senha.js`)
 
@@ -441,7 +442,7 @@ Progressão dos saltos de placar exato: `+5, +5, +10, +10, +15, +15` — cresce 
 
 ### 6.2 Bônus de Prorrogação / Pênaltis (mata-mata)
 
-No futebol real, o empate nos 90 minutos não define vencedor — a partida vai para prorrogação (30 min) e, se necessário, pênaltis. O bolão reflete essa realidade com um bônus:
+No futebol real, o empate nos 90 minutos não define vencedor — a partida vai para prorrogação de 30 minutos (dois tempos de 15) e, se necessário, pênaltis. O bolão reflete essa realidade com um bônus:
 
 - O usuário palpite o placar dos **90 minutos** e pontua normalmente (exato, empate, res+gol, etc.) — as regras dos grupos continuam valendo.
 - **Adicionalmente**, em jogos de mata-mata, o usuário marca **qual time acha que avança** (`palpite_classificado_id`).
@@ -484,7 +485,7 @@ A pontuação é fixa por categoria, conforme tabela na seção 5.4. Os pontos s
 
 12. **Sincronização de username** — Preenchido automaticamente a partir do prefixo do email (via migration). Atualizado quando o nome é alterado em `/config`.
 
-13. **Salvamento individual** — Cada jogo na página de palpites possui seu próprio formulário e botão "Salvar" (não há salvamento em lote).
+13. **Salvamento individual e em lote** — Cada jogo possui botão "Salvar" individual, e cada rodada/fase possui "Salvar todos" para os jogos ainda abertos.
 
 14. **Trust proxy** — `app.set('trust proxy', 1)` é essencial para o cookie de sessão funcionar atrás do proxy HTTPS do Render.
 
@@ -494,7 +495,7 @@ A pontuação é fixa por categoria, conforme tabela na seção 5.4. Os pontos s
 
 17. **Extras deadline configurável** — O prazo para palpites extras é armazenado na tabela `config` (chave `extras_data_limite`) e verificado no servidor.
 
-18. **Pontuação por fase configurável** — O admin pode definir a pontuação de cada fase em `/admin/pontuacao-fases`. A função `calcularPontos` lê os valores da tabela `fase_pontuacao`.
+18. **Pontuação por fase configurável** — O admin pode definir a pontuação de cada fase em `/admin/pontuacao-fases`. A função `calcularPontos` lê os valores da tabela `fase_pontuacao`. `pts_classificado` é sempre derivado automaticamente como metade inteira de `pts_resultado`.
 
 19. **Aproveitamento percentual** — O ranking e o perfil do usuário exibem o aproveitamento (pontos do participante / total de pontos disputados × 100).
 
@@ -668,7 +669,7 @@ bolao/
 
 ## 11. Notas Técnicas Adicionais
 
-- **Render free tier**: O serviço web hiberna após 15 minutos de inatividade. A primeira requisição após o período de inatividade pode levar alguns segundos (cold start). O banco (Neon) também escala a zero após 5 minutos, mas a reconexão é transparente.
+- **Render free tier**: O serviço web pode hibernar após inatividade. A primeira requisição pode levar alguns segundos (cold start). A produção atual usa Render Postgres; Neon é apenas uma migração futura.
 - **Timezone — TZ=UTC no db.js**: O Render roda com TZ=America/Sao_Paulo. O driver node-pg, por padrão, parseia TIMESTAMPTZ usando o fuso local do processo — isso adiciona +3h ao Date retornado. Para corrigir, `process.env.TZ = 'UTC'` é forçado antes do `require('pg')` em `database/db.js`. Com TZ=UTC, o parse devolve o timestamp UTC correto, e as views convertem para BRT com `toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })`.
 - **Timezone — Armazenamento**: Todas as datas de jogos são armazenadas como TIMESTAMPTZ no PostgreSQL (ou DATETIME no SQLite). O seed usa timestamps em UTC. As views convertem para BRT no front-end.
 - **Segurança de sessão**: `sameSite: 'lax'` e `secure: true` em produção. O trust proxy é ativado com `app.set('trust proxy', 1)` para que o Express confie no header `X-Forwarded-Proto` enviado pelo proxy do Render.

@@ -4,7 +4,7 @@
   "description": "Bolão da Copa do Mundo FIFA 2026 - Sistema de palpites entre amigos",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "node database/setup.js && node server.js",
     "start:prod": "node database/setup.js && node server.js",
     "dev": "node server.js",
     "seed": "node database/seed.js",

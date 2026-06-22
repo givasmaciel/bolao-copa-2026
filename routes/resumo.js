@@ -91,7 +91,7 @@ router.get('/', verificarAutenticado, async (req, res) => {
       LEFT JOIN selecoes cc ON j.classificado_id = cc.id
       LEFT JOIN palpites p ON p.jogo_id = j.id AND p.usuario_id = ?
       WHERE j.finalizado = 1
-      ORDER BY j.fase, j.rodada, j.data
+      ORDER BY j.data DESC
     `, [userId]);
 
     // Lista de participantes para racha
@@ -169,12 +169,32 @@ router.get('/', verificarAutenticado, async (req, res) => {
       WHERE pe.usuario_id = ?
     `, [userId]);
 
+    const totalDisputadoResumo = await get(`
+      SELECT COALESCE(SUM(
+        fp.pts_exato +
+        CASE
+          WHEN j.fase <> 'grupo'
+           AND j.gols_casa = j.gols_visitante
+           AND j.classificado_id IS NOT NULL
+          THEN fp.pts_classificado
+          ELSE 0
+        END
+      ), 0) AS total
+      FROM jogos j
+      JOIN fase_pontuacao fp ON fp.fase = j.fase
+      WHERE j.finalizado = 1
+    `);
+    const maximoPontosResumo = Number(totalDisputadoResumo?.total) || 0;
+    const aproveitamento = maximoPontosResumo > 0
+      ? Math.max(0, Math.min(100, Math.round(((Number(stats?.total_pontos) || 0) / maximoPontosResumo) * 100)))
+      : 0;
+
     res.render('resumo', {
       title: 'Meu resumo',
       stats,
       bonusPontos: bonusRow?.total || 0,
       extrasPontos: extrasRowPts?.total || 0,
-      aproveitamento: stats.total_palpites > 0 ? Math.round(stats.palpites_certos / stats.total_palpites * 100) : 0,
+      aproveitamento,
       porRodada,
       jogosFinalizados,
       participantes,

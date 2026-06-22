@@ -72,11 +72,11 @@ class Client {
   const colsF = await new Promise(r => db.all('PRAGMA table_info(fase_pontuacao)', (_, c) => r(c)));
   log(colsF.some(x => x.name === 'pts_classificado'), 'fase_pontuacao.pts_classificado existe');
 
-  console.log('\n=== TESTE 2: pts_classificado populados ===\n');
+  console.log('\n=== TESTE 2: pts_classificado populados (auto-calculado) ===\n');
   const fases = await new Promise(r => db.all('SELECT fase, pts_resultado, pts_classificado FROM fase_pontuacao ORDER BY fase', (_, f) => r(f)));
   for (const f of fases) {
     const esperado = f.fase === 'grupo' ? 0 : Math.floor(f.pts_resultado / 2);
-    log(f.pts_classificado === esperado, `${f.fase}: pts_classificado=${f.pts_classificado} (esperado ${esperado})`);
+    log(f.pts_classificado === esperado, `${f.fase}: pts_classificado=${f.pts_classificado} (esperado=${esperado}, floor(pts_resultado/2))`);
   }
 
   console.log('\n=== TESTE 3: Cálculo de pontos (calcularPontosMataMata) ===\n');
@@ -109,6 +109,11 @@ class Client {
   // Verifica sessão autenticada acessando /admin
   const adminCheck = await admin.req('GET', '/admin');
   log(adminCheck.status === 200, `GET /admin autenticado retornou 200 (got ${adminCheck.status})`);
+
+  console.log('\n=== TESTE 2b: Admin form não permite editar pts_classificado separadamente ===\n');
+  const pontForm = await admin.req('GET', '/admin/pontuacao-fases');
+  log(!/\bname="[^"]*classificado[^"]*"/.test(pontForm.body), 'Formulário não tem campo input editável para pts_classificado');
+  log(pontForm.body.includes('&#189; do Só res.') || pontForm.body.includes('½ do Só res.'), 'Subtítulo explica que é metade do Só resultado');
 
   console.log('\n=== TESTE 5: UI admin mostra seção nova para mata-mata ===\n');
   const jogosPage = await admin.req('GET', '/admin/jogos?fase=r32');
@@ -193,7 +198,7 @@ class Client {
   console.log('\n=== TESTE 11: UI admin pontuacao-fases tem campo novo ===\n');
   const pontPage = await admin.req('GET', '/admin/pontuacao-fases');
   log(pontPage.status === 200, `GET /admin/pontuacao-fases retorna 200`);
-  log(pontPage.body.includes('_classificado'), `Formulário tem campos pts_classificado`);
+  log(pontPage.body.includes('&#189;') || pontPage.body.includes('½'), 'Formulário mostra que Prór.+Pên. = ½ do Só resultado (não editável)');
 
   console.log('\n=== RESUMO ===\n');
   console.log(`  Passou: ${pass}`);

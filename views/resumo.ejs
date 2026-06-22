@@ -4,56 +4,48 @@
 
 <h1>📊 Meu resumo</h1>
 
-<div class="grid grid-4 mb-2">
-  <div class="stat-card">
-    <div class="stat-valor"><%= stats.total_pontos + extrasPontos + bonusPontos %></div>
-    <div class="stat-label">
-      Pontos totais
-      <% if (bonusPontos > 0) { %>
-        <span style="font-size:0.65rem;color:var(--verde)">(+<%= bonusPontos %> bônus)</span>
-      <% } %>
-      <% if (extrasPontos > 0) { %>
-        <span style="font-size:0.65rem;color:var(--cinza-escuro)">(+<%= extrasPontos %> extras)</span>
-      <% } %>
+<div class="card" style="padding:10px">
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px">
+    <div class="stat-card" style="padding:8px;border-top-width:2px">
+      <div style="font-size:1.3rem;font-weight:800;color:var(--verde);line-height:1.1"><%= stats.total_pontos + extrasPontos + bonusPontos %></div>
+      <div style="color:var(--cinza-escuro);font-size:0.65rem;margin-top:2px">
+        Pontos
+        <% if (bonusPontos > 0) { %><span style="color:var(--verde)">(+<%= bonusPontos %>)</span><% } %>
+        <% if (extrasPontos > 0) { %><span style="color:var(--cinza-escuro)">(+<%= extrasPontos %>)</span><% } %>
+      </div>
     </div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-valor"><%= stats.total_palpites %></div>
-    <div class="stat-label">Palpites</div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-valor"><%= stats.placares_exatos %></div>
-    <div class="stat-label">Placar exato (20pts)</div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-valor"><%= stats.resultados_exatos %></div>
-    <div class="stat-label">Acerto c/ gol (14pts)</div>
-  </div>
-</div>
-
-<div class="grid grid-4 mb-2">
-  <div class="stat-card">
-    <div class="stat-valor"><%= stats.so_resultados %></div>
-    <div class="stat-label">Só resultado (8pts)</div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-valor"><%= stats.acertou_um_gol %></div>
-    <div class="stat-label">Um gol certo (3pts)</div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-valor"><%= stats.errou_tudo %></div>
-    <div class="stat-label">Errou tudo (0pt)</div>
-  </div>
-</div>
-
-<div class="grid grid-4 mb-2">
-  <div class="stat-card">
-    <div class="stat-valor"><%= stats.acertou_empate %></div>
-    <div class="stat-label">Empates acertados</div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-valor"><%= aproveitamento %>%</div>
-    <div class="stat-label">Aproveitamento</div>
+    <div class="stat-card" style="padding:8px;border-top-width:2px">
+      <div style="font-size:1.3rem;font-weight:800;color:var(--verde);line-height:1.1"><%= stats.total_palpites %></div>
+      <div style="color:var(--cinza-escuro);font-size:0.65rem;margin-top:2px">Palpites</div>
+    </div>
+    <div class="stat-card" style="padding:8px;border-top-width:2px">
+      <div style="font-size:1.3rem;font-weight:800;color:var(--verde);line-height:1.1"><%= stats.placares_exatos %></div>
+      <div style="color:var(--cinza-escuro);font-size:0.65rem;margin-top:2px">Exato</div>
+    </div>
+    <div class="stat-card" style="padding:8px;border-top-width:2px">
+      <div style="font-size:1.3rem;font-weight:800;color:var(--verde);line-height:1.1"><%= stats.resultados_exatos %></div>
+      <div style="color:var(--cinza-escuro);font-size:0.65rem;margin-top:2px">Res+Gol</div>
+    </div>
+    <div class="stat-card" style="padding:8px;border-top-width:2px">
+      <div style="font-size:1.3rem;font-weight:800;color:var(--verde);line-height:1.1"><%= stats.so_resultados %></div>
+      <div style="color:var(--cinza-escuro);font-size:0.65rem;margin-top:2px">Só Res</div>
+    </div>
+    <div class="stat-card" style="padding:8px;border-top-width:2px">
+      <div style="font-size:1.3rem;font-weight:800;color:var(--verde);line-height:1.1"><%= stats.acertou_um_gol %></div>
+      <div style="color:var(--cinza-escuro);font-size:0.65rem;margin-top:2px">1 Gol</div>
+    </div>
+    <div class="stat-card" style="padding:8px;border-top-width:2px">
+      <div style="font-size:1.3rem;font-weight:800;color:var(--verde);line-height:1.1"><%= stats.errou_tudo %></div>
+      <div style="color:var(--cinza-escuro);font-size:0.65rem;margin-top:2px">Errou</div>
+    </div>
+    <div class="stat-card" style="padding:8px;border-top-width:2px">
+      <div style="font-size:1.3rem;font-weight:800;color:var(--verde);line-height:1.1"><%= stats.acertou_empate %></div>
+      <div style="color:var(--cinza-escuro);font-size:0.65rem;margin-top:2px">Empate</div>
+    </div>
+    <div class="stat-card" style="padding:8px;border-top-width:2px">
+      <div style="font-size:1.3rem;font-weight:800;color:var(--verde);line-height:1.1"><%= aproveitamento %>%</div>
+      <div style="color:var(--cinza-escuro);font-size:0.65rem;margin-top:2px">Aproveit.</div>
+    </div>
   </div>
 </div>
 

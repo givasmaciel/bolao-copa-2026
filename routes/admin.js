@@ -659,13 +659,12 @@ router.post('/pontuacao-fases', verificarAdmin, async (req, res) => {
       const resultadoGol = parseInt(req.body[fase + '_resultado_gol'], 10);
       const resultado = parseInt(req.body[fase + '_resultado'], 10);
       const gol = parseInt(req.body[fase + '_gol'], 10);
-      const classificado = req.body[fase + '_classificado'] !== undefined
-        ? parseInt(req.body[fase + '_classificado'], 10)
-        : 0;
       if ([exato, empate, resultadoGol, resultado, gol].some(isNaN)) continue;
+      // Regra fixa: bônus por classificado = metade inteira de "Só resultado".
+      const classificado = fase === 'grupo' ? 0 : Math.floor(resultado / 2);
       await run(
         'UPDATE fase_pontuacao SET pts_exato = ?, pts_empate = ?, pts_resultado_gol = ?, pts_resultado = ?, pts_gol = ?, pts_classificado = ? WHERE fase = ?',
-        [exato, empate, resultadoGol, resultado, gol, isNaN(classificado) ? 0 : classificado, fase]
+        [exato, empate, resultadoGol, resultado, gol, classificado, fase]
       );
     }
     req.flash('sucesso', 'Pontuação das fases atualizada!');
