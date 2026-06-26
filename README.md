@@ -17,7 +17,7 @@ Deploy no Render (Node.js) com Render Postgres. Localmente usa SQLite. Neon est�
 - **Config** (`/config`) — participante altera próprio nome (sincronizado com username)
 - **Admin como juiz** — não participa, não aparece no ranking, redirecionado de `/palpites`
 - **Admin: editar horário/estádio** — botão "🕐 Horário/Estádio" em `/admin/jogos` para corrigir data/hora, estádio, cidade e país de qualquer jogo sem precisar de deploy
-- **Placar automático** — busca resultados reais da API 26worldcup.cn a cada 16 minutos; atualiza placar e recalcula pontos automaticamente (fase de grupos); no mata-mata, atualiza o placar dos 90 min sem finalizar (admin adiciona prorrogação/pênaltis manualmente); acionável manualmente pelo admin em `/admin/placar-automatico`
+- **Placar automático** — busca resultados reais da API worldcup26.ir (open-source) a cada 16 minutos; atualiza placar e recalcula pontos automaticamente (fase de grupos); no mata-mata, atualiza o placar dos 90 min sem finalizar (admin adiciona prorrogação/pênaltis manualmente); acionável manualmente pelo admin em `/admin/placar-automatico`
 - **Pontos bônus** — participantes tardios recebem pontuação do último colocado -1 da rodada de ingresso; cadastro encerra após fechamento dos extras; tooltip no ranking mostra motivo
 - **Rotas administrativas** — resultados dos jogos, recalcular pontos, gerenciar usuários (promover/rebaixar/excluir/resetar senha, resetar palpites individual/massa, alterar username, criar participante), admin extras, admin config
 - **Rota de diagnóstico** — `/jogos/db-info` retorna JSON com `host`, `marcador` (do `db_marker` da tabela `config`), contagens (`usuarios`, `jogos`, `palpites`, `jogos_finalizados`) e timestamp
@@ -105,7 +105,7 @@ Admin local: `npm run criar-admin` (usuário: `admin@teste.com` / `admin123`)
 
 ## Variáveis de ambiente
 
-`DATABASE_URL`, `SESSION_SECRET`, `ADMIN_NOME`, `ADMIN_EMAIL`, `ADMIN_SENHA`, `BASE_URL`, `DIAGNOSTIC_KEY`, `PLANO_AUTO_API_KEY`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, `SENTRY_DSN` (opcional — error tracking)
+`DATABASE_URL`, `SESSION_SECRET`, `ADMIN_NOME`, `ADMIN_EMAIL`, `ADMIN_SENHA`, `BASE_URL`, `DIAGNOSTIC_KEY`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, `SENTRY_DSN` (opcional — error tracking)
 
 ## Estrutura do projeto
 
@@ -132,7 +132,7 @@ routes/
   admin.js       — resultados, recalcular, placar automático, usuários, criar participante, extras, config, pontuação por fase, pontos bônus
 
 services/
-  placar-automatico.js — integração com API 26worldcup.cn (busca resultados a cada 16 min, respeitando limite de 100 req/dia)
+  placar-automatico.js — integração com API worldcup26.ir (busca resultados a cada 16 min, API pública e gratuita)
   mata-mata.js         — lógica de geração dos confrontos eliminatórios
 
 middleware/
@@ -173,7 +173,7 @@ scripts/
 
 - Admin (is_admin=1) redirecionado de `/palpites` e `/palpites-extras` com flash
 - Palpites travam 2 min antes do horário BRT de cada jogo (frontend + backend)
-- Pontuação automática ao admin marcar jogo como finalizado; botão de recalcular disponível; placar automático via API 26worldcup.cn a cada 16 min
+- Pontuação automática ao admin marcar jogo como finalizado; botão de recalcular disponível; placar automático via API worldcup26.ir a cada 16 min
 - Admin pode recalcular pontos, resetar palpites (individual/massa), resetar senha, promover/rebaixar, excluir usuários
 - Cadastro aberto — qualquer pessoa pode criar conta livremente (até o fechamento dos palpites extras)
 - Admin pode conceder pontos bônus a participantes tardios (último colocado -1 da rodada de ingresso; cadastro encerra após fechamento dos extras)

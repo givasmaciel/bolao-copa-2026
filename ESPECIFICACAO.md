@@ -331,7 +331,7 @@ Armazena configurações do sistema, como o prazo limite dos palpites extras (ex
 - Tabela principal com as colunas:
   - `#` (posição com 🥇🥈🥉 para top 3)
   - `Participante` (avatar + nome + tag "(você)" para o usuário logado)
-  - `Palpites` (total dinâmico de palpites feitos pelo participante até o momento — cresce conforme ele palita novos jogos)
+  - `Palpites` (total dinâmico de palpites feitos pelo participante até o momento — cresce conforme ele palpita novos jogos)
   - `🎯 Qualidade dos acertos` (grupo de 6 sub-colunas): **Exatos** (20 pts) → **Res+Gol** (14 pts) → **Só Res** (8 pts) → **1 Gol** (3 pts) → **Gols** (placares parciais certos) → **Pont.** (soma das 4 primeiras = palpites pontuados)
   - `Média` (pts/palpite em finalizados)
   - `Aproveit.` (% do máximo possível em finalizados)
@@ -579,7 +579,7 @@ Executado em todo deploy (`node database/setup.js && node server.js`):
 | `SMTP_USER` | Não | Usuário SMTP |
 | `SMTP_PASS` | Não | Senha SMTP |
 | `SMTP_FROM` | Não | Remetente dos e-mails |
-| `PLANO_AUTO_API_KEY` | Não | Chave da API 26worldcup.cn para placar automático (fallback para chave hardcoded) |
+| `PLANO_AUTO_API_KEY` | Não | (depreciado) Chave da antiga API 26worldcup.cn — não é mais necessária, API atual worldcup26.ir é pública |
 | `ADMIN_DIAG_EMAIL` | Não | Email do admin consultado na rota `/admin/diagnostic` (fallback para `ADMIN_EMAIL`) |
 
 ---
@@ -681,7 +681,7 @@ bolao/
 - **PWA (Progressive Web App)**: `public/manifest.json` + `public/sw.js` (service worker). Estratégia híbrida — assets estáticos cache-first, HTML network-first, APIs/login/admin nunca cacheia. Instalável no celular como app nativo (⚽ verde Brasil). Atalhos para Palpites/Ranking/Jogos. Service worker pula `/healthz` e `/jogos/db-info`.
 - **Sentry (opcional)**: se `NODE_ENV=production` E `SENTRY_DSN` estiver setado, inicializa com `tracesSampleRate: 0.1` e middleware de request/error handlers. Filtra `/healthz`, `/favicon` e `/admin`. Zero overhead em dev local.
 - **Content-Security-Policy**: middleware seta CSP, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`. Defesa em profundidade contra XSS e clickjacking. Permite inline (EJS usa) e `flagcdn.com` para bandeiras.
-- **Placar automático no mata-mata**: o serviço (`services/placar-automatico.js`) busca resultados da API `26worldcup.cn` para todas as fases. Em jogos de grupos, finaliza e recalcula pontos automaticamente. Em mata-mata, apenas atualiza o placar dos 90 min (`gols_casa`/`gols_visitante`) sem finalizar — o admin deve revisar e adicionar dados de prorrogação/pênaltis manualmente em `/admin/jogos` antes de marcar `finalizado`.
+- **Placar automático no mata-mata**: o serviço (`services/placar-automatico.js`) busca resultados da API `worldcup26.ir` (open-source, gratuita) para todas as fases. Em jogos de grupos, finaliza e recalcula pontos automaticamente. Em mata-mata, apenas atualiza o placar dos 90 min (`gols_casa`/`gols_visitante`) sem finalizar — o admin deve revisar e adicionar dados de prorrogação/pênaltis manualmente em `/admin/jogos` antes de marcar `finalizado`.
 - **Proteção contra sobrescrita de horários**: `setup.js` e `schema.js` usam `COALESCE` nos UPDATEs. Se o admin editou um jogo via `/admin/jogos/:id/horario`, o próximo deploy não desfaz a alteração.
 - **Logs estruturados**: `logger.js` emite JSON para stdout (Render indexa). Substitui `console.log/error/warn` por `logger.info/warn/error/debug`. Permite buscas por `level`, `msg`, campos customizados.
 - **Toast/snackbar**: `public/js/toast.js` expõe `window.toast(msg, tipo, duracao)`. Substitui `alert()` por notificações modernas com ícones (success/error/warning/info), cor por tipo, posição canto-inferior-central, some sozinho. Usado em `salvarIndividual`, `salvarGrupo` e outros pontos com mensagem de erro/sucesso.

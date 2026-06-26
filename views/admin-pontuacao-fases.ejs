@@ -32,7 +32,7 @@
             <td class="text-center"><input type="number" name="<%= f.fase %>_gol" value="<%= f.pts_gol %>" min="0" class="form-control" style="width:70px;text-align:center"></td>
             <td class="text-center">
               <% if (f.fase === 'grupo') { %>
-                <span style="color:var(--cinza-escuro)" title="Não se aplica na fase de grupos">—</span>
+                <span style="color:var(--cinza-escuro)" title="Não se aplica à fase de grupos">—</span>
               <% } else { %>
                 <strong class="pontos-badge" style="background:var(--verde)"><%= Math.floor(f.pts_resultado / 2) %></strong>
               <% } %>
@@ -52,10 +52,10 @@
   <h3>Como funciona</h3>
   <ul style="font-size:0.9rem">
     <li><strong>Placar exato</strong> — acertou o placar certinho</li>
-    <li><strong>Empate</strong> — jogo terminou empatado e você palpou empate (qualquer placar)</li>
+    <li><strong>Empate</strong> — jogo terminou empatado e você palpitou empate (qualquer placar)</li>
     <li><strong>Resultado + 1 gol</strong> — acertou quem ganhou/perdeu e acertou o gol de pelo menos um time</li>
-    <li><strong>Só resultado</strong> — acertou quem ganhou mas errou os gols dos dois times</li>
-    <li><strong>1 gol certo</strong> — errou quem ganhou mas acertou o gol de um time</li>
+    <li><strong>Só resultado</strong> — acertou quem ganhou, mas errou os gols dos dois times</li>
+    <li><strong>1 gol certo</strong> — errou quem ganhou, mas acertou o gol de um time</li>
     <li><strong>Prór.+Pên.</strong> (só mata-mata) — bônus por acertar <em>quem avança</em> quando o jogo vai para prorrogação ou pênaltis. É calculado automaticamente como metade inteira do "Só resultado" da fase e soma-se aos pontos do placar dos 90 min. Aplica-se mesmo se você errou o placar mas acertou quem classificou.</li>
   </ul>
 </div>

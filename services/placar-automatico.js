@@ -1,125 +1,152 @@
 const { run, get, all } = require('../database/db');
 const { calcularPontos } = require('./pontuacao');
 
-const API_URL = 'https://26worldcup.cn/api/v1/cup/2026/schedule';
-const API_KEY = process.env.PLANO_AUTO_API_KEY || 'ft_bolao_co_8d3ff2c4132244de97a58898dd260728694d25a3';
+const API_URL = 'https://worldcup26.ir/get/games';
 
 const API_NOME_PARA_SIGLA = {
-  'Mexico': 'MEX', 'South Africa': 'AFS', 'South Korea': 'COR', 'Czechia': 'CZE',
-  'Canada': 'CAN', 'Bosnia & Herzegovina': 'BIH', 'Qatar': 'CAT', 'Switzerland': 'SUI',
-  'USA': 'EUA', 'Paraguay': 'PAR', 'Australia': 'AUS', 'Türkiye': 'TUR',
+  'Mexico': 'MEX', 'South Africa': 'AFS', 'South Korea': 'COR', 'Czech Republic': 'CZE',
+  'Canada': 'CAN', 'Bosnia and Herzegovina': 'BIH', 'Qatar': 'CAT', 'Switzerland': 'SUI',
+  'United States': 'EUA', 'Paraguay': 'PAR', 'Australia': 'AUS', 'Turkey': 'TUR',
   'Brazil': 'BRA', 'Morocco': 'MAR', 'Haiti': 'HAI', 'Scotland': 'ESC',
   'Germany': 'GER', 'Curaçao': 'CUR', 'Ivory Coast': 'CMF', 'Ecuador': 'EQU',
   'Netherlands': 'HOL', 'Japan': 'JPN', 'Sweden': 'SUE', 'Tunisia': 'TUN',
-  'Spain': 'ESP', 'Cape Verde Islands': 'CBV', 'Saudi Arabia': 'ARA', 'Uruguay': 'URU',
+  'Spain': 'ESP', 'Cape Verde': 'CBV', 'Saudi Arabia': 'ARA', 'Uruguay': 'URU',
   'France': 'FRA', 'Senegal': 'SEN', 'Iraq': 'IRQ', 'Norway': 'NOR',
   'Argentina': 'ARG', 'Algeria': 'ALG', 'Austria': 'AUT', 'Jordan': 'JOR',
-  'Portugal': 'POR', 'Congo DR': 'COD', 'Uzbekistan': 'UZB', 'Colombia': 'COL',
+  'Portugal': 'POR', 'Democratic Republic of the Congo': 'COD', 'Uzbekistan': 'UZB', 'Colombia': 'COL',
   'England': 'ING', 'Croatia': 'CRO', 'Ghana': 'GHA', 'Panama': 'PAN',
   'Belgium': 'BEL', 'Egypt': 'EGI', 'Iran': 'IRA', 'New Zealand': 'NZL',
 };
 
+const FETCH_TIMEOUT = 30_000;
+const MAX_RETRIES = 3;
+const RETRY_DELAYS = [5_000, 10_000, 20_000];
+
 let ultimaExecucao = null;
 let ultimoResultado = { ok: false, atualizados: 0, erros: 0, ignorados: 0, mensagem: '' };
+let falhasConsecutivas = 0;
+
+async function fetchComTimeout(url, options, timeoutMs) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    return res;
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 async function buscarPlacares() {
   const resultado = { ok: false, atualizados: 0, erros: 0, ignorados: 0, mensagem: '' };
 
-  try {
-    const res = await fetch(API_URL, {
-      headers: { 'Api-Key': API_KEY }
-    });
+  for (let tentativa = 1; tentativa <= MAX_RETRIES; tentativa++) {
+    try {
+      const res = await fetchComTimeout(API_URL, {}, FETCH_TIMEOUT);
 
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-    }
-
-    const body = await res.json();
-    const partidas = body?.data?.matches || [];
-
-    if (partidas.length === 0) {
-      resultado.mensagem = 'Nenhuma partida encontrada na API.';
-      resultado.ok = true;
-      return resultado;
-    }
-
-    let encontrouFinalizado = false;
-
-    for (const partida of partidas) {
-      if (partida.status !== 'FT') continue;
-      encontrouFinalizado = true;
-      if (partida.home_score === null || partida.away_score === null) continue;
-      if (!partida.home_team || !partida.away_team) continue;
-
-      const siglaCasaDB = API_NOME_PARA_SIGLA[partida.home_team];
-      const siglaVisitanteDB = API_NOME_PARA_SIGLA[partida.away_team];
-
-      if (!siglaCasaDB || !siglaVisitanteDB) {
-        resultado.ignorados++;
-        continue;
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
       }
 
-      const jogo = await get(`
-        SELECT j.id, j.finalizado, j.gols_casa, j.gols_visitante, j.fase
-        FROM jogos j
-        JOIN selecoes sc ON j.selecao_casa_id = sc.id
-        JOIN selecoes sv ON j.selecao_visitante_id = sv.id
-        WHERE sc.sigla = ? AND sv.sigla = ?
-      `, [siglaCasaDB, siglaVisitanteDB]);
+      falhasConsecutivas = 0;
 
-      if (!jogo) {
-        resultado.ignorados++;
-        continue;
+      const body = await res.json();
+      const partidas = body?.games || [];
+
+      if (partidas.length === 0) {
+        resultado.mensagem = 'Nenhuma partida encontrada na API.';
+        resultado.ok = true;
+        break;
       }
 
-      if (jogo.finalizado === 1) {
-        resultado.ignorados++;
-        continue;
-      }
+      let encontrouFinalizado = false;
 
-      const golsCasa = Number(partida.home_score);
-      const golsVisitante = Number(partida.away_score);
-      const ehGrupo = jogo.fase === 'grupo';
+      for (const partida of partidas) {
+        if (partida.finished !== 'TRUE') continue;
+        encontrouFinalizado = true;
+        if (partida.home_score === null || partida.away_score === null) continue;
+        if (!partida.home_team_name_en || !partida.away_team_name_en) continue;
 
-      if (ehGrupo) {
-        await run(
-          'UPDATE jogos SET gols_casa = ?, gols_visitante = ?, finalizado = 1 WHERE id = ?',
-          [golsCasa, golsVisitante, jogo.id]
-        );
+        const siglaCasaDB = API_NOME_PARA_SIGLA[partida.home_team_name_en];
+        const siglaVisitanteDB = API_NOME_PARA_SIGLA[partida.away_team_name_en];
 
-        const ptsConfig = await get('SELECT * FROM fase_pontuacao WHERE fase = ?', ['grupo']);
+        if (!siglaCasaDB || !siglaVisitanteDB) {
+          resultado.ignorados++;
+          continue;
+        }
 
-        if (ptsConfig) {
-          const palpites = await all(
-            'SELECT id, palpite_gols_casa, palpite_gols_visitante FROM palpites WHERE jogo_id = ?',
-            [jogo.id]
+        const jogo = await get(`
+          SELECT j.id, j.finalizado, j.gols_casa, j.gols_visitante, j.fase
+          FROM jogos j
+          JOIN selecoes sc ON j.selecao_casa_id = sc.id
+          JOIN selecoes sv ON j.selecao_visitante_id = sv.id
+          WHERE sc.sigla = ? AND sv.sigla = ?
+        `, [siglaCasaDB, siglaVisitanteDB]);
+
+        if (!jogo) {
+          resultado.ignorados++;
+          continue;
+        }
+
+        if (jogo.finalizado === 1) {
+          resultado.ignorados++;
+          continue;
+        }
+
+        const golsCasa = Number(partida.home_score);
+        const golsVisitante = Number(partida.away_score);
+        const ehGrupo = jogo.fase === 'grupo';
+
+        if (ehGrupo) {
+          await run(
+            'UPDATE jogos SET gols_casa = ?, gols_visitante = ?, finalizado = 1 WHERE id = ?',
+            [golsCasa, golsVisitante, jogo.id]
           );
 
-          for (const p of palpites) {
-            const pontos = calcularPontos(golsCasa, golsVisitante, p.palpite_gols_casa, p.palpite_gols_visitante, ptsConfig);
-            await run('UPDATE palpites SET pontos_obtidos = ? WHERE id = ?', [pontos, p.id]);
+          const ptsConfig = await get('SELECT * FROM fase_pontuacao WHERE fase = ?', ['grupo']);
+
+          if (ptsConfig) {
+            const palpites = await all(
+              'SELECT id, palpite_gols_casa, palpite_gols_visitante FROM palpites WHERE jogo_id = ?',
+              [jogo.id]
+            );
+
+            for (const p of palpites) {
+              const pontos = calcularPontos(golsCasa, golsVisitante, p.palpite_gols_casa, p.palpite_gols_visitante, ptsConfig);
+              await run('UPDATE palpites SET pontos_obtidos = ? WHERE id = ?', [pontos, p.id]);
+            }
           }
+        } else {
+          await run(
+            'UPDATE jogos SET gols_casa = ?, gols_visitante = ? WHERE id = ?',
+            [golsCasa, golsVisitante, jogo.id]
+          );
         }
-      } else {
-        await run(
-          'UPDATE jogos SET gols_casa = ?, gols_visitante = ? WHERE id = ?',
-          [golsCasa, golsVisitante, jogo.id]
-        );
+
+        resultado.atualizados++;
       }
 
-      resultado.atualizados++;
-    }
+      resultado.ok = true;
+      if (!encontrouFinalizado) {
+        resultado.mensagem = 'Nenhum jogo finalizado encontrado na API.';
+      } else {
+        resultado.mensagem = `${resultado.atualizados} jogo(s) atualizado(s), ${resultado.ignorados} ignorado(s).`;
+      }
 
-    resultado.ok = true;
-    if (!encontrouFinalizado) {
-      resultado.mensagem = 'Nenhum jogo finalizado encontrado na API.';
-    } else {
-      resultado.mensagem = `${resultado.atualizados} jogo(s) atualizado(s), ${resultado.ignorados} ignorado(s).`;
+      break;
+
+    } catch (err) {
+      if (tentativa < MAX_RETRIES) {
+        const delay = RETRY_DELAYS[tentativa - 1] || RETRY_DELAYS[RETRY_DELAYS.length - 1];
+        console.error(`[Placar Automático] Tentativa ${tentativa}/${MAX_RETRIES} falhou: ${err.message}. Tentando novamente em ${delay / 1000}s...`);
+        await new Promise(r => setTimeout(r, delay));
+      } else {
+        falhasConsecutivas++;
+        resultado.mensagem = `Erro após ${MAX_RETRIES} tentativas: ${err.message}`;
+        resultado.erros = 1;
+        console.error(`[Placar Automático] ${resultado.mensagem} (${falhasConsecutivas} falhas consecutivas)`);
+      }
     }
-  } catch (err) {
-    resultado.mensagem = `Erro: ${err.message}`;
-    resultado.erros = 1;
-    console.error('[Placar Automático]', err.message);
   }
 
   ultimaExecucao = new Date();
