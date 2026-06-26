@@ -452,7 +452,7 @@ async function criarSchema() {
     [72, dt(2026,6,27,20,30), 'Mercedes-Benz Stadium',        'Atlanta',              'EUA'],
   ];
   for (const [id, data, estadio, cidade, pais] of updates) {
-    await run("UPDATE jogos SET data = ?, estadio = ?, cidade = ?, pais = ? WHERE id = ?", [data, estadio, cidade, pais, id]);
+    await run("UPDATE jogos SET data = COALESCE(data, ?), estadio = COALESCE(estadio, ?), cidade = COALESCE(cidade, ?), pais = COALESCE(pais, ?) WHERE id = ?", [data, estadio, cidade, pais, id]);
   }
 
   // Migração 2026-06-11: tabela de pontos bônus (admin premia participantes que entraram tarde)

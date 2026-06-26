@@ -17,15 +17,15 @@ router.get('/diagnostic', async (req, res) => {
   try {
     const usandoPG = !!process.env.DATABASE_URL;
     const totalUsers = await get('SELECT COUNT(*) AS total FROM usuarios');
-    const adminUser = await get("SELECT id, email, is_admin, length(senha_hash) AS hash_len, substring(senha_hash, 1, 30) AS hash_inicio FROM usuarios WHERE email = 'gpmmac@gmail.com'");
+    const adminEmailDiagnostic = process.env.ADMIN_DIAG_EMAIL || (process.env.ADMIN_EMAIL || '');
+    const adminUser = adminEmailDiagnostic ? await get("SELECT id, email, is_admin, length(senha_hash) AS hash_len, substring(senha_hash, 1, 30) AS hash_inicio FROM usuarios WHERE email = ?", [adminEmailDiagnostic]) : null;
     const envEmail = process.env.ADMIN_EMAIL || '(não definido)';
     const envSenhaLen = (process.env.ADMIN_SENHA || '').length;
 
     const adminSenha = process.env.ADMIN_SENHA || '';
-    const testHash = adminUser ? await bcrypt.compare(adminSenha, adminUser.hash_inicio + '...') : false;
     let senhaOk = false;
     if (adminUser && adminSenha) {
-      const fullUser = await get("SELECT senha_hash FROM usuarios WHERE email = 'gpmmac@gmail.com'");
+      const fullUser = await get("SELECT senha_hash FROM usuarios WHERE email = ?", [adminEmailDiagnostic]);
       senhaOk = await bcrypt.compare(adminSenha, fullUser.senha_hash);
     }
 

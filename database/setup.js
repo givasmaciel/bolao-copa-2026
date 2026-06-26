@@ -98,9 +98,9 @@ async function setup() {
       [72, dt(2026,6,27,20,30), 'Mercedes-Benz Stadium',        'Atlanta',              'EUA'],
     ];
     for (const [id, data, estadio, cidade, pais] of updates) {
-      await run("UPDATE jogos SET data = ?, estadio = ?, cidade = ?, pais = ? WHERE id = ?", [data, estadio, cidade, pais, id]);
+      await run("UPDATE jogos SET data = COALESCE(data, ?), estadio = COALESCE(estadio, ?), cidade = COALESCE(cidade, ?), pais = COALESCE(pais, ?) WHERE id = ?", [data, estadio, cidade, pais, id]);
     }
-    console.log(`✅ Horários de ${updates.length} jogos da fase de grupos atualizados`);
+    console.log(`✅ Horários de ${updates.length} jogos da fase de grupos garantidos (não sobrescreve edições manuais)`);
 
     // Mata-mata (R32, R16, QF, SF, 3º lugar, Final) - 32 jogos
     // Estes não são sobrescritos pelo seed em deploys subsequentes (o seed só roda
@@ -146,9 +146,9 @@ async function setup() {
       [104, dt(2026,7,19,16,0),   'MetLife Stadium',              'Nova York/Nova Jersey','EUA'], // W101 vs W102
     ];
     for (const [id, data, estadio, cidade, pais] of mataMataUpdates) {
-      await run("UPDATE jogos SET data = ?, estadio = ?, cidade = ?, pais = ? WHERE id = ?", [data, estadio, cidade, pais, id]);
+      await run("UPDATE jogos SET data = COALESCE(data, ?), estadio = COALESCE(estadio, ?), cidade = COALESCE(cidade, ?), pais = COALESCE(pais, ?) WHERE id = ?", [data, estadio, cidade, pais, id]);
     }
-    console.log(`✅ Horários de ${mataMataUpdates.length} jogos do mata-mata atualizados`);
+    console.log(`✅ Horários de ${mataMataUpdates.length} jogos do mata-mata garantidos (não sobrescreve edições manuais)`);
 
     // Fix: jogos 29 e 30 do Grupo C estavam com os times trocados no banco
     // (Escócia×Marrocos e Brasil×Haiti tinham selecao_casa_id/visitante_id invertidos)

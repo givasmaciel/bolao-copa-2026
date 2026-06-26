@@ -114,9 +114,8 @@ router.post('/', verificarAutenticado, async (req, res) => {
   }
 
   try {
-    await run('DELETE FROM palpites_extras WHERE usuario_id = ?', [usuarioId]);
-
     for (const cat of CATEGORIAS) {
+      await run('DELETE FROM palpites_extras WHERE usuario_id = ? AND categoria = ?', [usuarioId, cat.id]);
       if (MULTI_CATS.has(cat.id)) {
         const vals = req.body[cat.id];
         if (!vals) continue;

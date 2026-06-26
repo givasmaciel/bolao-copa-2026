@@ -20,7 +20,7 @@ const API_NOME_PARA_SIGLA = {
 };
 
 let ultimaExecucao = null;
-let ultimoResultado = { ok: false, atualizados: 0, erros: 0, mensagem: '' };
+let ultimoResultado = { ok: false, atualizados: 0, erros: 0, ignorados: 0, mensagem: '' };
 
 async function buscarPlacares() {
   const resultado = { ok: false, atualizados: 0, erros: 0, ignorados: 0, mensagem: '' };
@@ -60,11 +60,11 @@ async function buscarPlacares() {
       }
 
       const jogo = await get(`
-        SELECT j.id, j.finalizado, j.gols_casa, j.gols_visitante
+        SELECT j.id, j.finalizado, j.gols_casa, j.gols_visitante, j.fase
         FROM jogos j
         JOIN selecoes sc ON j.selecao_casa_id = sc.id
         JOIN selecoes sv ON j.selecao_visitante_id = sv.id
-        WHERE sc.sigla = ? AND sv.sigla = ? AND j.fase = 'grupo'
+        WHERE sc.sigla = ? AND sv.sigla = ?
       `, [siglaCasaDB, siglaVisitanteDB]);
 
       if (!jogo) {
@@ -79,24 +79,32 @@ async function buscarPlacares() {
 
       const golsCasa = Number(partida.home_score);
       const golsVisitante = Number(partida.away_score);
+      const ehGrupo = jogo.fase === 'grupo';
 
-      await run(
-        'UPDATE jogos SET gols_casa = ?, gols_visitante = ?, finalizado = 1 WHERE id = ?',
-        [golsCasa, golsVisitante, jogo.id]
-      );
-
-      const ptsConfig = await get('SELECT * FROM fase_pontuacao WHERE fase = ?', ['grupo']);
-
-      if (ptsConfig) {
-        const palpites = await all(
-          'SELECT id, palpite_gols_casa, palpite_gols_visitante FROM palpites WHERE jogo_id = ?',
-          [jogo.id]
+      if (ehGrupo) {
+        await run(
+          'UPDATE jogos SET gols_casa = ?, gols_visitante = ?, finalizado = 1 WHERE id = ?',
+          [golsCasa, golsVisitante, jogo.id]
         );
 
-        for (const p of palpites) {
-          const pontos = calcularPontos(golsCasa, golsVisitante, p.palpite_gols_casa, p.palpite_gols_visitante, ptsConfig);
-          await run('UPDATE palpites SET pontos_obtidos = ? WHERE id = ?', [pontos, p.id]);
+        const ptsConfig = await get('SELECT * FROM fase_pontuacao WHERE fase = ?', ['grupo']);
+
+        if (ptsConfig) {
+          const palpites = await all(
+            'SELECT id, palpite_gols_casa, palpite_gols_visitante FROM palpites WHERE jogo_id = ?',
+            [jogo.id]
+          );
+
+          for (const p of palpites) {
+            const pontos = calcularPontos(golsCasa, golsVisitante, p.palpite_gols_casa, p.palpite_gols_visitante, ptsConfig);
+            await run('UPDATE palpites SET pontos_obtidos = ? WHERE id = ?', [pontos, p.id]);
+          }
         }
+      } else {
+        await run(
+          'UPDATE jogos SET gols_casa = ?, gols_visitante = ? WHERE id = ?',
+          [golsCasa, golsVisitante, jogo.id]
+        );
       }
 
       resultado.atualizados++;
