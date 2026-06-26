@@ -17,7 +17,7 @@ Deploy no Render (Node.js) com Render Postgres. Localmente usa SQLite. Neon est�
 - **Config** (`/config`) — participante altera próprio nome (sincronizado com username)
 - **Admin como juiz** — não participa, não aparece no ranking, redirecionado de `/palpites`
 - **Admin: editar horário/estádio** — botão "🕐 Horário/Estádio" em `/admin/jogos` para corrigir data/hora, estádio, cidade e país de qualquer jogo sem precisar de deploy
-- **Placar automático** — busca resultados reais da API 26worldcup.cn a cada 16 minutos; atualiza placar e recalcula pontos automaticamente; acionável manualmente pelo admin em `/admin/placar-automatico`
+- **Placar automático** — busca resultados reais da API 26worldcup.cn a cada 16 minutos; atualiza placar e recalcula pontos automaticamente (fase de grupos); no mata-mata, atualiza o placar dos 90 min sem finalizar (admin adiciona prorrogação/pênaltis manualmente); acionável manualmente pelo admin em `/admin/placar-automatico`
 - **Pontos bônus** — participantes tardios recebem pontuação do último colocado -1 da rodada de ingresso; cadastro encerra após fechamento dos extras; tooltip no ranking mostra motivo
 - **Rotas administrativas** — resultados dos jogos, recalcular pontos, gerenciar usuários (promover/rebaixar/excluir/resetar senha, resetar palpites individual/massa, alterar username, criar participante), admin extras, admin config
 - **Rota de diagnóstico** — `/jogos/db-info` retorna JSON com `host`, `marcador` (do `db_marker` da tabela `config`), contagens (`usuarios`, `jogos`, `palpites`, `jogos_finalizados`) e timestamp

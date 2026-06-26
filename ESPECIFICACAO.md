@@ -38,7 +38,7 @@ O banco opera de forma transparente com **SQLite** (desenvolvimento local) ou **
   - `SERIAL` (PG) vs `AUTOINCREMENT` (SQLite) para PKs.
   - `TIMESTAMPTZ` (PG) vs `DATETIME` (SQLite) para colunas de data/hora.
   - `IF NOT EXISTS` para adição condicional de colunas.
-- **Atenção — dupla fonte de verdade**: O `schema.js` contém uma migration (linhas ~328–407) que sobrescreve os 72 jogos de grupo toda vez que o servidor inicia. O `seed.js` também define esses mesmos jogos. **Ambos os arquivos devem ser mantidos em sincronia** ao alterar horários, estádios ou cidades de jogos da fase de grupos.
+- **Proteção contra sobrescrita**: O `setup.js` e `schema.js` usam `COALESCE` nos UPDATEs de horários — se o admin editou manualmente um campo via `/admin/jogos/:id/horario`, o deploy não sobrescreve a edição.
 - SQLite: `PRAGMA journal_mode = WAL` e `PRAGMA foreign_keys = ON`.
 - Setup em produção: `node database/setup.js && node server.js`. O `setup.js` cria as tabelas, executa seed se vazio e cria/atualiza admin via variáveis de ambiente.
 
@@ -554,8 +554,8 @@ services:
 Executado em todo deploy (`node database/setup.js && node server.js`):
 1. Cria as tabelas (schema) se não existirem.
 2. Verifica se há dados; se vazio, executa o seed (48 seleções, 12 grupos, 104 jogos).
-3. Atualiza horários dos 72 jogos da fase de grupos.
-4. Atualiza horários dos 32 jogos do mata-mata.
+3. Preenche horários dos 72 jogos da fase de grupos (usa `COALESCE` — não sobrescreve edições manuais do admin).
+4. Preenche horários dos 32 jogos do mata-mata (mesmo `COALESCE`).
 5. Corrige times trocados dos jogos 29 e 30.
 6. Se `ADMIN_EMAIL` e `ADMIN_SENHA` estiverem definidas, cria ou atualiza o administrador automaticamente.
 
@@ -580,6 +580,7 @@ Executado em todo deploy (`node database/setup.js && node server.js`):
 | `SMTP_PASS` | Não | Senha SMTP |
 | `SMTP_FROM` | Não | Remetente dos e-mails |
 | `PLANO_AUTO_API_KEY` | Não | Chave da API 26worldcup.cn para placar automático (fallback para chave hardcoded) |
+| `ADMIN_DIAG_EMAIL` | Não | Email do admin consultado na rota `/admin/diagnostic` (fallback para `ADMIN_EMAIL`) |
 
 ---
 
@@ -680,6 +681,8 @@ bolao/
 - **PWA (Progressive Web App)**: `public/manifest.json` + `public/sw.js` (service worker). Estratégia híbrida — assets estáticos cache-first, HTML network-first, APIs/login/admin nunca cacheia. Instalável no celular como app nativo (⚽ verde Brasil). Atalhos para Palpites/Ranking/Jogos. Service worker pula `/healthz` e `/jogos/db-info`.
 - **Sentry (opcional)**: se `NODE_ENV=production` E `SENTRY_DSN` estiver setado, inicializa com `tracesSampleRate: 0.1` e middleware de request/error handlers. Filtra `/healthz`, `/favicon` e `/admin`. Zero overhead em dev local.
 - **Content-Security-Policy**: middleware seta CSP, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`. Defesa em profundidade contra XSS e clickjacking. Permite inline (EJS usa) e `flagcdn.com` para bandeiras.
+- **Placar automático no mata-mata**: o serviço (`services/placar-automatico.js`) busca resultados da API `26worldcup.cn` para todas as fases. Em jogos de grupos, finaliza e recalcula pontos automaticamente. Em mata-mata, apenas atualiza o placar dos 90 min (`gols_casa`/`gols_visitante`) sem finalizar — o admin deve revisar e adicionar dados de prorrogação/pênaltis manualmente em `/admin/jogos` antes de marcar `finalizado`.
+- **Proteção contra sobrescrita de horários**: `setup.js` e `schema.js` usam `COALESCE` nos UPDATEs. Se o admin editou um jogo via `/admin/jogos/:id/horario`, o próximo deploy não desfaz a alteração.
 - **Logs estruturados**: `logger.js` emite JSON para stdout (Render indexa). Substitui `console.log/error/warn` por `logger.info/warn/error/debug`. Permite buscas por `level`, `msg`, campos customizados.
 - **Toast/snackbar**: `public/js/toast.js` expõe `window.toast(msg, tipo, duracao)`. Substitui `alert()` por notificações modernas com ícones (success/error/warning/info), cor por tipo, posição canto-inferior-central, some sozinho. Usado em `salvarIndividual`, `salvarGrupo` e outros pontos com mensagem de erro/sucesso.
 - **Confirmação de exclusão**: em `/admin/usuarios`, modal exige digitar o nome do usuário para habilitar o botão Excluir (substitui `confirm()` de 1-clique). Enter confirma, Esc cancela.
