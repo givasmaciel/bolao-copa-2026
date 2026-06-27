@@ -9,8 +9,8 @@
  * - INSERT no Neon: palpites do Render cujo jogo NÃO está finalizado no Neon
  *
  * Uso:
- *   DATABASE_URL=postgresql://...neon... node scripts/fix-palpites-futuro.js --dry-run
- *   DATABASE_URL=postgresql://...neon... node scripts/fix-palpites-futuro.js
+ *   DATABASE_URL=postgresql://usuario:senha@hostbanco/database node scripts/fix-palpites-futuro.js --dry-run
+ *   DATABASE_URL=postgresql://usuario:senha@hostbanco/database node scripts/fix-palpites-futuro.js
  */
 
 require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });

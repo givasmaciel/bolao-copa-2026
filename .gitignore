@@ -8,3 +8,4 @@ data/
 .claude/
 MANUAL_LOCAL.md
 backups/
+scripts/compare-dbs.js

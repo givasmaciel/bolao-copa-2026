@@ -25,6 +25,7 @@ const resumoRoutes = require('./routes/resumo');
 const classificacaoRoutes = require('./routes/classificacao');
 const { all, get } = require('./database/db');
 const { PALPITE_MARGEM_MS } = require('./services/palpite-config');
+const { getStatus: getPlacarStatus } = require('./services/placar-automatico');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -95,21 +96,28 @@ app.use(session({
 }));
 app.use(flash());
 
+// Segurança: SESSION_SECRET em produção deve ser explícito, não o fallback
+if (process.env.NODE_ENV === 'production') {
+  const secret = process.env.SESSION_SECRET;
+  if (!secret || secret === 'bolao-copa-2026-secret') {
+    console.error('❌ NODE_ENV=production mas SESSION_SECRET não está definido ou usa o valor padrão.');
+    console.error('   Defina uma string única e longa em .env: SESSION_SECRET=sua-chave-aqui');
+    process.exit(1);
+  }
+}
+
 // Identifica qual banco está conectado (lê uma vez no boot e cacheia)
-let dbMarker = 'desconhecido';
-(async () => {
+// Resolvido: agora é um Promise para evitar race condition — o server só inicia DEPOIS que dbMarker está pronto
+const dbMarkerPromise = (async () => {
   try {
     const m = await get("SELECT valor FROM config WHERE chave = 'db_marker'");
-    if (m && m.valor) dbMarker = m.valor;
-    else {
-      // Não tem marcador ainda — pega host do DATABASE_URL como fallback
-      const u = process.env.DATABASE_URL || '';
-      const h = u.split('@')[1]?.split('/')[0] || 'local';
-      dbMarker = h;
-    }
-    logger.info('boot dbMarker loaded', { dbMarker });
+    if (m && m.valor) return m.valor;
+    // Não tem marcador ainda — pega host do DATABASE_URL como fallback
+    const u = process.env.DATABASE_URL || '';
+    return u.split('@')[1]?.split('/')[0] || 'local';
   } catch (e) {
     logger.warn('boot erro lendo db_marker', { error: e.message });
+    return 'erro';
   }
 })();
 
@@ -159,13 +167,13 @@ function csrfProtection(req, res, next) {
 app.use(csrfProtection);
 
 // Disponibiliza flash messages, usuário e constantes para as views
-app.use((req, res, next) => {
+app.use(async (req, res, next) => {
   res.locals.sucesso = req.flash('sucesso');
   res.locals.erro = req.flash('erro');
   res.locals.aviso = req.flash('aviso');
   res.locals.usuario = req.session.usuario || null;
   res.locals.PALPITE_MARGEM_MS = PALPITE_MARGEM_MS;
-  res.locals.dbMarker = dbMarker;
+  res.locals.dbMarker = await dbMarkerPromise;
   next();
 });
 
@@ -205,19 +213,49 @@ app.get('/healthz', healthzLimiter, async (req, res) => {
   try {
     const dbCheck = await get('SELECT 1 AS ok');
     const dbLatencyMs = Date.now() - start;
-    const contagens = {
-      usuarios: (await get('SELECT COUNT(*) AS c FROM usuarios'))?.c || 0,
-      jogos: (await get('SELECT COUNT(*) AS c FROM jogos'))?.c || 0,
-      palpites: (await get('SELECT COUNT(*) AS c FROM palpites'))?.c || 0,
-      jogos_finalizados: (await get('SELECT COUNT(*) AS c FROM jogos WHERE finalizado = 1'))?.c || 0,
-    };
+    const [contagens, marcacaoDb] = await Promise.all([
+      Promise.all([
+        get('SELECT COUNT(*) AS c FROM usuarios'),
+        get('SELECT COUNT(*) AS c FROM jogos'),
+        get('SELECT COUNT(*) AS c FROM palpites'),
+        get('SELECT COUNT(*) AS c FROM jogos WHERE finalizado = 1'),
+      ]),
+      dbMarkerPromise,
+    ]);
+    const [usuarios, jogos, palpites, jogosFinalizados] = contagens.map(r => r?.c || 0);
+
+    // Verificações proativas
+    const problemas = [];
+
+    // 1) Jogos finalizados sem pontos calculados (indicaria bug no recalculate)
+    // Exclui jogos sem palpites (ninguém jogou) — foco em finalizados com palpites mas sem pontos
+    const finalizadosSemPontos = await get(`
+      SELECT COUNT(*) AS c FROM jogos j
+      WHERE j.finalizado = 1
+        AND EXISTS (SELECT 1 FROM palpites WHERE jogo_id = j.id)
+        AND NOT EXISTS (SELECT 1 FROM palpites WHERE jogo_id = j.id AND pontos_obtidos > 0)
+    `);
+    if (finalizadosSemPontos?.c > 0) {
+      problemas.push(`jogos_finalizados_sem_pontos:${finalizadosSemPontos.c}`);
+    }
+
+    // 2) Placar automático parado (>25 min desde última execução)
+    const placarStatus = getPlacarStatus();
+    if (placarStatus.ultimaExecucao) {
+      const minDesdeUltimaExec = (Date.now() - placarStatus.ultimaExecucao.getTime()) / 60000;
+      if (minDesdeUltimaExec > 25) {
+        problemas.push(`placar_parado_min:${Math.round(minDesdeUltimaExec)}`);
+      }
+    }
+
     const data = {
-      status: 'ok',
+      status: problemas.length > 0 ? 'degraded' : 'ok',
       uptime_segundos: Math.round(process.uptime()),
-      db: { conectado: !!dbCheck?.ok, marcador: dbMarker, latencia_ms: dbLatencyMs },
-      contagens,
+      db: { conectado: !!dbCheck?.ok, marcador: marcacaoDb, latencia_ms: dbLatencyMs },
+      contagens: { usuarios, jogos, palpites, jogos_finalizados: jogosFinalizados },
       versao_node: process.version,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      ...(problemas.length > 0 && { problemas }),
     };
     healthzCache = { data, expiresAt: Date.now() + HEALTHZ_CACHE_MS };
     res.set('X-Cache', 'MISS');
@@ -227,7 +265,7 @@ app.get('/healthz', healthzLimiter, async (req, res) => {
     res.status(503).json({
       status: 'degraded',
       erro: err.message,
-      db: { conectado: false, marcador: dbMarker },
+      db: { conectado: false, marcador: await dbMarkerPromise },
       uptime_segundos: Math.round(process.uptime())
     });
   }
