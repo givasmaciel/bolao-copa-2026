@@ -137,39 +137,29 @@ DATABASE_URL="postgresql://neondb_owner:XXXX@ep-xxx.aws.neon.tech/neondb?sslmode
 
 ### Opção B — Importar do snapshot JSON (se usou Opção A no passo 5)
 
-Crie um pequeno script de import do snapshot. Exemplo:
+Use o script `scripts/import-snapshot.js` (já no repositório):
 
-```javascript
-// scripts/import-snapshot.js (a criar)
-const fs = require('fs');
-const path = require('path');
-const { run } = require('../database/db');
+```bash
+# 1. Conferir o que será importado (sem risco — dry-run)
+node scripts/import-snapshot.js --dry-run
 
-const SNAP = process.argv[2];
-if (!SNAP) { console.error('uso: node scripts/import-snapshot.js <path-snapshot>'); process.exit(1); }
+# 2. Importar (se não passar path, usa o snapshot mais recente em data/snapshots/)
+DATABASE_URL="postgresql://neondb_owner:XXXX@ep-xxx.aws.neon.tech/neondb?sslmode=require" \
+  node scripts/import-snapshot.js
 
-const data = JSON.parse(fs.readFileSync(SNAP, 'utf8'));
-const TABELAS = ['usuarios', 'grupos', 'selecoes', 'jogos', 'palpites', 'palpites_extras', 'resultados_extras', 'fase_pontuacao', 'config', 'pontos_bonus'];
-
-(async () => {
-  for (const tabela of TABELAS) {
-    const linhas = data.dados[tabela] || [];
-    if (linhas.length === 0) { console.log(`${tabela}: 0 linhas, pulando`); continue; }
-    await run(`DELETE FROM ${tabela}`);
-    const cols = Object.keys(linhas[0]);
-    const placeholders = cols.map(() => '?').join(',');
-    let count = 0;
-    for (const row of linhas) {
-      const values = cols.map(c => row[c] === undefined ? null : row[c]);
-      await run(`INSERT INTO ${tabela} (${cols.join(',')}) VALUES (${placeholders})`, values);
-      count++;
-    }
-    console.log(`${tabela}: ${count} linhas importadas`);
-  }
-})().catch(e => { console.error(e); process.exit(1); });
+# 3. Ou apontando para um snapshot específico:
+DATABASE_URL="postgresql://neondb_owner:XXXX@ep-xxx.aws.neon.tech/neondb?sslmode=require" \
+  node scripts/import-snapshot.js data/snapshots/snapshot-2026-06-26-210844.json
 ```
 
-> Se preferir, posso adicionar esse script ao repositório em outra oportunidade.
+**Recursos do script:**
+- Roda em transação: se qualquer linha falhar, ROLLBACK e banco fica intacto
+- Ordem reversa no DELETE (respeita foreign keys)
+- `--dry-run` para conferir antes de escrever
+- Lê qualquer snapshot JSON no formato `{ _meta, dados }` (gerado por `scripts/daily-snapshot.js`)
+- Compatível com Render e Neon (mesma interface `pg.Pool`)
+
+> Esse script substitui o exemplo inline que existia em versões anteriores desta doc.
 
 ---
 
@@ -324,6 +314,58 @@ curl https://bolao-copa-2026-zjoi.onrender.com/jogos/db-info
 
 # 8. (1-2 semanas depois) Deletar Render Postgres
 ```
+
+---
+
+---
+
+## 11. Status atual (26/06/2026)
+
+### O que já foi feito
+
+- **Projeto Neon criado**: `ep-red-brook-a64zto1n-pooler.us-west-2.aws.neon.tech`
+- **Schema criado** no Neon via `node database/setup.js` (CREATE TABLE + ALTER TABLE)
+- **Coluna `codigo_convite`** adicionada no schema do Neon (existia no Render mas não no `schema.js`)
+- **Dump fresco** do Render Postgres salvo em `data/render-dump.json`
+- **Snapshot diário** salvo em `data/snapshots/snapshot-2026-06-26-210844.json`
+- **Import completo** dos dados no Neon (10 tabelas, contagens idênticas ao Render)
+- **Connection string** do Neon salva no `.env` local (comentada)
+- **Script `scripts/import-neon.js`** mantido para refazer o espelho quando necessário
+
+### Contagens verificadas (Render = Neon)
+
+| Tabela | Linhas |
+|--------|--------|
+| usuarios | 11 |
+| grupos | 12 |
+| selecoes | 48 |
+| jogos | 104 |
+| palpites | 717 |
+| palpites_extras | 648 |
+| fase_pontuacao | 7 |
+| config | 6 |
+| pontos_bonus | 2 |
+
+`db_marker` no Neon: `neon-producao-2026-06-26`
+
+### O que falta (quando decidir migrar)
+
+1. Fazer dump fresco (5 min antes da migração)
+2. Reimportar no Neon (rodar `node scripts/import-neon.js`)
+3. Trocar `DATABASE_URL` no dashboard do Render → Neon
+4. Verificar `/healthz` e `/jogos/db-info`
+5. (1-2 semanas depois) Deletar Render Postgres
+
+### Conexão
+
+Connection string do Neon salva em `.env` (comentada). Para usar:
+```bash
+# Descomentar a linha DATABASE_URL no .env apontando para Neon,
+# ou passar via variável de ambiente:
+DATABASE_URL="postgresql://neondb_owner:senha@ep-red-brook-a64zto1n-pooler.us-west-2.aws.neon.tech/neondb?sslmode=require"
+```
+
+> ⚠️ Não compartilhe a connection string em commits ou docs públicos. Está segura no `.env` (gitignorado) e no dashboard do Neon.
 
 ---
 

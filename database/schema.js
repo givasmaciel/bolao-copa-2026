@@ -274,6 +274,15 @@ async function criarSchema() {
     }
   } catch (e) { /* Coluna já existe */ }
 
+  // Migração 2026-06-19: coluna codigo_convite (código único para convite de participantes)
+  try {
+    if (usandoPG) {
+      await run("ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS codigo_convite TEXT");
+    } else {
+      await run("ALTER TABLE usuarios ADD COLUMN codigo_convite TEXT");
+    }
+  } catch (e) { /* Coluna já existe */ }
+
   // Migração 2026-06-15: coluna foto_base64 (foto persistente no banco, não some no deploy)
   try {
     if (usandoPG) {
