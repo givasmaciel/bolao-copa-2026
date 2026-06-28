@@ -24,7 +24,7 @@
 </div>
 
 <p class="texto-aux" style="font-size:0.8rem;margin:0 0 12px">
-  ⓘ <em>Palpites</em> mostra o total de palpites <strong>feitos até o momento</strong> pelo participante (cresce conforme ele palpita novos jogos). As métricas de qualidade, <em>Média</em> e <em>Aproveitamento</em> referem-se apenas a jogos <strong>finalizados</strong>. <em>Pontos</em> = jogos finalizados + extras + bônus. <em>Pont.</em> é a soma de <em>Exatos + Res+Gol + Só Res + 1 Gol</em> (quantos palpites pontuaram &gt; 0).
+  ⓘ <em>Palpites</em> mostra o total de palpites <strong>feitos até o momento</strong> pelo participante (cresce conforme ele palpita novos jogos). As métricas de qualidade, <em>Média</em> e <em>Aproveitamento</em> referem-se apenas a jogos <strong>finalizados</strong>. <em>Pontos</em> = jogos finalizados + extras + bônus. <em>Pont.</em> é a soma de <em>Exatos + Res+Gol + Só Res + 1 Gol</em> (quantos palpites pontuaram &gt; 0). Na coluna <em>Extras/Bônus</em>: <strong style="color:var(--verde)">+Ne</strong> = pontos de palpites extras (campeão, artilheiro etc.), <strong>+Nb</strong> = pontos bônus concedidos pelo admin.
 </p>
 
 <details class="card mb-2" style="padding:8px 12px;cursor:pointer">
@@ -330,6 +330,7 @@
         <th class="text-center" colspan="6">🎯 Qualidade dos acertos</th>
         <th class="text-center" rowspan="2" title="Média pts por palpite em jogos finalizados">Média</th>
         <th class="text-center" rowspan="2" title="% do máximo possível em jogos finalizados">Aproveit.</th>
+        <th class="text-center" rowspan="2" title="+Ne = extras (campeão/artilheiro/etc) | +Nb = bônus do admin">Extras/Bônus</th>
         <th class="text-center" rowspan="2" title="Total: palpites + extras + bônus">Pontos</th>
       </tr>
       <tr>
@@ -416,9 +417,14 @@
             <% }); %>
 <%
               var bonusInfo = bonusMap && bonusMap[u.id] && bonusMap[u.id].length > 0 ? bonusMap[u.id].map(function(b) { return b.motivo ? b.pontos + ' (' + b.motivo + ')' : '+' + b.pontos; }).join('; ') : '';
-              var extraTotal = (u.extras_pontos || 0) + (u.bonus_pontos || 0);
+              var extraSom = u.extras_pontos || 0;
+              var bonusSom = u.bonus_pontos || 0;
             %>
-            <td class="text-center" style="color:var(--cinza-escuro)" title="<%= extraTotal > 0 ? 'Extra: +' + (u.extras_pontos || 0) + (bonusInfo ? ' | Bônus: ' + bonusInfo : '') : '' %>"><%= extraTotal > 0 ? '+' + extraTotal : '—' %></td>
+            <td class="text-center" style="color:var(--cinza-escuro)" title="<%= extraSom > 0 ? 'Extra: +' + extraSom : 'Sem pontos extras' %><%= bonusSom > 0 ? ' | Bônus: +' + bonusSom + (bonusInfo ? ' (' + bonusInfo + ')' : '') : '' %>">
+              <% if (extraSom > 0) { %><span style="color:var(--verde)">+<%= extraSom %>e</span><% } %>
+              <% if (bonusSom > 0) { %><span style="color:var(--cinza-escuro);font-size:0.85em">+<%= bonusSom %>b</span><% } %>
+              <% if (extraSom === 0 && bonusSom === 0) { %>—<% } %>
+            </td>
             <td class="text-center pontos"><%= u.total_pontos %></td>
           </tr>
         <% }); %>
