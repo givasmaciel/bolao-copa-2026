@@ -49,6 +49,7 @@ router.get('/', verificarAutenticado, async (req, res) => {
         ), 0) + COALESCE((SELECT SUM(pontos) FROM pontos_bonus WHERE usuario_id = u.id), 0) AS total_pontos
       FROM usuarios u
       LEFT JOIN palpites p ON p.usuario_id = u.id
+      WHERE u.is_admin = 0
       GROUP BY u.id
       ORDER BY total_pontos DESC
       LIMIT 5
