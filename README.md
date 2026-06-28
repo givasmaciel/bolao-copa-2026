@@ -15,7 +15,7 @@ Deploy no Render (Node.js) com **Postgres no Neon** (free tier permanente). Loca
 - **Resumo** (`/resumo`) — estatísticas detalhadas por tipo de ponto, pontos por rodada, racha (comparação head-to-head) com qualquer participante, histórico de jogos finalizados
 - **Visualização pública de palpites** (`/jogos/:id/palpites`) — 3 níveis de visibilidade: 🔒 oculto antes do fechamento, 👀 visível sem pontos após fechar, visível com pontos após resultado; agrupamento por pontuação; destaca o palpite do visitante
 - **Config** (`/config`) — participante altera próprio nome (sincronizado com username)
-- **Admin como juiz** — não participa, não aparece no ranking, redirecionado de `/palpites`
+- **Admin** — gerencia o site via `/admin/*` (jogos, usuários, extras, bônus, mata-mata, horários, pontuação por fase). Pode apostar em `/palpites` e `/palpites-extras` se quiser, mas é **excluído do ranking** — seus palpites não contam pra ninguém.
 - **Admin: editar horário/estádio** — botão "🕐 Horário/Estádio" em `/admin/jogos` para corrigir data/hora, estádio, cidade e país de qualquer jogo sem precisar de deploy
 - **Placar automático** — busca resultados reais da API worldcup26.ir (open-source) a cada 16 minutos; atualiza placar e recalcula pontos automaticamente (fase de grupos); no mata-mata, atualiza o placar dos 90 min sem finalizar (admin adiciona prorrogação/pênaltis manualmente); acionável manualmente pelo admin em `/admin/placar-automatico`
 - **Pontos bônus** — participantes tardios recebem pontuação do último colocado -1 da rodada de ingresso; cadastro encerra após fechamento dos extras; tooltip no ranking mostra motivo
@@ -138,9 +138,9 @@ database/
 
 routes/
   auth.js        — cadastro aberto (bloqueado após prazo dos extras), login (email/username/nome), logout
-  palpites.js    — palpites por jogo, trava 2 min antes, exclusão de admin
+  palpites.js    — palpites por jogo, trava 2 min antes, idempotência via ON CONFLICT
   extras.js      — palpites extras independentes, save individual e em lote, revelação pós-prazo
-  dashboard.js   — cards, próximos jogos, top 5, banner com contagem regressiva, pontuação por fase
+  dashboard.js   — cards, próximos jogos, top 5 (exclui admin), banner com contagem regressiva, pontuação por fase
   resumo.js      — stats detalhadas, pontos por rodada, racha, histórico
   config.js      — alterar nome (sincroniza com username)
   classificacao.js — classificação dos grupos
@@ -195,7 +195,7 @@ scripts/
 
 ## Regras de negócio
 
-- Admin (is_admin=1) redirecionado de `/palpites` e `/palpites-extras` com flash
+- Admin (is_admin=1) pode acessar `/palpites` e `/palpites-extras` e dar palpites; seus palpites existem mas são excluídos do ranking (`WHERE u.is_admin = 0` em todas as queries)
 - Palpites travam 2 min antes do horário BRT de cada jogo (frontend + backend)
 - Pontuação automática ao admin marcar jogo como finalizado; botão de recalcular disponível; placar automático via API worldcup26.ir a cada 16 min
 - Admin pode recalcular pontos, resetar palpites (individual/massa), resetar senha, promover/rebaixar, excluir usuários

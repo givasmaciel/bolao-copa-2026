@@ -239,7 +239,7 @@ Armazena configurações do sistema, como o prazo limite dos palpites extras (ex
 - Cada jogo possui botão "Salvar" individual; cada agrupamento também oferece "Salvar todos" para os jogos ainda abertos.
 - Cada jogo é bloqueado 2 minutos antes do seu horário (horário de Brasília).
 - Jogos finalizados (`finalizado = 1`) são bloqueados independentemente do horário.
-- Administradores são redirecionados para `/admin` com mensagem flash.
+- Administradores podem acessar `/palpites` e dar palpites normalmente (seus palpites existem mas não contam para o ranking — ver regra 7.1).
 - Placar validado entre 0–99; valores vazios ou não numéricos são ignorados.
 - Se o jogo possui campo `time_casa` (nome alternativo) ou está bloqueado, exibe mensagem apropriada.
 - Lógica de upsert: INSERT se não existe palpite; UPDATE se já existe.
@@ -276,7 +276,7 @@ Armazena configurações do sistema, como o prazo limite dos palpites extras (ex
 - Prazo configurável via tabela `config` (chave `extras_data_limite`).
 - Categorias com múltiplas seleções usam checkboxes; as demais usam select.
 - Cada categoria possui seu próprio botão de salvar (salvamento individual por categoria).
-- Administradores são bloqueados (redirecionados para `/admin`).
+- Administradores podem acessar e salvar normalmente (seus palpites existem mas não contam para o ranking — ver regra 7.1).
 - Contador visual de seleções no front-end.
 
 ### 5.5 Resumo / Estatísticas (`routes/resumo.js`)
@@ -461,7 +461,7 @@ A pontuação é fixa por categoria, conforme tabela na seção 5.4. Os pontos s
 
 ## 7. Regras de Negócio
 
-1. **Admin não participa** — Usuários com `is_admin = 1` são redirecionados para `/admin` ao tentar acessar `/palpites` ou `/palpites-extras` (com mensagem flash). São excluídos do ranking.
+1. **Papel do administrador** — Usuários com `is_admin = 1` **administraram o site**: gerenciam jogos, usuários, extras, bônus e mata-mata via `/admin/*`. Eles **podem visualizar e dar palpites** (em `/palpites` e `/palpites-extras`) se quiserem, mas são **excluídos do ranking** — seus palpites não contam para a competição. Suas estatísticas pessoais (em `/resumo`) também ignoram a participação no ranking.
 
 2. **Bloqueio de 2 minutos** — Cada palpite de jogo é bloqueado 2 minutos antes do horário do jogo (horário de Brasília). A verificação é feita por jogo individualmente.
 
