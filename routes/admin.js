@@ -5,6 +5,7 @@ const { run, get, all } = require('../database/db');
 const { verificarAdmin } = require('../middleware/auth');
 const { gerarMataMata, listarConfrontos, limparMataMata } = require('../services/mata-mata');
 const { calcularPontos, calcularPontosMataMata } = require('../services/pontuacao');
+const logger = require('../logger');
 
 const router = express.Router();
 
@@ -800,11 +801,16 @@ router.get('/placar-automatico', verificarAdmin, (req, res) => {
 // POST /admin/placar-automatico/executar - executa manualmente
 router.post('/placar-automatico/executar', verificarAdmin, async (req, res) => {
   req.flash('aviso', 'Buscando placares...');
-  const resultado = await buscarPlacares();
-  if (resultado.ok) {
-    req.flash('sucesso', resultado.mensagem);
-  } else {
-    req.flash('erro', resultado.mensagem);
+  try {
+    const resultado = await buscarPlacares();
+    if (resultado.ok) {
+      req.flash('sucesso', resultado.mensagem);
+    } else {
+      req.flash('erro', resultado.mensagem);
+    }
+  } catch (err) {
+    logger.error('placar-automatico erro manual', { error: err.message });
+    req.flash('erro', `Erro inesperado: ${err.message}`);
   }
   res.redirect('/admin/placar-automatico');
 });
