@@ -140,12 +140,12 @@ routes/
   auth.js        — cadastro aberto (bloqueado após prazo dos extras), login (email/username/nome), logout
   palpites.js    — palpites por jogo, trava 2 min antes, idempotência via ON CONFLICT
   extras.js      — palpites extras independentes, save individual e em lote, revelação pós-prazo
-  dashboard.js   — cards, próximos jogos, top 5 (exclui admin), banner com contagem regressiva, pontuação por fase
+  dashboard.js   — cards, próximos jogos, top 5 (admin entra), banner com contagem regressiva, pontuação por fase
   resumo.js      — stats detalhadas, pontos por rodada, racha, histórico
   config.js      — alterar nome (sincroniza com username)
   classificacao.js — classificação dos grupos
   jogos.js       — listagem pública dos 104 jogos + rota /jogos/db-info para diagnóstico do banco conectado
-  ranking.js     — ranking com pontos extras, desempate, exclui admins
+  ranking.js     — ranking com pontos extras, desempate, admin entra normalmente
   senha.js       — reset de senha com token + email
   admin.js       — resultados, recalcular, placar automático, usuários, criar participante, extras, config, pontuação por fase, pontos bônus
 
@@ -196,6 +196,7 @@ scripts/
 ## Regras de negócio
 
 - Admin (is_admin=1) acessa `/palpites` e `/palpites-extras`, dá palpites, e **participa do ranking** normalmente — sem filtro de exclusão nas queries de ranking.
+- Admin é submetido **às mesmas regras de visibilidade** dos participantes comuns: em `/jogos/:id/palpites` e `/palpites/jogo/:id` o admin só vê os palpites dos outros **após o fechamento** (🔒 antes, 👀 sem pontos após fechar, completo após resultado). Não há bypass de admin.
 - Palpites travam 2 min antes do horário BRT de cada jogo (frontend + backend)
 - Pontuação automática ao admin marcar jogo como finalizado; botão de recalcular disponível; placar automático via API worldcup26.ir a cada 16 min
 - Admin pode recalcular pontos, resetar palpites (individual/massa), resetar senha, promover/rebaixar, excluir usuários

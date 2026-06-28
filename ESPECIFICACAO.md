@@ -462,44 +462,45 @@ A pontuação é fixa por categoria, conforme tabela na seção 5.4. Os pontos s
 ## 7. Regras de Negócio
 
 1. **Papel do administrador** — Usuários com `is_admin = 1` **administraram o site**: gerenciam jogos, usuários, extras, bônus e mata-mata via `/admin/*`. Eles **podem visualizar e dar palpites** (em `/palpites` e `/palpites-extras`) e **participam do ranking normalmente** — seus palpites contam como qualquer outro participante. Não há exclusão de admin do ranking: a coluna `excluir_ranking` foi removida em 28/06/2026 quando o conceito de "admin externo" foi abandonado.
+2. **Admin não tem bypass de visibilidade** — Em `/jogos/:id/palpites` e `/palpites/jogo/:id`, o admin vê os palpites dos outros SOMENTE após o fechamento (🔒 antes do limite, 👀 sem pontos após fechar, completo após resultado). Admin é submetido às mesmas regras dos participantes comuns; o poder extra fica apenas nas rotas `/admin/*` para gerenciar o site.
 
-2. **Bloqueio de 2 minutos** — Cada palpite de jogo é bloqueado 2 minutos antes do horário do jogo (horário de Brasília). A verificação é feita por jogo individualmente.
+3. **Bloqueio de 2 minutos** — Cada palpite de jogo é bloqueado 2 minutos antes do horário do jogo (horário de Brasília). A verificação é feita por jogo individualmente.
 
-3. **Jogos finalizados são imutáveis** — Se `finalizado = 1`, o palpite é bloqueado independentemente do horário.
+4. **Jogos finalizados são imutáveis** — Se `finalizado = 1`, o palpite é bloqueado independentemente do horário.
 
-4. **Mata-mata disponível para palpites** — Todas as fases (grupos e mata-mata) estão disponíveis. Confrontos de mata-mata só aparecem após o admin gerar os confrontos (preencher `selecao_casa_id` e `selecao_visitante_id`). Jogos com times nulos são ocultados dos palpites.
+5. **Mata-mata disponível para palpites** — Todas as fases (grupos e mata-mata) estão disponíveis. Confrontos de mata-mata só aparecem após o admin gerar os confrontos (preencher `selecao_casa_id` e `selecao_visitante_id`). Jogos com times nulos são ocultados dos palpites.
 
-5. **Recálculo automático** — Ao salvar resultado com `finalizado = 1`, todos os palpites daquele jogo são recalculados. Se desfinalizado, pontos zeram.
+6. **Recálculo automático** — Ao salvar resultado com `finalizado = 1`, todos os palpites daquele jogo são recalculados. Se desfinalizado, pontos zeram.
 
-6. **Upsert de palpites** — INSERT se não existe palpite para o par (usuário, jogo); UPDATE se já existe.
+7. **Upsert de palpites** — INSERT se não existe palpite para o par (usuário, jogo); UPDATE se já existe.
 
-7. **Validação de placar** — Gols limitados a 0–99. Valores vazios ou não numéricos são ignorados.
+8. **Validação de placar** — Gols limitados a 0–99. Valores vazios ou não numéricos são ignorados.
 
-8. **Senha mínima** — 4 caracteres (cadastro e redefinição).
+9. **Senha mínima** — 4 caracteres (cadastro e redefinição).
 
-9. **Token de recuperação** — Expira em 1 hora; uso único. Sem SMTP, link é exibido na tela.
+10. **Token de recuperação** — Expira em 1 hora; uso único. Sem SMTP, link é exibido na tela.
 
-10. **Cadastro aberto** — Qualquer pessoa pode criar conta, sem necessidade de código de convite. O cadastro é bloqueado automaticamente após o fechamento dos palpites extras.
+11. **Cadastro aberto** — Qualquer pessoa pode criar conta, sem necessidade de código de convite. O cadastro é bloqueado automaticamente após o fechamento dos palpites extras.
 
-11. **Login flexível** — Aceita email, username ou nome (display name) no campo de login.
+12. **Login flexível** — Aceita email, username ou nome (display name) no campo de login.
 
-12. **Sincronização de username** — Preenchido automaticamente a partir do prefixo do email (via migration). Atualizado quando o nome é alterado em `/config`.
+13. **Sincronização de username** — Preenchido automaticamente a partir do prefixo do email (via migration). Atualizado quando o nome é alterado em `/config`.
 
-13. **Salvamento individual e em lote** — Cada jogo possui botão "Salvar" individual, e cada rodada/fase possui "Salvar todos" para os jogos ainda abertos.
+14. **Salvamento individual e em lote** — Cada jogo possui botão "Salvar" individual, e cada rodada/fase possui "Salvar todos" para os jogos ainda abertos.
 
-14. **Trust proxy** — `app.set('trust proxy', 1)` é essencial para o cookie de sessão funcionar atrás do proxy HTTPS do Render.
+15. **Trust proxy** — `app.set('trust proxy', 1)` é essencial para o cookie de sessão funcionar atrás do proxy HTTPS do Render.
 
-15. **Horário BRT** — Todos os horários armazenados com offset -03:00. O PostgreSQL (`TIMESTAMPTZ`) normaliza para UTC internamente.
+16. **Horário BRT** — Todos os horários armazenados com offset -03:00. O PostgreSQL (`TIMESTAMPTZ`) normaliza para UTC internamente.
 
-16. **Pontos bônus** — Para evitar vantagem ou desvantagem excessiva, participantes que ingressarem após o início da competição iniciam com pontuação igual à do último colocado da rodada de ingresso, reduzida em 1 ponto. Após o encerramento dos palpites extras, não serão aceitas novas inscrições. Os bônus são armazenados na tabela `pontos_bonus` com motivo e podem ser removidos individualmente pelo admin.
+17. **Pontos bônus** — Para evitar vantagem ou desvantagem excessiva, participantes que ingressarem após o início da competição iniciam com pontuação igual à do último colocado da rodada de ingresso, reduzida em 1 ponto. Após o encerramento dos palpites extras, não serão aceitas novas inscrições. Os bônus são armazenados na tabela `pontos_bonus` com motivo e podem ser removidos individualmente pelo admin.
 
-17. **Extras deadline configurável** — O prazo para palpites extras é armazenado na tabela `config` (chave `extras_data_limite`) e verificado no servidor.
+18. **Extras deadline configurável** — O prazo para palpites extras é armazenado na tabela `config` (chave `extras_data_limite`) e verificado no servidor.
 
-18. **Pontuação por fase configurável** — O admin pode definir a pontuação de cada fase em `/admin/pontuacao-fases`. A função `calcularPontos` lê os valores da tabela `fase_pontuacao`. `pts_classificado` é sempre derivado automaticamente como metade inteira de `pts_resultado`.
+19. **Pontuação por fase configurável** — O admin pode definir a pontuação de cada fase em `/admin/pontuacao-fases`. A função `calcularPontos` lê os valores da tabela `fase_pontuacao`. `pts_classificado` é sempre derivado automaticamente como metade inteira de `pts_resultado`.
 
-19. **Aproveitamento percentual** — O ranking e o perfil do usuário exibem o aproveitamento (pontos do participante / total de pontos disputados × 100).
+20. **Aproveitamento percentual** — O ranking e o perfil do usuário exibem o aproveitamento (pontos do participante / total de pontos disputados × 100).
 
-20. **Resultados dos extras no ranking** — Os pontos dos palpites extras só aparecem no ranking após o admin definir os resultados em `/admin/extras`.
+21. **Resultados dos extras no ranking** — Os pontos dos palpites extras só aparecem no ranking após o admin definir os resultados em `/admin/extras`.
 
 ---
 
