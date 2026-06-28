@@ -30,6 +30,18 @@ const { getStatus: getPlacarStatus } = require('./services/placar-automatico');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Rede de proteção: nunca deixar o processo morrer por erro assíncrono não tratado.
+// Loga o stack e mantém o serviço de pé. Em produção, Render não fica em crash-loop.
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error('unhandledRejection', {
+    error: reason?.message || String(reason),
+    stack: reason?.stack
+  });
+});
+process.on('uncaughtException', (err) => {
+  logger.error('uncaughtException', { error: err.message, stack: err.stack });
+});
+
 // Sentry — só inicializa em produção E se SENTRY_DSN estiver definido
 if (process.env.NODE_ENV === 'production' && process.env.SENTRY_DSN) {
   Sentry.init({

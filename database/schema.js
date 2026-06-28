@@ -608,6 +608,32 @@ async function criarSchema() {
     }
   } catch (e) { /* índices já existem */ }
 
+  // Migração 2026-06-28: ressincronizar sequences de tabelas SERIAL no PostgreSQL.
+  // Causa: ao importar dados via sync-render-to-neon ou restore manual, os IDs foram
+  // inseridos com valores explícitos, mas a sequence interna (palpites_id_seq, etc.)
+  // ficou apontando para 1. Resultado: próximo INSERT tentava usar IDs que já existiam
+  // → "duplicate key value violates unique constraint palpites_pkey" → crash do Node.
+  // Solução: setval(seq, MAX(id)) para cada tabela com SERIAL. Idempotente e seguro.
+  if (usandoPG) {
+    try {
+      const tabelasSerial = ['usuarios', 'grupos', 'palpites', 'palpites_extras', 'resultados_extras', 'password_reset_tokens', 'pontos_bonus'];
+      let consertos = 0;
+      for (const tabela of tabelasSerial) {
+        try {
+          const seq = await get(`SELECT pg_get_serial_sequence(?, 'id') AS seq`, [tabela]);
+          if (!seq?.seq) continue;
+          await run(`SELECT setval('${seq.seq}', COALESCE((SELECT MAX(id) FROM ${tabela}), 1))`);
+          consertos++;
+        } catch (e) {
+          console.warn(`⚠️ Não foi possível ressincronizar sequence de ${tabela}: ${e.message}`);
+        }
+      }
+      if (consertos > 0) console.log(`✅ Sequences ressincronizadas (${consertos} tabela(s): ${tabelasSerial.slice(0, consertos).join(', ')})`);
+    } catch (e) {
+      console.warn('⚠️ Erro ao ressincronizar sequences:', e.message);
+    }
+  }
+
   console.log('✅ Schema criado/verificado');
 }
 
