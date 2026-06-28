@@ -32,10 +32,6 @@ async function getDataLimite() {
 
 router.get('/', verificarAutenticado, async (req, res) => {
   try {
-    if (req.session.usuario.is_admin) {
-      req.flash('erro', 'Administradores não podem participar do bolão.');
-      return res.redirect('/admin');
-    }
     const selecoes = await all('SELECT id, nome_pt, sigla, bandeira_url FROM selecoes ORDER BY nome_pt');
     const rows = await all(
       'SELECT categoria, selecao_id FROM palpites_extras WHERE usuario_id = ? ORDER BY categoria',
@@ -85,10 +81,6 @@ router.get('/', verificarAutenticado, async (req, res) => {
 });
 
 router.post('/', verificarAutenticado, async (req, res) => {
-  if (req.session.usuario.is_admin) {
-    req.flash('erro', 'Administradores não podem participar do bolão.');
-    return res.redirect('/admin');
-  }
   if (new Date() >= await getDataLimite()) {
     req.flash('erro', 'O prazo para palpites extras já encerrou.');
     return res.redirect('/palpites-extras');
@@ -151,10 +143,6 @@ router.post('/:categoria', verificarAutenticado, async (req, res) => {
   if (!cat) {
     req.flash('erro', 'Categoria inválida.');
     return res.redirect('/palpites-extras');
-  }
-  if (req.session.usuario.is_admin) {
-    req.flash('erro', 'Administradores não podem participar do bolão.');
-    return res.redirect('/admin');
   }
   if (new Date() >= await getDataLimite()) {
     req.flash('erro', 'O prazo para palpites extras já encerrou.');

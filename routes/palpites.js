@@ -30,9 +30,6 @@ function groupKey(jogo) {
 // POST /palpites/salvar-rodada - salva todos os palpites de uma rodada/fase
 router.post('/salvar-rodada', verificarAutenticado, async (req, res) => {
   const usuarioId = req.session.usuario.id;
-  if (req.session.usuario.is_admin) {
-    return res.status(403).json({ ok: false, erro: 'Administradores não podem participar do bolão.' });
-  }
 
   const { fase, rodada, jogos } = req.body;
   if (!jogos) {
@@ -109,10 +106,6 @@ router.post('/salvar-rodada', verificarAutenticado, async (req, res) => {
 // GET /palpites - mostra todos os jogos para o usuário dar palpites
 router.get('/', verificarAutenticado, async (req, res) => {
   try {
-    if (req.session.usuario.is_admin) {
-      req.flash('erro', 'Administradores não podem participar do bolão.');
-      return res.redirect('/admin');
-    }
     const jogos = await all(`
       SELECT
         j.id, j.fase, j.rodada, j.data, j.estadio, j.cidade, j.pais,
@@ -200,10 +193,6 @@ router.get('/', verificarAutenticado, async (req, res) => {
 // POST /palpites/:jogoId - salva o palpite de um jogo específico
 router.post('/:jogoId', verificarAutenticado, async (req, res) => {
   const usuarioId = req.session.usuario.id;
-  if (req.session.usuario.is_admin) {
-    req.flash('erro', 'Administradores não podem participar do bolão.');
-    return res.redirect('/admin');
-  }
 
   const jogoId = parseInt(req.params.jogoId, 10);
   const casa = parseInt(req.body.casa, 10);
@@ -322,7 +311,7 @@ router.get('/jogo/:id', verificarAutenticado, async (req, res) => {
       SELECT u.nome, p.palpite_gols_casa, p.palpite_gols_visitante, p.pontos_obtidos
       FROM palpites p
       JOIN usuarios u ON u.id = p.usuario_id
-      WHERE p.jogo_id = ? AND u.is_admin = 0
+      WHERE p.jogo_id = ?
       ORDER BY p.pontos_obtidos DESC, u.nome ASC
     `, [jogoId]);
 

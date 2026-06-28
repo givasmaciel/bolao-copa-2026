@@ -40,10 +40,13 @@
         </div>
         <div class="form-group mt-2" style="margin-bottom:0">
           <% if (multiCats.has(cat.id)) { %>
+            <div class="flex-between" style="margin-bottom:4px">
+              <span id="counter-<%= cat.id %>" style="font-size:0.85rem;font-weight:600;color:var(--texto)">0/<%= cat.max %> selecionadas</span>
+            </div>
             <div style="max-height:280px; overflow-y:auto; border:1px solid var(--cinza); border-radius:8px; padding:8px">
               <% selecoes.forEach(function(s) { %>
                 <label style="display:flex; align-items:center; gap:8px; padding:4px 6px; border-radius:4px; cursor:pointer; <%= resultados[cat.id] && resultados[cat.id].has(s.id) ? 'background:var(--cinza-claro);font-weight:600' : '' %>">
-                  <input type="checkbox" name="<%= cat.id %>" value="<%= s.id %>"
+                  <input type="checkbox" name="<%= cat.id %>" value="<%= s.id %>" onchange="atualizarContador('<%= cat.id %>', <%= cat.max %>)"
                     <%= resultados[cat.id] && resultados[cat.id].has(s.id) ? 'checked' : '' %>>
                   <%= s.nome_pt %>
                 </label>
@@ -68,4 +71,18 @@
   <% }); %>
 </div>
 
+<script>
+function atualizarContador(catId, max) {
+  const checkboxes = document.querySelectorAll('input[name="' + catId + '"]:checked');
+  const el = document.getElementById('counter-' + catId);
+  if (el) el.textContent = checkboxes.length + '/' + max + ' selecionadas';
+}
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('[id^="counter-"]').forEach(function(el) {
+    var catId = el.id.replace('counter-', '');
+    var max = parseInt(el.textContent.split('/')[1], 10);
+    atualizarContador(catId, max);
+  });
+});
+</script>
 <%- include('partials/footer') %>

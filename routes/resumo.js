@@ -96,7 +96,7 @@ router.get('/', verificarAutenticado, async (req, res) => {
 
     // Lista de participantes para racha
     const participantes = await all(`
-      SELECT id, nome FROM usuarios WHERE is_admin = 0 AND id != ? ORDER BY nome
+      SELECT id, nome FROM usuarios WHERE id != ? ORDER BY nome
     `, [userId]);
 
     // Racha com um participante específico (query param ?com=id)

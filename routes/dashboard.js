@@ -49,7 +49,6 @@ router.get('/', verificarAutenticado, async (req, res) => {
         ), 0) + COALESCE((SELECT SUM(pontos) FROM pontos_bonus WHERE usuario_id = u.id), 0) AS total_pontos
       FROM usuarios u
       LEFT JOIN palpites p ON p.usuario_id = u.id
-      WHERE u.is_admin = 0
       GROUP BY u.id
       ORDER BY total_pontos DESC
       LIMIT 5
@@ -128,7 +127,7 @@ router.get('/', verificarAutenticado, async (req, res) => {
       if (!isNaN(d.getTime())) extrasDataLimite = d;
     }
     const extrasPrazoPassou = extrasDataLimite ? new Date() >= extrasDataLimite : true;
-    const alertaExtras = !req.session.usuario.is_admin && !temExtrasSalvos && !extrasPrazoPassou;
+    const alertaExtras = !temExtrasSalvos && !extrasPrazoPassou;
 
     // Processa próximo jogo para alerta
     let nextGame = null;
