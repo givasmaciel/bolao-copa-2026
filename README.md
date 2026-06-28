@@ -80,8 +80,26 @@ Prazo dos palpites extras configurável via tabela `config` (chave `extras_data_
 - Node.js 18+, Express 4.21, EJS 3.1
 - SQLite 5 (dev) / PostgreSQL 16 (produção: Render Postgres free; migração para Neon disponível em `docs/MIGRACAO_RENDER_NEON.md`)
 - bcryptjs, express-session, connect-flash, nodemailer
+- @sentry/node (produção), express-rate-limit (healthz), Sentry error tracking
 - CSS puro responsivo (verde/amarelo/azul)
 - Bandeiras via flagcdn.com
+
+## Segurança
+
+- **CSRF token** validado em todos os POST/PUT/PATCH/DELETE
+- **CSP** (Content-Security-Policy) restritivo — bloqueia scripts/iframes externos
+- **Rate limit** em `/healthz` (60 req/min/IP) e em login/cadastro/recuperação
+- **SESSION_SECRET** obrigatório em produção (validação no startup; recusa valor padrão)
+- **Health check proativo** em `/healthz`: detecta placar automático parado >25 min e jogos finalizados sem pontos calculados
+- **Sentry** em produção (silencia ruído: `/healthz`, `/favicon`, `/admin`)
+
+## Testes
+
+```bash
+node tests/pontuacao.test.js
+```
+
+24 testes cobrindo regras de pontuação (placar exato, resultado+gol, só resultado, 1 gol, empate, mata-mata com prorrogação/pênaltis, null-safety).
 
 ## Rodar local
 
