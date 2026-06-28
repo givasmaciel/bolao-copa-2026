@@ -16,7 +16,7 @@ Aplicação web full-stack em português do Brasil para cadastro de palpites sob
 | **Framework Web** | Express 4.21 |
 | **Templates** | EJS 3.1 (server-side rendering) |
 | **Banco (dev)** | SQLite 5 via `sqlite3` |
-| **Banco (prod)** | PostgreSQL 16 no **Render Postgres** (Free plan) |
+| **Banco (prod)** | PostgreSQL 16 no **Neon** (serverless, free tier permanente, scale-to-zero) |
 | **Sessão** | `express-session` (cookie 30 dias, `secure: true` em produção, `sameSite: 'lax'`) |
 | **Hash de senhas** | `bcryptjs` (10 rounds) |
 | **Flash messages** | `connect-flash` |
@@ -44,7 +44,7 @@ O banco opera de forma transparente com **SQLite** (desenvolvimento local) ou **
 
 ### 3.1 Banco de produção atual
 
-**Status atual (jun/2026):** produção roda no **Render Postgres** (host `dpg-d8k9g01kh4rs73bbrbpg-a`, marcador `db_marker=render-producao-2026-06-19`). O plano Free expira em ~90 dias (~set/2026). Para migrar para o **Neon** (free permanente), ver [`docs/MIGRACAO_RENDER_NEON.md`](docs/MIGRACAO_RENDER_NEON.md).
+**Status atual (jun/2026):** produção roda no **Neon** (PostgreSQL serverless, free tier permanente, region US West 2, marcador `db_marker=neon-producao-2026-06-28`). Render Postgres foi descontinuado como banco primário em 28/06/2026 — pode ser mantido opcionalmente como mirror sincronizado via `scripts/sync-render-to-neon.js` (útil para auditoria/rollback). Detalhes do processo de migração em [`docs/MIGRACAO_RENDER_NEON.md`](docs/MIGRACAO_RENDER_NEON.md).
 
 ---
 
@@ -162,7 +162,7 @@ O banco opera de forma transparente com **SQLite** (desenvolvimento local) ou **
 | `chave` | TEXT PRIMARY KEY | Nome da chave |
 | `valor` | TEXT NOT NULL | Valor da configuração |
 
-Armazena configurações do sistema, como o prazo limite dos palpites extras (ex.: `extras_data_limite`) e o marcador do banco (`db_marker`) usado pelo `/jogos/db-info` e exibido no rodapé do site. Exemplo de valores: `db_marker=render-producao-2026-06-19`, `db_marker=neon-producao-2026-06-27`.
+Armazena configurações do sistema, como o prazo limite dos palpites extras (ex.: `extras_data_limite`) e o marcador do banco (`db_marker`) usado pelo `/jogos/db-info` e exibido no rodapé do site. Marcadores atuais: `db_marker=neon-producao-2026-06-28` (produção), `db_marker=neon-producao-2026-06-26` (snapshot antes da virada de `DATABASE_URL` para Neon).
 
 ### `fase_pontuacao`
 
@@ -316,7 +316,7 @@ Armazena configurações do sistema, como o prazo limite dos palpites extras (ex
 - Exibe placar real se finalizado, ou "×" se pendente.
 - Fases: grupo, r32, r16, qf, sf, terceiro, final.
 - Mostra bandeira, estádio, cidade, data/hora e grupo (quando aplicável).
-- **`/jogos/db-info`**: o `marcador` permite distinguir Render vs Neon vs dev local. É exibido também no rodapé do site (discreto, opacity 0.5) para evitar confusão quando há mais de um banco em uso.
+- **`/jogos/db-info`**: o `marcador` permite distinguir Render Postgres vs Neon vs dev local. É exibido também no rodapé do site (discreto, opacity 0.5) para evitar confusão quando há mais de um banco em uso.
 
 ### 5.8 Ranking (`routes/ranking.js`)
 
@@ -510,14 +510,14 @@ A pontuação é fixa por categoria, conforme tabela na seção 5.4. Os pontos s
 | Componente | Serviço |
 |---|---|
 | **Web server** | Render (Node.js) — serviço `bolao_copa_2026` |
-| **Banco de dados** | Render Postgres (PostgreSQL 16, free tier, **expira em ~90 dias**) |
+| **Banco de dados** | **Neon** (PostgreSQL 16 serverless, free tier permanente, scale-to-zero) |
 | **Repositório** | GitHub (`main` → auto-deploy no Render) |
 
-> **Status atual (jun/2026):** produção roda no **Render Postgres** (host `dpg-d8k9g01kh4rs73bbrbpg-a`, marcador `db_marker=render-producao-2026-06-19`). O plano Free expira em ~90 dias. Para migrar para o **Neon** (free permanente), siga [`docs/MIGRACAO_RENDER_NEON.md`](docs/MIGRACAO_RENDER_NEON.md).
+> **Status atual (jun/2026):** produção roda no **Neon** (marcador `db_marker=neon-producao-2026-06-28`). A connection string é configurada manualmente em Render Dashboard → bolao-copa-2026 → Environment → `DATABASE_URL` (sincronizada manualmente — `sync: false` no `render.yaml`). Render Postgres pode ser mantido como mirror opcional via `scripts/sync-render-to-neon.js`. Detalhes em [`docs/MIGRACAO_RENDER_NEON.md`](docs/MIGRACAO_RENDER_NEON.md).
 
 ### 8.2 render.yaml (Blueprint)
 
-O arquivo `render.yaml` define o blueprint que provisiona o serviço e o banco juntos. O `bolao-db` é um Render Postgres interno, e sua connection string é injetada em `DATABASE_URL` automaticamente.
+A partir de 28/06/2026 o `render.yaml` **não provisiona mais** o banco — apenas o web service. A connection string do Neon é injetada manualmente em Render Dashboard → Environment.
 
 ```yaml
 services:
@@ -536,17 +536,14 @@ services:
       - key: ADMIN_NOME
         value: Administrador
       - key: ADMIN_EMAIL
-        sync: false
+        sync: false          # configurar manualmente
       - key: ADMIN_SENHA
-        sync: false
+        sync: false          # configurar manualmente
       - key: DATABASE_URL
-        fromDatabase:
-          name: bolao-db
-          property: connectionString
+        sync: false          # configurar manualmente com a connection string do Neon
 ```
 
-- O blueprint provisiona **automaticamente** o Postgres `bolao-db` e injeta sua connection string em `DATABASE_URL`.
-- `ADMIN_EMAIL` e `ADMIN_SENHA` devem ser configuradas manualmente no dashboard do Render.
+- `ADMIN_EMAIL`, `ADMIN_SENHA` e `DATABASE_URL` (Neon) são configurados manualmente no dashboard do Render.
 - URL de produção: `https://bolao-copa-2026-zjoi.onrender.com`.
 
 ### 8.3 Script de Setup (`database/setup.js`)

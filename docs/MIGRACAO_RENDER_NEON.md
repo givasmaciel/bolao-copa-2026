@@ -1,8 +1,8 @@
 # Migração Render Postgres → Neon
 
-> **Quando fazer:** antes do Render Postgres expirar (~90 dias após criação). Verifique em `https://dashboard.render.com` → serviço `bolao-db` → "Info" → "Expires at".
+> **Status atual (28/06/2026):** ✅ **MIGRAÇÃO CONCLUÍDA**. Produção roda no Neon. Render Postgres foi descontinuado como banco primário; o `render.yaml` deixou de provisioná-lo. Render Postgres pode ser mantido opcionalmente como mirror sincronizado via `scripts/sync-render-to-neon.js`.
 
-> **Quando NÃO fazer:** durante a fase de grupos ou mata-mata com jogos finalizados chegando, para evitar inconsistências entre dumps. O ideal é migrar em janela de manutenção (madrugada).
+> **Este documento descreve o passo-a-passo** caso seja necessário repetir a migração (ex.: trocar de projeto Neon, recovery de disaster). Para referência de quando ainda foi feita, ver [seção 11](#11-status-pós-migração-28062026).
 
 ## Sumário
 
@@ -319,53 +319,54 @@ curl https://bolao-copa-2026-zjoi.onrender.com/jogos/db-info
 
 ---
 
-## 11. Status atual (26/06/2026)
+## 11. Status pós-migração (28/06/2026)
 
-### O que já foi feito
+### O que foi feito na migração
 
-- **Projeto Neon criado**: `ep-red-brook-a64zto1n-pooler.us-west-2.aws.neon.tech`
-- **Schema criado** no Neon via `node database/setup.js` (CREATE TABLE + ALTER TABLE)
-- **Coluna `codigo_convite`** adicionada no schema do Neon (existia no Render mas não no `schema.js`)
-- **Dump fresco** do Render Postgres salvo em `data/render-dump.json`
-- **Snapshot diário** salvo em `data/snapshots/snapshot-2026-06-26-210844.json`
-- **Import completo** dos dados no Neon (10 tabelas, contagens idênticas ao Render)
-- **Connection string** do Neon salva no `.env` local (comentada)
-- **Script `scripts/import-neon.js`** mantido para refazer o espelho quando necessário
+| Data | Etapa | Resultado |
+|------|-------|-----------|
+| 26/06 | Schema criado no Neon via `node database/setup.js` | `db_marker=neon-producao-2026-06-26` |
+| 26/06 | Import inicial dos dados do Render Postgres | 10 tabelas, contagens idênticas |
+| 27/06 | Script `scripts/sync-render-to-neon.js` | Automatiza dump + comparação + import |
+| 28/06 | `DATABASE_URL` no Render Dashboard trocada para Neon | Render Postgres deixa de ser primário |
+| 28/06 | `render.yaml` atualizado (seção `databases` removida) | Banco passa a ser externo |
+| 28/06 | `db_marker` atualizado | `neon-producao-2026-06-28` |
 
-### Contagens verificadas (Render = Neon)
+### Estado atual
 
-| Tabela | Linhas |
-|--------|--------|
-| usuarios | 11 |
-| grupos | 12 |
-| selecoes | 48 |
-| jogos | 104 |
-| palpites | 717 |
-| palpites_extras | 648 |
-| fase_pontuacao | 7 |
-| config | 6 |
-| pontos_bonus | 2 |
+- **Produção**: Neon (`ep-red-brook-...-pooler.us-west-2.aws.neon.tech`)
+- **`DATABASE_URL`** no Render: connection string do Neon (`sync: false` no `render.yaml`, configurada manualmente)
+- **`render.yaml`**: seção `databases` removida; `DATABASE_URL` é `sync: false`
+- **Render Postgres** (`bolao-db`): mantido opcionalmente como mirror para auditoria/rollback
+- **Sincronização periódica**: `scripts/sync-render-to-neon.js --dry-run` para auditoria, `--force` para aplicar
+- **`db_marker`**: `neon-producao-2026-06-28`
 
-`db_marker` no Neon: `neon-producao-2026-06-26`
+### Conexões no `.env` local
 
-### O que falta (quando decidir migrar)
-
-1. Fazer dump fresco (5 min antes da migração)
-2. Reimportar no Neon (rodar `node scripts/import-neon.js`)
-3. Trocar `DATABASE_URL` no dashboard do Render → Neon
-4. Verificar `/healthz` e `/jogos/db-info`
-5. (1-2 semanas depois) Deletar Render Postgres
-
-### Conexão
-
-Connection string do Neon salva em `.env` (comentada). Para usar:
 ```bash
-# Descomentar a linha DATABASE_URL no .env apontando para Neon,
-# ou passar via variável de ambiente:
-DATABASE_URL="postgresql://neondb_owner:senha@ep-red-brook-a64zto1n-pooler.us-west-2.aws.neon.tech/neondb?sslmode=require"
+# (Obrigatório para sync/compare) — lidas pelos scripts de migration
+DATABASE_URL_RENDER=postgresql://...render.com/bolao_4c6d
+DATABASE_URL_NEON=postgresql://...neon.tech/neondb?sslmode=require
+
+# Sem DATABASE_URL = SQLite local (data/bolao.db).
+# Para conectar direto no Neon em dev local, descomente:
+# DATABASE_URL=postgresql://...neon.tech/neondb?sslmode=require
 ```
 
-> ⚠️ Não compartilhe a connection string em commits ou docs públicos. Está segura no `.env` (gitignorado) e no dashboard do Neon.
+> ⚠️ Não compartilhe as connection strings em commits ou docs públicos. Estão seguras no `.env` (gitignorado) e nos dashboards do Neon/Render.
+
+### Se precisar refazer a migração
+
+Se um dia precisar migrar de novo (ex.: trocar de Neon project, disaster recovery):
+
+1. Dump do Render (se ainda for o primário): `DATABASE_URL=...render... node scripts/daily-snapshot.js`
+2. Dump do Neon (se for o primário): usar snapshot manual + `scripts/sync-render-to-neon.js --dry-run` para verificar divergência
+3. Importar: `DATABASE_URL=...novo-destino... node scripts/import-snapshot.js`
+4. Trocar `DATABASE_URL` no Render Dashboard
+5. Atualizar `db_marker`
+6. Verificar `/healthz` e `/jogos/db-info`
+
+> O passo-a-passo detalhado está nas seções 1–10 deste documento.
 
 ---
 

@@ -1,7 +1,7 @@
 # ⚽ Bolão da Copa do Mundo 2026
 
 Aplicação full-stack em português do Brasil para bolão de palpites da Copa 2026.  
-Deploy no Render (Node.js) com Render Postgres. Localmente usa SQLite. Neon está previsto apenas como migração futura.
+Deploy no Render (Node.js) com **Postgres no Neon** (free tier permanente). Localmente usa SQLite. Render Postgres foi descontinuado em 28/06/2026 — veja [`docs/MIGRACAO_RENDER_NEON.md`](docs/MIGRACAO_RENDER_NEON.md) para o histórico da migração.
 
 ## Funcionalidades
 
@@ -21,7 +21,7 @@ Deploy no Render (Node.js) com Render Postgres. Localmente usa SQLite. Neon est�
 - **Pontos bônus** — participantes tardios recebem pontuação do último colocado -1 da rodada de ingresso; cadastro encerra após fechamento dos extras; tooltip no ranking mostra motivo
 - **Rotas administrativas** — resultados dos jogos, recalcular pontos, gerenciar usuários (promover/rebaixar/excluir/resetar senha, resetar palpites individual/massa, alterar username, criar participante), admin extras, admin config
 - **Rota de diagnóstico** — `/jogos/db-info` retorna JSON com `host`, `marcador` (do `db_marker` da tabela `config`), contagens (`usuarios`, `jogos`, `palpites`, `jogos_finalizados`) e timestamp
-- **Indicador de banco** — `db_marker` lido no boot é exibido discretamente no rodapé (ex.: "🗄️ DB: render-producao-2026-06-19"), evitando confusão quando há mais de um banco em uso (Render, Neon, dev local)
+- **Indicador de banco** — `db_marker` lido no boot é exibido discretamente no rodapé (ex.: "🗄️ DB: neon-producao-2026-06-28"), evitando confusão quando há mais de um banco em uso (Neon prod, Render mirror, dev local)
 - **Tratamento de erros sem reload silencioso** — `salvarIndividual` e `salvarGrupo` validam placar antes de enviar, mostram mensagem detalhada em caso de erro HTTP, mantêm o placar que o usuário digitou e re-habilitam o botão
 - **PWA (Progressive Web App)** — manifest.json + service worker (cache offline de assets estáticos, network-first para HTML), atalhos para Palpites/Ranking/Jogos, instalável no celular como app nativo
 - **Health check `/healthz`** — endpoint público que verifica conexão com banco, retorna uptime, latência, marcador e contagens. Retorna 503 se banco offline. Útil para monitoramento do Render e debugging.
@@ -78,7 +78,7 @@ Prazo dos palpites extras configurável via tabela `config` (chave `extras_data_
 ## Tecnologias
 
 - Node.js 18+, Express 4.21, EJS 3.1
-- SQLite 5 (dev) / PostgreSQL 16 (produção: Render Postgres free; migração para Neon disponível em `docs/MIGRACAO_RENDER_NEON.md`)
+- SQLite 5 (dev) / PostgreSQL 16 no **Neon** (produção, free tier permanente — `us-west-2.aws.neon.tech`)
 - bcryptjs, express-session, connect-flash, nodemailer
 - @sentry/node (produção), express-rate-limit (healthz), Sentry error tracking
 - CSS puro responsivo (verde/amarelo/azul)
@@ -116,10 +116,10 @@ Admin local: `npm run criar-admin` (usuário: `admin@teste.com` / `admin123`)
 
 1. Push do código para o GitHub
 2. Render cria web service (auto-deploy ativado)
-3. Banco: **Render Postgres** (Postgres 16 free tier, plano Free Expira em ~90 dias) — gerenciado automaticamente pelo `render.yaml` (blueprint) ou configurado manualmente
-4. Variáveis obrigatórias: `DATABASE_URL`, `SESSION_SECRET`, `ADMIN_EMAIL`, `ADMIN_SENHA`
+3. Banco: **Neon** (Postgres 16 serverless, free tier permanente) — connection string configurada manualmente em Render Dashboard → Environment → `DATABASE_URL`. O `render.yaml` não provisiona mais o banco automaticamente (foi descontinuado o Render Postgres)
+4. Variáveis obrigatórias: `DATABASE_URL` (Neon), `SESSION_SECRET`, `ADMIN_EMAIL`, `ADMIN_SENHA`
 
-> **Status atual (jun/2026):** Produção roda no **Render Postgres** (host `dpg-...`, marcador `render-producao-2026-06-19`). O plano Free expira em ~90 dias (~set/2026). Veja [`docs/MIGRACAO_RENDER_NEON.md`](docs/MIGRACAO_RENDER_NEON.md) para migrar para Neon (free permanente) quando quiser.
+> **Status atual (28/06/2026):** Produção roda no **Neon** (host `ep-red-brook-a64zto1n-pooler.us-west-2.aws.neon.tech`, marcador `neon-producao-2026-06-28`). Render Postgres foi descontinuado — a conexão antiga (`dpg-...`) foi cortada. Veja [`docs/MIGRACAO_RENDER_NEON.md`](docs/MIGRACAO_RENDER_NEON.md) para o histórico e procedimentos de rollback.
 
 ## Variáveis de ambiente
 
@@ -177,14 +177,20 @@ views/
 
 raiz/
   server.js      — entry point (trust proxy, session, rotas, dbMarker)
-  render.yaml    — Blueprint do Render
+  render.yaml    — Blueprint do Render (não provisiona mais Render Postgres; DATABASE_URL manual)
   .env.example, .node-version, package.json
 
 scripts/
-  daily-snapshot.js     — backup de todas as tabelas com rotação (30 últimos)
+  daily-snapshot.js     — backup de todas as tabelas com rotação (30 últimos) — Render ou Neon
+  compare-dbs.js        — compara contagens entre Render e Neon (dry-run, --sync, --force)
+  sync-render-to-neon.js — espelha Render → Neon (dump + comparação + import automático)
   fix-palpites-futuro.js — substitui palpites não-finalizados do Neon pelos do Render
+  import-neon.js        — reimporta o espelho a partir de `data/render-dump.json`
   import-render-dump.js  — import full do dump Render para outro banco
+  import-snapshot.js    — importa um snapshot JSON (Render ou Neon)
   import-palpites-only.js — import focado só em palpites e palpites_extras
+  dump-db-json.js       — dump manual em JSON (legado, prefira `daily-snapshot.js`)
+  test-mata-mata-e2e.js — teste end-to-end da lógica de mata-mata
 ```
 
 ## Regras de negócio
@@ -238,12 +244,12 @@ Retorna JSON:
   "uptime_segundos": 1234,
   "db": {
     "conectado": true,
-    "marcador": "render-producao-2026-06-19",
+    "marcador": "neon-producao-2026-06-28",
     "latencia_ms": 42
   },
-  "contagens": { "usuarios": 11, "jogos": 104, "palpites": 467, "jogos_finalizados": 28 },
+  "contagens": { "usuarios": 11, "jogos": 104, "palpites": 717, "jogos_finalizados": 28 },
   "versao_node": "v18.x",
-  "timestamp": "2026-06-19T..."
+  "timestamp": "2026-06-28T..."
 }
 ```
 
@@ -313,6 +319,14 @@ DATABASE_URL=postgresql://... node scripts/daily-snapshot.js
 DATABASE_URL=postgresql://...neon... node scripts/fix-palpites-futuro.js --dry-run
 DATABASE_URL=postgresql://...neon... node scripts/fix-palpites-futuro.js
 
+# Sincronização automática Render → Neon (dump + comparação + import).
+# Lê DATABASE_URL_RENDER e DATABASE_URL_NEON do .env.
+node scripts/sync-render-to-neon.js --dry-run   # só compara
+node scripts/sync-render-to-neon.js --force     # sincroniza sem perguntar
+
+# Comparar contagens Render vs Neon (sem modificar nada)
+node scripts/compare-dbs.js
+
 # Import full do dump Render para outro banco (limpa e reinsere
 # usuarios, palpites, palpites_extras, resultados_extras, fase_pontuacao,
 # config, pontos_bonus). NÃO mexe em jogos/selecoes/grupos.
@@ -320,24 +334,34 @@ DATABASE_URL=postgresql://...neon... node scripts/import-render-dump.js
 
 # Import focado só em palpites e palpites_extras (clean and reinsert)
 DATABASE_URL=postgresql://...neon... node scripts/import-palpites-only.js
+
+# Importar um snapshot JSON específico (Render ou Neon)
+DATABASE_URL=postgresql://... node scripts/import-snapshot.js data/snapshots/snapshot-2026-06-28-031633.json
 ```
+
+> O script `sync-render-to-neon.js` requer `DATABASE_URL_RENDER` e `DATABASE_URL_NEON` no `.env` (já configurados por padrão). Os outros scripts leem apenas `DATABASE_URL` e operam sobre o banco apontado por ela.
 
 Para agendar o `daily-snapshot.js` no Windows, criar tarefa no Task Scheduler que roda `node scripts\daily-snapshot.js` em `C:\Users\NoteFnde\Downloads\projetos\bolao` com `DATABASE_URL` configurada. Snapshots vão para `data/snapshots/snapshot-YYYY-MM-DD-HHMMSS.json` com **rotação automática** mantendo os últimos 30.
 
 ## Migração entre bancos
 
-Recomendação: migrar **somente após o fim da fase de grupos** (27/06), evitando transportar palpites "no futuro" sujeitos a inconsistências. Quando chegar a hora:
+> ✅ **Migração Render → Neon concluída em 28/06/2026.** Produção roda no Neon. Render Postgres foi descontinuado, mas os scripts de sincronização permanecem para manter um mirror atualizado (útil para auditoria e rollback).
 
-1. Dump fresco do Render: `DATABASE_URL=<render> node scripts/daily-snapshot.js`
-2. Trocar `DATABASE_URL` no Render para o novo destino (Neon ou outro)
-3. Importar: `DATABASE_URL=<novo> node scripts/import-render-dump.js`
+**Arquitetura atual:**
+- **Produção:** Neon (`ep-red-brook-...pooler.us-west-2.aws.neon.tech`), marcador `neon-producao-2026-06-28`
+- **Mirror (opcional):** Render Postgres (`dpg-...`), marcador `render-producao-...`. Mantido sincronizado via `sync-render-to-neon.js` — pode ser descontinuado quando não for mais útil.
+
+**Trocar de banco (ex.: Neon → outro provedor):**
+1. Dump fresco: `DATABASE_URL=<atual> node scripts/daily-snapshot.js`
+2. Importar no destino: `DATABASE_URL=<novo> node scripts/import-render-dump.js` (ou `import-snapshot.js`)
+3. Trocar `DATABASE_URL` no Render Dashboard → Environment
 4. Verificar `/jogos/db-info` para confirmar conexão e ver contagens
 
 Para evitar confusão quando há mais de um banco em uso, cada banco recebe um `db_marker` único na tabela `config` (chave `db_marker`), exibido no rodapé do site. Exemplo:
 
 ```sql
--- No Render
-INSERT INTO config (chave, valor) VALUES ('db_marker', 'render-producao-2026-06-19');
--- No Neon
-INSERT INTO config (chave, valor) VALUES ('db_marker', 'neon-producao-2026-06-27');
+-- No Neon (produção atual)
+INSERT INTO config (chave, valor) VALUES ('db_marker', 'neon-producao-2026-06-28');
+-- No Render (mirror)
+INSERT INTO config (chave, valor) VALUES ('db_marker', 'render-mirror-2026-06-28');
 ```
