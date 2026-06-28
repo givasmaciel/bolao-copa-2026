@@ -277,7 +277,7 @@ router.post('/recalcular', verificarAdmin, async (req, res) => {
 router.get('/usuarios', verificarAdmin, async (req, res) => {
   try {
     const usuarios = await all(`
-      SELECT u.id, u.nome, u.email, u.username, u.foto, u.is_admin, u.criado_em,
+      SELECT u.id, u.nome, u.email, u.username, u.foto, u.is_admin, u.excluir_ranking, u.criado_em,
         COALESCE((SELECT SUM(pontos) FROM pontos_bonus WHERE usuario_id = u.id), 0) AS total_bonus
       FROM usuarios u ORDER BY u.nome
     `);
@@ -304,8 +304,11 @@ router.post('/usuarios/:id/tornar-admin', verificarAdmin, async (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (isNaN(id)) return res.redirect('/admin/usuarios');
   try {
-    await run('UPDATE usuarios SET is_admin = 1 WHERE id = ?', [id]);
-    req.flash('sucesso', 'Usuário promovido a admin.');
+    // Promover participante para admin MANTÉM seus pontos intactos: a query não toca
+    // em palpites, palpites_extras nem pontos_bonus. excluir_ranking=0 (default) garante
+    // que ele continua aparecendo no ranking.
+    await run('UPDATE usuarios SET is_admin = 1, excluir_ranking = 0 WHERE id = ?', [id]);
+    req.flash('sucesso', 'Usuário promovido a admin (continua no bolão).');
   } catch (err) {
     req.flash('erro', 'Erro ao promover.');
   }
@@ -321,6 +324,33 @@ router.post('/usuarios/:id/rebaixar', verificarAdmin, async (req, res) => {
     req.flash('sucesso', 'Admin rebaixado a participante.');
   } catch (err) {
     req.flash('erro', 'Erro ao rebaixar.');
+  }
+  res.redirect('/admin/usuarios');
+});
+
+// POST /admin/usuarios/:id/toggle-excluir-ranking - alterna exclusão do ranking.
+// Usado para o admin externo (gpmmac) continuar fora do ranking durante a transição,
+// e futuramente remover essa distinção quando o admin externo for excluído.
+router.post('/usuarios/:id/toggle-excluir-ranking', verificarAdmin, async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.redirect('/admin/usuarios');
+  try {
+    const u = await get('SELECT is_admin, excluir_ranking FROM usuarios WHERE id = ?', [id]);
+    if (!u) {
+      req.flash('erro', 'Usuário não encontrado.');
+      return res.redirect('/admin/usuarios');
+    }
+    if (!u.is_admin) {
+      req.flash('erro', 'Só admins podem ter essa configuração. Promova o usuário primeiro.');
+      return res.redirect('/admin/usuarios');
+    }
+    const novoValor = u.excluir_ranking ? 0 : 1;
+    await run('UPDATE usuarios SET excluir_ranking = ? WHERE id = ?', [novoValor, id]);
+    req.flash('sucesso', novoValor
+      ? 'Admin agora está FORA do ranking (admin externo).'
+      : 'Admin agora está NO ranking (admin jogador).');
+  } catch (err) {
+    req.flash('erro', 'Erro ao alternar exclusão do ranking.');
   }
   res.redirect('/admin/usuarios');
 });
