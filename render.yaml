@@ -5,12 +5,18 @@
 # mais provisionado por este blueprint.
 #
 # A connection string do Neon deve ser configurada manualmente em
-# Render Dashboard → bolao-copa-2026 → Environment → DATABASE_URL
+# Render Dashboard → bolao_copa_2026 → Environment → DATABASE_URL
 # (ela NÃO vem mais de um banco Render interno).
+#
+# NOME DO SERVIÇO: usa underscore (bolao_copa_2026) — NÃO trocar pra hífen.
+# O serviço real em produção foi criado manualmente no dashboard Render lá no
+# começo, e o Blueprint adota serviço existente quando o nome bate exato.
+# Se trocar pra "bolao-copa-2026" (hífen), o Blueprint sync vai criar um
+# SERVIÇO NOVO com hífen toda vez que sincronizar, gerando duplicata.
 
 services:
   - type: web
-    name: bolao-copa-2026
+    name: bolao_copa_2026
     env: node
     region: oregon
     plan: free
