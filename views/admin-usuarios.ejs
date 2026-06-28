@@ -37,7 +37,7 @@
       <th>Nome</th>
       <th>Usuário</th>
       <th>E-mail</th>
-      <th class="text-center">Tipo</th>
+      <th class="text-center">Admin</th>
       <th class="text-center">Bônus</th>
       <th class="text-center">Desde</th>
       <th class="text-center">Ações</th>
@@ -55,12 +55,10 @@
         <td style="font-family:monospace"><%= u.username || '—' %></td>
         <td><%= u.email %></td>
         <td class="text-center" style="white-space:nowrap">
-          <% if (u.is_admin && u.excluir_ranking) { %>
-            <span title="Admin externo: poderes de gestão, não participa do bolão">🔒 Externo</span>
-          <% } else if (u.is_admin) { %>
-            <span title="Admin que joga: tem poderes de gestão E compete normalmente no bolão">🎮 Admin</span>
+          <% if (u.is_admin) { %>
+            <span title="Admin: tem poderes de gestão e participa do bolão">🎮 Admin</span>
           <% } else { %>
-            <span style="color:var(--text-muted)">👤 Participante</span>
+            <span style="color:var(--text-muted)">👤</span>
           <% } %>
         </td>
         <td class="text-center">
@@ -138,17 +136,6 @@
               <input type="hidden" name="_csrf" value="<%= csrfToken %>">
               <button type="submit" class="btn btn-sm btn-secondary" onclick="return confirm('Rebaixar <%= u.nome %> para participante?\n\nEle continua no bolão, mas perde acesso ao /admin.')">Rebaixar</button>
             </form>
-            <% if (u.excluir_ranking) { %>
-              <form method="POST" action="/admin/usuarios/<%= u.id %>/toggle-excluir-ranking" style="display:inline">
-                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                <button type="submit" class="btn btn-sm" style="background:var(--verde);color:white" title="Trazer este admin para o bolão (ele aparece no ranking e compete normalmente)">🎮 Trazer para o bolão</button>
-              </form>
-            <% } else { %>
-              <form method="POST" action="/admin/usuarios/<%= u.id %>/toggle-excluir-ranking" style="display:inline">
-                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                <button type="submit" class="btn btn-sm" style="background:var(--text-muted);color:white" title="Tirar este admin do ranking (ele continua tendo acesso ao /admin mas não compete)">🔒 Excluir do ranking</button>
-              </form>
-            <% } %>
           <% } %>
           <form method="POST" action="/admin/usuarios/<%= u.id %>/resetar-palpites" style="display:inline">
             <input type="hidden" name="_csrf" value="<%= csrfToken %>">

@@ -283,29 +283,21 @@ async function criarSchema() {
     }
   } catch (e) { /* Coluna já existe */ }
 
-  // Migração 2026-06-28: coluna excluir_ranking (separa "admin externo" de "admin que joga").
-  // is_admin=1 dá acesso ao /admin/*; excluir_ranking=1 mantém o admin FORA do ranking.
-  // Default 0: novos admins e novos participantes aparecem normalmente no ranking.
-  // Só o admin externo atual (criado via ADMIN_EMAIL no setup.js) fica com =1.
+  // Migração 2026-06-28: remover coluna usuarios.excluir_ranking.
+  // A coluna foi introduzida em 28/06 (commit 10c8eaf) para separar admin externo de admin
+  // jogador, mas o conceito foi abandonado: agora todo admin participa do bolão, então
+  // a coluna (e o filtro WHERE excluir_ranking = 0) ficaram sem uso.
+  // Idempotente: tentar dropar coluna inexistente é tratado como aviso, não erro fatal.
   try {
     if (usandoPG) {
-      await run("ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS excluir_ranking INTEGER DEFAULT 0");
+      await run("ALTER TABLE usuarios DROP COLUMN IF EXISTS excluir_ranking");
     } else {
-      await run("ALTER TABLE usuarios ADD COLUMN excluir_ranking INTEGER DEFAULT 0");
-    }
-  } catch (e) { /* Coluna já existe */ }
-
-  // Marca o admin externo atual (definido em ADMIN_EMAIL) como fora do ranking.
-  // Só roda se ADMIN_EMAIL estiver configurado — caso contrário, o usuário pode
-  // setar manualmente via /admin/usuarios na flag "Excluir do ranking".
-  // Idempotente: rodar várias vezes não muda nada (já está =1).
-  try {
-    const adminEmail = (process.env.ADMIN_EMAIL || '').toLowerCase().trim();
-    if (adminEmail) {
-      await run('UPDATE usuarios SET excluir_ranking = 1 WHERE LOWER(email) = ? AND is_admin = 1', [adminEmail]);
+      await run("ALTER TABLE usuarios DROP COLUMN excluir_ranking");
     }
   } catch (e) {
-    console.warn('Aviso: não foi possível ajustar excluir_ranking do admin externo:', e.message);
+    if (!/no such column/i.test(String(e.message))) {
+      console.warn('Aviso: não foi possível remover coluna excluir_ranking:', e.message);
+    }
   }
 
   // Migração 2026-06-15: coluna foto_base64 (foto persistente no banco, não some no deploy)

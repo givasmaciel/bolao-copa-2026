@@ -342,7 +342,7 @@ Armazena configurações do sistema, como o prazo limite dos palpites extras (ex
 
 **Cálculo:**
 - `total_pontos = SUM(palpites.pontos_obtidos) + SUM(pontos dos palpites_extras via subquery) + SUM(pontos_bonus)`.
-- Exclui administradores (`is_admin = 0`).
+- Sem filtro de exclusão por `is_admin`: **admins aparecem no ranking normalmente** com seus palpites contando como qualquer participante.
 - **Critérios de desempate (8 níveis, do mais forte pro mais fraco):**
 
   | # | Critério | SQL / Métrica | Pontos (grupos) |
@@ -461,7 +461,7 @@ A pontuação é fixa por categoria, conforme tabela na seção 5.4. Os pontos s
 
 ## 7. Regras de Negócio
 
-1. **Papel do administrador** — Usuários com `is_admin = 1` **administraram o site**: gerenciam jogos, usuários, extras, bônus e mata-mata via `/admin/*`. Eles **podem visualizar e dar palpites** (em `/palpites` e `/palpites-extras`) se quiserem, mas são **excluídos do ranking** — seus palpites não contam para a competição. Suas estatísticas pessoais (em `/resumo`) também ignoram a participação no ranking.
+1. **Papel do administrador** — Usuários com `is_admin = 1` **administraram o site**: gerenciam jogos, usuários, extras, bônus e mata-mata via `/admin/*`. Eles **podem visualizar e dar palpites** (em `/palpites` e `/palpites-extras`) e **participam do ranking normalmente** — seus palpites contam como qualquer outro participante. Não há exclusão de admin do ranking: a coluna `excluir_ranking` foi removida em 28/06/2026 quando o conceito de "admin externo" foi abandonado.
 
 2. **Bloqueio de 2 minutos** — Cada palpite de jogo é bloqueado 2 minutos antes do horário do jogo (horário de Brasília). A verificação é feita por jogo individualmente.
 

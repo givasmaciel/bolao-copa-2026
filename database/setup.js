@@ -167,17 +167,17 @@ async function setup() {
     if (adminExistente) {
       const hash = await bcrypt.hash(adminSenha, 10);
       await run(
-        'UPDATE usuarios SET nome = ?, senha_hash = ?, is_admin = 1, excluir_ranking = 1 WHERE id = ?',
+        'UPDATE usuarios SET nome = ?, senha_hash = ?, is_admin = 1 WHERE id = ?',
         [adminNome, hash, adminExistente.id]
       );
-      console.log(`✅ Admin atualizado (excluído do ranking): ${adminEmail}`);
+      console.log(`✅ Admin atualizado: ${adminEmail}`);
     } else {
       const hash = await bcrypt.hash(adminSenha, 10);
       await run(
-        'INSERT INTO usuarios (nome, email, senha_hash, is_admin, excluir_ranking) VALUES (?, ?, ?, 1, 1)',
+        'INSERT INTO usuarios (nome, email, senha_hash, is_admin) VALUES (?, ?, ?, 1)',
         [adminNome, adminEmail.toLowerCase().trim(), hash]
       );
-      console.log(`✅ Admin criado (excluído do ranking): ${adminEmail}`);
+      console.log(`✅ Admin criado: ${adminEmail}`);
     }
   } else {
     console.log('ℹ️  ADMIN_EMAIL/ADMIN_SENHA não definidos. Admin deve ser criado manualmente.');

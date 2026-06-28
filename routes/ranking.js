@@ -65,7 +65,6 @@ router.get('/', async (req, res) => {
       LEFT JOIN palpites p ON p.usuario_id = u.id
       LEFT JOIN jogos j ON j.id = p.jogo_id
       LEFT JOIN fase_pontuacao fp ON fp.fase = j.fase
-      WHERE u.excluir_ranking = 0
       GROUP BY u.id
       -- Critérios de desempate (do mais forte pro mais fraco):
       -- 1) total_pontos, 2) placares exatos, 3) resultado+gol, 4) resultado,
@@ -89,7 +88,7 @@ router.get('/', async (req, res) => {
     // Calcula totais
     const totais = await get(`
       SELECT
-        (SELECT COUNT(*) FROM usuarios WHERE excluir_ranking = 0) AS total_usuarios,
+        (SELECT COUNT(*) FROM usuarios) AS total_usuarios,
         (SELECT COUNT(*) FROM jogos) AS total_jogos,
         (SELECT COUNT(*) FROM jogos WHERE finalizado = 1) AS jogos_finalizados,
         (SELECT COUNT(*) FROM jogos WHERE finalizado = 0) AS jogos_pendentes,
@@ -102,7 +101,6 @@ router.get('/', async (req, res) => {
       FROM palpites p
       JOIN jogos j ON j.id = p.jogo_id
       JOIN usuarios u ON u.id = p.usuario_id
-      WHERE u.excluir_ranking = 0
       GROUP BY p.usuario_id, j.rodada
       ORDER BY p.usuario_id, j.rodada
     `);
@@ -138,7 +136,6 @@ router.get('/', async (req, res) => {
       FROM resultados_extras r
       JOIN palpites_extras pe ON pe.categoria = r.categoria AND pe.selecao_id = r.selecao_id
       JOIN usuarios u ON u.id = pe.usuario_id
-      WHERE u.excluir_ranking = 0
       ORDER BY r.categoria, r.selecao_id, u.nome
     `);
     // Monta mapa: resultado_id -> [usuarios]
