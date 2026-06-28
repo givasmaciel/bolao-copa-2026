@@ -1,6 +1,7 @@
 const express = require('express');
 const { run, get, all } = require('../database/db');
 const { verificarAutenticado } = require('../middleware/auth');
+const logger = require('../logger');
 
 const router = express.Router();
 
@@ -202,7 +203,7 @@ router.get('/', verificarAutenticado, async (req, res) => {
       rachaId: req.query.com || ''
     });
   } catch (err) {
-    console.error('Erro no resumo:', err);
+    logger.error('Erro no resumo:', err);
     req.flash('erro', 'Erro ao carregar resumo. Tente novamente em alguns instantes.');
     // Direciona direto ao /dashboard — o redirect para '/' também levaria
     // ao dashboard (porque o usuário está logado), mas passando por '/'

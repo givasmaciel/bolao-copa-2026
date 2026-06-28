@@ -95,7 +95,7 @@ router.get('/', verificarAdmin, async (req, res) => {
 
     res.render('admin', { title: 'Painel Admin', totais, proximosJogos, resumoRanking });
   } catch (err) {
-    console.error('Erro no admin:', err);
+    logger.error('Erro no admin:', err);
     req.flash('erro', 'Erro ao carregar painel.');
     res.redirect('/');
   }
@@ -121,7 +121,7 @@ router.get('/jogos', verificarAdmin, async (req, res) => {
 
     res.render('admin-jogos', { title: 'Editar resultados', jogos, query: req.query });
   } catch (err) {
-    console.error('Erro ao listar jogos admin:', err);
+    logger.error('Erro ao listar jogos admin:', err);
     req.flash('erro', 'Erro ao carregar jogos.');
     res.redirect('/admin');
   }
@@ -202,15 +202,12 @@ router.post('/jogos/:id', verificarAdmin, async (req, res) => {
       );
       const isMataMata = jogo.fase !== 'grupo';
       const jogoComResultado = { ...jogo, gols_casa: gc, gols_visitante: gv, classificado_id: classificadoId };
-      for (const p of palpites) {
-        let pontos;
-        if (isMataMata) {
-          pontos = calcularPontosMataMata(jogoComResultado, p.palpite_gols_casa, p.palpite_gols_visitante, p.palpite_classificado_id, ptsConfig);
-        } else {
-          pontos = calcularPontos(gc, gv, p.palpite_gols_casa, p.palpite_gols_visitante, ptsConfig);
-        }
-        await run('UPDATE palpites SET pontos_obtidos = ? WHERE id = ?', [pontos, p.id]);
-      }
+      await Promise.all(palpites.map(p => {
+        const pontos = isMataMata
+          ? calcularPontosMataMata(jogoComResultado, p.palpite_gols_casa, p.palpite_gols_visitante, p.palpite_classificado_id, ptsConfig)
+          : calcularPontos(gc, gv, p.palpite_gols_casa, p.palpite_gols_visitante, ptsConfig);
+        return run('UPDATE palpites SET pontos_obtidos = ? WHERE id = ?', [pontos, p.id]);
+      }));
     } else {
       // Se "desfinalizou" ou limpou placar, zera pontos desse jogo
       await run('UPDATE palpites SET pontos_obtidos = 0 WHERE jogo_id = ?', [jogoId]);
@@ -219,7 +216,7 @@ router.post('/jogos/:id', verificarAdmin, async (req, res) => {
     req.flash('sucesso', 'Resultado atualizado e pontos recalculados!');
     res.redirect('/admin/jogos');
   } catch (err) {
-    console.error('Erro ao atualizar jogo:', err);
+    logger.error('Erro ao atualizar jogo:', err);
     req.flash('erro', 'Erro ao atualizar.');
     res.redirect('/admin/jogos');
   }
@@ -253,21 +250,19 @@ router.post('/recalcular', verificarAdmin, async (req, res) => {
       const ptsConfig = ptsCache[j.fase] || { pts_exato: 20, pts_empate: 14, pts_resultado_gol: 14, pts_resultado: 8, pts_gol: 3, pts_classificado: 0 };
       const palpites = palpitesPorJogo[j.id] || [];
       const isMataMata = j.fase !== 'grupo';
-      for (const p of palpites) {
-        let pontos;
-        if (isMataMata) {
-          pontos = calcularPontosMataMata(j, p.palpite_gols_casa, p.palpite_gols_visitante, p.palpite_classificado_id, ptsConfig);
-        } else {
-          pontos = calcularPontos(j.gols_casa, j.gols_visitante, p.palpite_gols_casa, p.palpite_gols_visitante, ptsConfig);
-        }
-        await run('UPDATE palpites SET pontos_obtidos = ? WHERE id = ?', [pontos, p.id]);
-        total++;
-      }
+      const updates = palpites.map(p => {
+        const pontos = isMataMata
+          ? calcularPontosMataMata(j, p.palpite_gols_casa, p.palpite_gols_visitante, p.palpite_classificado_id, ptsConfig)
+          : calcularPontos(j.gols_casa, j.gols_visitante, p.palpite_gols_casa, p.palpite_gols_visitante, ptsConfig);
+        return run('UPDATE palpites SET pontos_obtidos = ? WHERE id = ?', [pontos, p.id]);
+      });
+      const results = await Promise.all(updates);
+      total += results.length;
     }
     req.flash('sucesso', `${total} palpites recalculados!`);
     res.redirect('/admin');
   } catch (err) {
-    console.error('Erro ao recalcular:', err);
+    logger.error('Erro ao recalcular:', err);
     req.flash('erro', 'Erro ao recalcular.');
     res.redirect('/admin');
   }
@@ -293,7 +288,7 @@ router.get('/usuarios', verificarAdmin, async (req, res) => {
     }
     res.render('admin-usuarios', { title: 'Gerenciar participantes', usuarios, bonusMap });
   } catch (err) {
-    console.error('Erro ao listar usuários:', err);
+    logger.error('Erro ao listar usuários:', err);
     req.flash('erro', 'Erro ao carregar.');
     res.redirect('/admin');
   }
@@ -353,7 +348,7 @@ router.post('/usuarios/:id/resetar-senha', verificarAdmin, async (req, res) => {
     await run('UPDATE usuarios SET senha_hash = ? WHERE id = ?', [hash, id]);
     req.flash('sucesso', 'Senha do participante foi redefinida.');
   } catch (err) {
-    console.error('Erro ao resetar senha:', err);
+    logger.error('Erro ao resetar senha:', err);
     req.flash('erro', 'Erro ao redefinir senha.');
   }
   res.redirect('/admin/usuarios');
@@ -377,7 +372,7 @@ router.post('/resetar-todos-palpites', verificarAdmin, async (req, res) => {
 
     req.flash('sucesso', 'Palpites pendentes + resultados oficiais resetados (jogos já finalizados e bets após prazo preservados).');
   } catch (err) {
-    console.error('Erro ao resetar:', err);
+    logger.error('Erro ao resetar:', err);
     req.flash('erro', 'Erro ao resetar.');
   }
   res.redirect('/admin');
@@ -419,7 +414,7 @@ router.post('/usuarios/criar', verificarAdmin, async (req, res) => {
     ]);
     req.flash('sucesso', `Participante ${nome} criado com sucesso!`);
   } catch (err) {
-    console.error('Erro ao criar participante:', err);
+    logger.error('Erro ao criar participante:', err);
     req.flash('erro', 'Erro ao criar participante.');
   }
   res.redirect('/admin/usuarios');
@@ -442,7 +437,7 @@ router.post('/usuarios/:id/alterar-username', verificarAdmin, async (req, res) =
     await run('UPDATE usuarios SET username = ? WHERE id = ?', [usernameLimpo, id]);
     req.flash('sucesso', 'Nome de usuário atualizado.');
   } catch (err) {
-    console.error('Erro ao alterar username:', err);
+    logger.error('Erro ao alterar username:', err);
     req.flash('erro', 'Erro ao alterar username.');
   }
   res.redirect('/admin/usuarios');
@@ -458,7 +453,7 @@ router.post('/usuarios/:id/excluir', verificarAdmin, async (req, res) => {
     await run('DELETE FROM usuarios WHERE id = ?', [id]);
     req.flash('sucesso', 'Participante excluído.');
   } catch (err) {
-    console.error('Erro ao excluir:', err);
+    logger.error('Erro ao excluir:', err);
     req.flash('erro', 'Erro ao excluir.');
   }
   res.redirect('/admin/usuarios');
@@ -490,7 +485,7 @@ router.post('/jogos/:id/limite', verificarAdmin, async (req, res) => {
       req.flash('sucesso', 'Prazo personalizado removido.');
     }
   } catch (err) {
-    console.error('Erro ao definir prazo:', err);
+    logger.error('Erro ao definir prazo:', err);
     req.flash('erro', 'Erro ao definir prazo.');
   }
   res.redirect('/admin/jogos');
@@ -504,7 +499,7 @@ router.post('/jogos/:id/limpar-limite', verificarAdmin, async (req, res) => {
     await run('UPDATE jogos SET palpite_limite = NULL WHERE id = ?', [jogoId]);
     req.flash('sucesso', 'Prazo personalizado removido.');
   } catch (err) {
-    console.error('Erro ao limpar prazo:', err);
+    logger.error('Erro ao limpar prazo:', err);
     req.flash('erro', 'Erro ao limpar prazo.');
   }
   res.redirect('/admin/jogos');
@@ -569,7 +564,7 @@ router.post('/jogos/:id/horario', verificarAdmin, async (req, res) => {
     await run(`UPDATE jogos SET ${updates.join(', ')} WHERE id = ?`, params);
     req.flash('sucesso', 'Horário/estádio atualizado! Os palpites pendentes revalidam o prazo automaticamente.');
   } catch (err) {
-    console.error('Erro ao atualizar horário/estádio:', err);
+    logger.error('Erro ao atualizar horário/estádio:', err);
     req.flash('erro', 'Erro ao atualizar horário/estádio.');
   }
   res.redirect('/admin/jogos');
@@ -582,7 +577,7 @@ router.get('/mata-mata', verificarAdmin, async (req, res) => {
     const selecoes = await all('SELECT id, nome_pt, sigla FROM selecoes ORDER BY nome_pt');
     res.render('admin-mata-mata', { title: 'Mata-mata', confrontos, selecoes });
   } catch (err) {
-    console.error('Erro ao carregar mata-mata:', err);
+    logger.error('Erro ao carregar mata-mata:', err);
     req.flash('erro', 'Erro ao carregar confrontos.');
     res.redirect('/admin');
   }
@@ -607,7 +602,7 @@ router.post('/mata-mata/limpar', verificarAdmin, async (req, res) => {
     const total = await limparMataMata();
     req.flash('sucesso', `${total} confrontos foram limpos.`);
   } catch (err) {
-    console.error('Erro ao limpar confrontos:', err);
+    logger.error('Erro ao limpar confrontos:', err);
     req.flash('erro', 'Erro ao limpar confrontos.' + (err.message ? ' (' + err.message + ')' : ''));
   }
   res.redirect('/admin/mata-mata');
@@ -630,7 +625,7 @@ router.post('/mata-mata/:id/editar', verificarAdmin, async (req, res) => {
       [casa, visitante, jogoId]);
     req.flash('sucesso', 'Confronto atualizado manualmente.');
   } catch (err) {
-    console.error('Erro ao editar confronto:', err);
+    logger.error('Erro ao editar confronto:', err);
     req.flash('erro', 'Erro ao editar confronto.');
   }
   res.redirect('/admin/mata-mata');
@@ -643,7 +638,7 @@ router.get('/pontuacao-fases', verificarAdmin, async (req, res) => {
     const faseLabel = { grupo: 'Fase de Grupos', r32: '16 avos de Final', r16: 'Oitavas de Final', qf: 'Quartas de Final', sf: 'Semifinal', terceiro: 'Disputa de 3º lugar', final: 'Final' };
     res.render('admin-pontuacao-fases', { title: 'Pontuação por Fase', fases, faseLabel });
   } catch (err) {
-    console.error('Erro:', err);
+    logger.error('Erro:', err);
     req.flash('erro', 'Erro ao carregar.');
     res.redirect('/admin');
   }
@@ -670,7 +665,7 @@ router.post('/pontuacao-fases', verificarAdmin, async (req, res) => {
     req.flash('sucesso', 'Pontuação das fases atualizada!');
     res.redirect('/admin/pontuacao-fases');
   } catch (err) {
-    console.error('Erro:', err);
+    logger.error('Erro:', err);
     req.flash('erro', 'Erro ao salvar.');
     res.redirect('/admin/pontuacao-fases');
   }
@@ -684,7 +679,7 @@ router.get('/premios', verificarAdmin, async (req, res) => {
     for (const r of rows) premios[r.chave] = r.valor;
     res.render('admin-premios', { title: 'Premiações', premios });
   } catch (err) {
-    console.error('Erro ao carregar premiações:', err);
+    logger.error('Erro ao carregar premiações:', err);
     req.flash('erro', 'Erro ao carregar.');
     res.redirect('/admin');
   }
@@ -711,7 +706,7 @@ router.post('/premios', verificarAdmin, async (req, res) => {
     req.flash('sucesso', 'Premiações atualizadas!');
     res.redirect('/admin/premios');
   } catch (err) {
-    console.error('Erro ao salvar premiações:', err);
+    logger.error('Erro ao salvar premiações:', err);
     req.flash('erro', 'Erro ao salvar.');
     res.redirect('/admin/premios');
   }
@@ -728,7 +723,7 @@ router.get('/link-login', verificarAdmin, async (req, res) => {
     const link = `${baseUrl}/login/${token}`;
     res.render('admin-link-login', { title: 'Link de login', link });
   } catch (err) {
-    console.error('Erro ao gerar link:', err);
+    logger.error('Erro ao gerar link:', err);
     req.flash('erro', 'Erro ao gerar link.');
     res.redirect('/admin');
   }
@@ -748,7 +743,7 @@ router.post('/usuarios/:id/bonus', verificarAdmin, async (req, res) => {
     await run('INSERT INTO pontos_bonus (usuario_id, pontos, motivo) VALUES (?, ?, ?)', [id, pts, motivo || null]);
     req.flash('sucesso', `${pts} ponto(s) bônus adicionado(s)!`);
   } catch (err) {
-    console.error('Erro ao adicionar bônus:', err);
+    logger.error('Erro ao adicionar bônus:', err);
     req.flash('erro', 'Erro ao adicionar bônus.');
   }
   res.redirect('/admin/usuarios');
@@ -763,7 +758,7 @@ router.post('/usuarios/:id/bonus/:bonusId/remover', verificarAdmin, async (req, 
     await run('DELETE FROM pontos_bonus WHERE id = ? AND usuario_id = ?', [bonusId, id]);
     req.flash('sucesso', 'Bônus removido.');
   } catch (err) {
-    console.error('Erro ao remover bônus:', err);
+    logger.error('Erro ao remover bônus:', err);
     req.flash('erro', 'Erro ao remover bônus.');
   }
   res.redirect('/admin/usuarios');
@@ -784,7 +779,7 @@ router.post('/usuarios/:id/bonus/:bonusId/editar', verificarAdmin, async (req, r
     await run('UPDATE pontos_bonus SET pontos = ?, motivo = ? WHERE id = ? AND usuario_id = ?', [pts, motivo || null, bonusId, id]);
     req.flash('sucesso', 'Bônus atualizado!');
   } catch (err) {
-    console.error('Erro ao editar bônus:', err);
+    logger.error('Erro ao editar bônus:', err);
     req.flash('erro', 'Erro ao editar bônus.');
   }
   res.redirect('/admin/usuarios');

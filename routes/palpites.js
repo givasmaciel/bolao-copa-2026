@@ -2,6 +2,7 @@ const express = require('express');
 const { run, get, all } = require('../database/db');
 const { verificarAutenticado } = require('../middleware/auth');
 const { PALPITE_MARGEM_MS } = require('../services/palpite-config');
+const logger = require('../logger');
 
 const router = express.Router();
 
@@ -79,6 +80,10 @@ router.post('/salvar-rodada', verificarAutenticado, async (req, res) => {
           palpiteClassificadoId = cid;
         }
       }
+      // Mata-mata: alerta se placar empatado e sem classificado (só loga, não bloqueia)
+      if (jogo.fase !== 'grupo' && casa === visitante && !palpiteClassificadoId) {
+        logger.warn('salvar-rodada sem classificado em empate', { jogoId: jogo.id, usuarioId });
+      }
 
       // INSERT ... ON CONFLICT: atômico e idempotente.
       // Resolve race conditions (dois submits simultâneos do mesmo jogo) e
@@ -100,7 +105,7 @@ router.post('/salvar-rodada', verificarAutenticado, async (req, res) => {
     res.json({ ok: true });
   } catch (err) {
     // Loga + retorna erro JSON em vez de deixar a promise morrer (que crasha o Node)
-    console.error('Erro em /palpites/salvar-rodada:', err);
+    logger.error('Erro em /palpites/salvar-rodada:', err);
     res.status(500).json({ ok: false, erro: 'Erro ao salvar palpites. Tente novamente em alguns segundos.' });
   }
 });
@@ -186,7 +191,7 @@ router.get('/', verificarAutenticado, async (req, res) => {
       faseGroups: FASE_GROUPS
     });
   } catch (err) {
-    console.error('Erro ao listar palpites:', err);
+    logger.error('Erro ao listar palpites:', err);
     req.flash('erro', 'Erro ao carregar jogos.');
     res.redirect('/');
   }
@@ -212,10 +217,15 @@ router.post('/:jogoId', verificarAutenticado, async (req, res) => {
 
   try {
     // Verifica se o jogo existe e ainda não começou
-    const jogo = await get(
-      "SELECT id, data, finalizado, palpite_limite, fase, selecao_casa_id, selecao_visitante_id FROM jogos WHERE id = ?",
-      [jogoId]
-    );
+    const jogo = await get(`
+      SELECT j.id, j.data, j.finalizado, j.palpite_limite, j.fase,
+             j.selecao_casa_id, j.selecao_visitante_id,
+             sc.sigla AS casa_sigla, sv.sigla AS visitante_sigla
+      FROM jogos j
+      LEFT JOIN selecoes sc ON j.selecao_casa_id = sc.id
+      LEFT JOIN selecoes sv ON j.selecao_visitante_id = sv.id
+      WHERE j.id = ?
+    `, [jogoId]);
     if (!jogo) {
       req.flash('erro', 'Jogo não encontrado.');
       return res.redirect('/palpites');
@@ -244,6 +254,10 @@ router.post('/:jogoId', verificarAutenticado, async (req, res) => {
         }
         palpiteClassificadoId = cid;
       }
+      // Se placar empatado e sem classificado, alerta o usuário (mas salva mesmo assim)
+      if (casa === visitante && !palpiteClassificadoId) {
+        req.flash('aviso', `⚠️ ${jogo.casa_sigla} ${casa}×${visitante} ${jogo.visitante_sigla} — Placar empatado sem time classificado. O bônus de classificado não será computado.`);
+      }
     }
 
     // Faz upsert atômico (INSERT ... ON CONFLICT) — não precisa de SELECT prévio
@@ -258,10 +272,10 @@ router.post('/:jogoId', verificarAutenticado, async (req, res) => {
       [usuarioId, jogoId, casa, visitante, palpiteClassificadoId]
     );
 
-    req.flash('sucesso', 'Palpite salvo com sucesso!');
+    req.flash('sucesso', `${jogo.casa_sigla} ${casa}×${visitante} ${jogo.visitante_sigla} salvo!`);
     res.redirect('/palpites');
   } catch (err) {
-    console.error('Erro ao salvar palpite:', err);
+    logger.error('Erro ao salvar palpite', { error: err.message, jogoId, usuarioId });
     req.flash('erro', 'Erro ao salvar palpite.');
     res.redirect('/palpites');
   }
@@ -313,7 +327,7 @@ router.get('/jogo/:id', verificarAutenticado, async (req, res) => {
       jogo, palpites
     });
   } catch (err) {
-    console.error('Erro ao carregar palpites do jogo:', err);
+    logger.error('Erro ao carregar palpites do jogo:', err);
     req.flash('erro', 'Erro ao carregar.');
     res.redirect('/palpites');
   }

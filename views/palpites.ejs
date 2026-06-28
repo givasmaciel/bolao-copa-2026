@@ -341,10 +341,36 @@ async function salvarGrupo(gid, label, btn) {
     const jogoId = match[1];
     const casa = form.querySelector('input[name="casa"]')?.value;
     const visitante = form.querySelector('input[name="visitante"]')?.value;
+    const classificado = form.querySelector('input[name="palpite_classificado_id"]:checked')?.value || '';
     if (casa !== undefined && visitante !== undefined) {
-      jogos[jogoId] = { casa, visitante };
+      jogos[jogoId] = { casa, visitante, classificado_id: classificado };
     }
   });
+  // Verifica se há jogos de mata-mata com placar empatado e sem classificado
+  var semClassificado = [];
+  container.querySelectorAll('.jogo-card form').forEach(function(form) {
+    var classDiv = form.querySelector('.jogo-classifica');
+    if (!classDiv) return;
+    var action = form.getAttribute('action');
+    var match = action.match(/\/palpites\/(\d+)/);
+    if (!match) return;
+    var jogoId = match[1];
+    var jogo = jogos[jogoId];
+    if (!jogo) return;
+    if (String(jogo.casa) === String(jogo.visitante) && !jogo.classificado_id) {
+      var casaSigla = classDiv.querySelector('label:first-child')?.textContent?.trim() || '';
+      var visitSigla = classDiv.querySelector('label:last-child')?.textContent?.trim() || '';
+      semClassificado.push(casaSigla + ' × ' + visitSigla);
+    }
+  });
+  if (semClassificado.length > 0) {
+    var nomes = semClassificado.slice(0, 3).join(', ');
+    if (semClassificado.length > 3) nomes += ' e +' + (semClassificado.length - 3) + ' outros';
+    if (!confirm('⚠️ ' + semClassificado.length + ' jogo(s) de mata-mata com placar EMPATADO e sem time classificado:\n' + nomes + '\n\nO bônus de classificado NÃO será computado. Deseja continuar mesmo assim?')) {
+      return;
+    }
+  }
+
   if (Object.keys(jogos).length === 0) {
     toast('Nenhum jogo aberto neste grupo.', 'warning');
     return;
@@ -400,6 +426,18 @@ function atualizarCountdowns() {
 setInterval(atualizarCountdowns, 1000);
 atualizarCountdowns();
 
+// Auto-seleciona classificado baseado no placar inicial
+// Só executa se o usuário NÃO salvou um palpite_classificado_id ainda,
+// para não sobrescrever a escolha manual em caso de empate
+(function() {
+  document.querySelectorAll('.jogo-form').forEach(function(form) {
+    var classChecked = form.querySelector('input[name="palpite_classificado_id"]:checked');
+    if (classChecked) return; // já tem escolha salva, preserva
+    var casaInput = form.querySelector('input[name="casa"]');
+    if (casaInput) autoClassificado(casaInput);
+  });
+})();
+
 function palpitarGrupo(gid) {
   document.getElementById('grupo-' + gid + '-preencher').style.display = 'block';
 }
@@ -436,6 +474,16 @@ function salvarIndividual(ev, form) {
   if (!casaInput.value || !visitInput.value || Number(casaInput.value) < 0 || Number(visitInput.value) < 0) {
     toast('Preencha os dois placares com números válidos (0 ou maior).', 'warning');
     return false;
+  }
+  // Mata-mata: alerta se placar empatado e classificado não selecionado
+  var classDiv = form.querySelector('.jogo-classifica');
+  if (classDiv && Number(casaInput.value) === Number(visitInput.value)) {
+    var classChecked = form.querySelector('input[name="palpite_classificado_id"]:checked');
+    if (!classChecked) {
+      if (!confirm('⚠️ Placar empatado sem time classificado. O bônus de classificado NÃO será computado. Deseja continuar?')) {
+        return false;
+      }
+    }
   }
   const placarOriginal = { casa: casaInput.value, visitante: visitInput.value };
   btn.disabled = true;

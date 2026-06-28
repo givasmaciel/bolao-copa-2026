@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
+const logger = require('../logger');
 let sharp;
 try { sharp = require('sharp'); } catch (e) { sharp = null; }
 const { run, get } = require('../database/db');
@@ -43,7 +44,7 @@ router.get('/', verificarAutenticado, async (req, res) => {
     const usuario = await get('SELECT nome, email, username, foto FROM usuarios WHERE id = ?', [req.session.usuario.id]);
     res.render('config', { title: 'Minha conta', usuario: { ...req.session.usuario, ...usuario } });
   } catch (err) {
-    console.error('Erro ao carregar config:', err);
+    logger.error('Erro ao carregar config:', err);
     req.flash('erro', 'Erro ao carregar.');
     res.redirect('/');
   }
@@ -78,7 +79,7 @@ router.post('/nome', verificarAutenticado, async (req, res) => {
     req.flash('sucesso', 'Nome atualizado com sucesso!');
     res.redirect('/config');
   } catch (err) {
-    console.error('Erro ao alterar nome:', err);
+    logger.error('Erro ao alterar nome:', err);
     req.flash('erro', 'Erro ao alterar nome.');
     res.redirect('/config');
   }
@@ -129,7 +130,7 @@ router.post('/foto', verificarAutenticado, (req, res) => {
       req.session.usuario.foto = fotoPath;
       req.flash('sucesso', 'Foto atualizada com sucesso!');
     } catch (dbErr) {
-      console.error('Erro ao salvar foto:', dbErr);
+      logger.error('Erro ao salvar foto:', dbErr);
       req.flash('erro', 'Erro ao salvar foto.');
     }
     res.redirect('/config');
@@ -144,7 +145,7 @@ router.post('/foto/remover', verificarAutenticado, async (req, res) => {
     delete req.session.usuario.foto;
     req.flash('sucesso', 'Foto removida.');
   } catch (err) {
-    console.error('Erro ao remover foto:', err);
+    logger.error('Erro ao remover foto:', err);
     req.flash('erro', 'Erro ao remover foto.');
   }
   res.redirect('/config');

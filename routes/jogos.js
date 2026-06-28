@@ -2,6 +2,7 @@ const express = require('express');
 const { all, get } = require('../database/db');
 const { verificarAutenticado } = require('../middleware/auth');
 const { PALPITE_MARGEM_MS } = require('../services/palpite-config');
+const logger = require('../logger');
 
 const router = express.Router();
 
@@ -67,7 +68,7 @@ router.get('/', async (req, res) => {
     const totalJogos = jogos.length;
     res.render('jogos', { title: 'Jogos da Copa 2026', fases, totalJogos });
   } catch (err) {
-    console.error('Erro ao listar jogos:', err);
+    logger.error('Erro ao listar jogos:', err);
     req.flash('erro', 'Erro ao carregar jogos.');
     res.redirect('/');
   }
@@ -145,7 +146,7 @@ router.get('/:id/palpites', verificarAutenticado, async (req, res) => {
       usuarioId: req.session.usuario.id
     });
   } catch (err) {
-    console.error('Erro ao carregar palpites do jogo:', err);
+    logger.error('Erro ao carregar palpites do jogo:', err);
     req.flash('erro', 'Erro ao carregar palpites.');
     res.redirect('/jogos');
   }

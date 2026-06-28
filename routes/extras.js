@@ -1,6 +1,7 @@
 const express = require('express');
 const { run, get, all } = require('../database/db');
 const { verificarAutenticado, verificarAdmin } = require('../middleware/auth');
+const logger = require('../logger');
 
 const router = express.Router();
 const adminRouter = express.Router();
@@ -74,7 +75,7 @@ router.get('/', verificarAutenticado, async (req, res) => {
       palpitesAgrupado
     });
   } catch (err) {
-    console.error('Erro ao carregar palpites extras:', err);
+    logger.error('Erro ao carregar palpites extras:', err);
     req.flash('erro', 'Erro ao carregar página.');
     res.redirect('/');
   }
@@ -131,7 +132,7 @@ router.post('/', verificarAutenticado, async (req, res) => {
     req.flash('sucesso', 'Palpites extras salvos com sucesso!');
     res.redirect('/palpites-extras');
   } catch (err) {
-    console.error('Erro ao salvar palpites extras:', err);
+    logger.error('Erro ao salvar palpites extras:', err);
     req.flash('erro', 'Erro ao salvar.');
     res.redirect('/palpites-extras');
   }
@@ -189,7 +190,7 @@ router.post('/:categoria', verificarAutenticado, async (req, res) => {
     req.flash('sucesso', `${cat.nome} salvo com sucesso!`);
     res.redirect('/palpites-extras');
   } catch (err) {
-    console.error('Erro ao salvar palpites extras:', err);
+    logger.error('Erro ao salvar palpites extras:', err);
     req.flash('erro', 'Erro ao salvar.');
     res.redirect('/palpites-extras');
   }
@@ -216,7 +217,7 @@ adminRouter.get('/extras', verificarAdmin, async (req, res) => {
       dataLimite
     });
   } catch (err) {
-    console.error('Erro:', err);
+    logger.error('Erro:', err);
     req.flash('erro', 'Erro ao carregar.');
     res.redirect('/admin');
   }
@@ -264,7 +265,7 @@ adminRouter.post('/extras', verificarAdmin, async (req, res) => {
     req.flash('sucesso', `${cat.nome} salvo!`);
     res.redirect('/admin/extras');
   } catch (err) {
-    console.error('Erro ao salvar resultados:', err);
+    logger.error('Erro ao salvar resultados:', err);
     req.flash('erro', 'Erro ao salvar.');
     res.redirect('/admin/extras');
   }
@@ -283,7 +284,7 @@ adminRouter.post('/extras/config', verificarAdmin, async (req, res) => {
     }
     res.redirect('/admin/extras');
   } catch (err) {
-    console.error('Erro ao salvar config:', err);
+    logger.error('Erro ao salvar config:', err);
     req.flash('erro', 'Erro ao salvar prazo.');
     res.redirect('/admin/extras');
   }

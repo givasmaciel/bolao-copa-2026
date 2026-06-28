@@ -17,12 +17,13 @@ Deploy no Render (Node.js) com **Postgres no Neon** (free tier permanente). Loca
 - **Config** (`/config`) — participante altera próprio nome (sincronizado com username)
 - **Admin** — gerencia o site via `/admin/*` (jogos, usuários, extras, bônus, mata-mata, horários, pontuação por fase). Pode apostar em `/palpites` e `/palpites-extras` se quiser **e participa normalmente do ranking** — seus palpites contam como qualquer outro participante.
 - **Admin: editar horário/estádio** — botão "🕐 Horário/Estádio" em `/admin/jogos` para corrigir data/hora, estádio, cidade e país de qualquer jogo sem precisar de deploy
-- **Placar automático** — busca resultados reais da API worldcup26.ir (open-source) a cada 16 minutos; atualiza placar e recalcula pontos automaticamente (fase de grupos); no mata-mata, atualiza o placar dos 90 min sem finalizar (admin adiciona prorrogação/pênaltis manualmente); acionável manualmente pelo admin em `/admin/placar-automatico`
+- **Placar automático** — busca resultados reais da API worldcup26.ir (open-source) a cada 16 minutos; atualiza placar e recalcula pontos automaticamente (fase de grupos); no mata-mata, atualiza o placar dos 90 min **e já salva o classificado_id** quando há vencedor nos 90 min (se empate, admin adiciona prorrogação/pênaltis manualmente); acionável manualmente pelo admin em `/admin/placar-automatico`
 - **Pontos bônus** — participantes tardios recebem pontuação do último colocado -1 da rodada de ingresso; cadastro encerra após fechamento dos extras; tooltip no ranking mostra motivo
 - **Rotas administrativas** — resultados dos jogos, recalcular pontos, gerenciar usuários (promover/rebaixar/excluir/resetar senha, resetar palpites individual/massa, alterar username, criar participante), admin extras, admin config
 - **Rota de diagnóstico** — `/jogos/db-info` retorna JSON com `host`, `marcador` (do `db_marker` da tabela `config`), contagens (`usuarios`, `jogos`, `palpites`, `jogos_finalizados`) e timestamp
 - **Indicador de banco** — `db_marker` lido no boot é exibido discretamente no rodapé (ex.: "🗄️ DB: neon-producao-2026-06-28"), evitando confusão quando há mais de um banco em uso (Neon prod, Render mirror, dev local)
 - **Tratamento de erros sem reload silencioso** — `salvarIndividual` e `salvarGrupo` validam placar antes de enviar, mostram mensagem detalhada em caso de erro HTTP, mantêm o placar que o usuário digitou e re-habilitam o botão
+- **Mata-mata com alerta de classificado** — ao salvar palpite de mata-mata com placar empatado e sem time classificado, o sistema exibe um `confirm()` para "Salvar todos" e `confirm()` no salvamento individual; o servidor também emite um flash `aviso` para o usuário; o bônus de classificado não é perdido **se o usuário marcar o rádio manualmente**. "Preencher todos" também aciona o auto-preenchimento do classificado baseado no placar (time com mais gols é pré-selecionado).
 - **PWA (Progressive Web App)** — manifest.json + service worker (cache offline de assets estáticos, network-first para HTML), atalhos para Palpites/Ranking/Jogos, instalável no celular como app nativo
 - **Health check `/healthz`** — endpoint público que verifica conexão com banco, retorna uptime, latência, marcador e contagens. Retorna 503 se banco offline. Útil para monitoramento do Render e debugging.
 - **Sentry (opcional)** — se `SENTRY_DSN` estiver definido em produção, errors vão automaticamente para o painel do Sentry com contexto da request. `tracesSampleRate=0.1`. Filtra `/healthz`, `/favicon` e `/admin` para evitar ruído.
@@ -138,7 +139,7 @@ database/
 
 routes/
   auth.js        — cadastro aberto (bloqueado após prazo dos extras), login (email/username/nome), logout
-  palpites.js    — palpites por jogo, trava 2 min antes, idempotência via ON CONFLICT
+  palpites.js    — palpites por jogo, trava 2 min antes, idempotência via ON CONFLICT, flash message com placar ("BRA 2×0 JAP salvo!"), valida server-side de classificado em mata-mata
   extras.js      — palpites extras independentes, save individual e em lote, revelação pós-prazo
   dashboard.js   — cards, próximos jogos, top 5 (admin entra), banner com contagem regressiva, pontuação por fase
   resumo.js      — stats detalhadas, pontos por rodada, racha, histórico
@@ -287,7 +288,7 @@ Referrer-Policy: strict-origin-when-cross-origin
 
 ### Logs estruturados (`logger.js`)
 
-Substituiu `console.log/error` por logger que emite JSON. Buscas úteis no Render:
+Substituiu `console.log/error` (e `console.error`) por logger que emite JSON em todas as rotas e services. Buscas úteis no Render:
 ```
 level:error                              # todos os erros
 msg:"unhandled error" AND url:/palpites   # erros específicos em palpites

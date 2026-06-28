@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const rateLimit = require('express-rate-limit');
 const { run, get } = require('../database/db');
+const logger = require('../logger');
 
 const senhaLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -98,7 +99,7 @@ router.post('/esqueci-senha', senhaLimiter, async (req, res) => {
     req.flash('sucesso', 'Se o e-mail existir, enviaremos um link de redefinição.');
     res.redirect('/esqueci-senha');
   } catch (err) {
-    console.error('Erro em esqueci-senha:', err);
+    logger.error('Erro em esqueci-senha:', err);
     req.flash('erro', 'Erro ao processar solicitação.');
     res.redirect('/esqueci-senha');
   }
@@ -123,7 +124,7 @@ router.get('/redefinir-senha/:token', async (req, res) => {
 
     res.render('redefinir-senha', { title: 'Redefinir senha', token });
   } catch (err) {
-    console.error('Erro ao validar token:', err);
+    logger.error('Erro ao validar token:', err);
     req.flash('erro', 'Erro ao validar link.');
     res.redirect('/esqueci-senha');
   }
@@ -163,7 +164,7 @@ router.post('/redefinir-senha/:token', senhaLimiter, async (req, res) => {
     req.flash('sucesso', 'Senha redefinida com sucesso! Faça login.');
     res.redirect('/login');
   } catch (err) {
-    console.error('Erro ao redefinir senha:', err);
+    logger.error('Erro ao redefinir senha:', err);
     req.flash('erro', 'Erro ao redefinir senha.');
     res.redirect(`/redefinir-senha/${token}`);
   }

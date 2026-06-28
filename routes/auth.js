@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const rateLimit = require('express-rate-limit');
 const { run, get } = require('../database/db');
 const { jaLogado } = require('../middleware/auth');
+const logger = require('../logger');
 
 const router = express.Router();
 
@@ -98,7 +99,7 @@ router.post('/cadastro', jaLogado, authLimiter, async (req, res) => {
     req.flash('sucesso', `Bem-vindo ao bolão, ${nome}!`);
     res.redirect('/dashboard');
   } catch (err) {
-    console.error('Erro no cadastro:', err);
+    logger.error('Erro no cadastro:', err);
     req.flash('erro', 'Erro ao criar conta. Tente novamente.');
     res.render('cadastro', { title: 'Criar conta', dados: req.body });
   }
@@ -150,12 +151,12 @@ router.post('/login', jaLogado, authLimiter, async (req, res) => {
 
     // Salva explicitamente antes do redirect
     req.session.save((err) => {
-      if (err) console.error('Erro ao salvar sessão:', err);
+      if (err) logger.error('Erro ao salvar sessão:', err);
       req.flash('sucesso', `Olá, ${usuario.nome}!`);
       res.redirect('/dashboard');
     });
   } catch (err) {
-    console.error('Erro no login:', err);
+    logger.error('Erro no login:', err);
     req.flash('erro', 'Erro ao fazer login.');
     res.render('login', { title: 'Entrar' });
   }
@@ -194,12 +195,12 @@ router.get('/login/:token', tokenLimiter, async (req, res) => {
       is_admin: admin.is_admin
     };
     req.session.save((err) => {
-      if (err) console.error('[TOKEN] erro ao salvar sessão:', err);
+      if (err) logger.error('[TOKEN] erro ao salvar sessão:', err);
       req.flash('sucesso', `Login automático: ${admin.nome}`);
       res.redirect('/dashboard');
     });
   } catch (err) {
-    console.error('Erro no login por token:', err);
+    logger.error('Erro no login por token:', err);
     req.flash('erro', 'Erro no login automático.');
     res.redirect('/login');
   }

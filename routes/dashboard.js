@@ -2,6 +2,7 @@ const express = require('express');
 const { run, get, all } = require('../database/db');
 const { verificarAutenticado } = require('../middleware/auth');
 const { PALPITE_MARGEM_MS } = require('../services/palpite-config');
+const logger = require('../logger');
 
 const router = express.Router();
 
@@ -188,7 +189,7 @@ router.get('/', verificarAutenticado, async (req, res) => {
       premios
     });
   } catch (err) {
-    console.error('Erro no dashboard:', err);
+    logger.error('Erro no dashboard:', err);
     req.flash('erro', 'Erro ao carregar painel.');
     res.redirect('/palpites');
   }

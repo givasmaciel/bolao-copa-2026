@@ -1,5 +1,6 @@
 const { run, get, all } = require('../database/db');
 const { calcularPontos, calcularPontosMataMata } = require('./pontuacao');
+const logger = require('../logger');
 
 const API_URL = 'https://worldcup26.ir/get/games';
 
@@ -122,9 +123,10 @@ async function buscarPlacares() {
           }
         } else if (ehMataMata && decididoNos90Min) {
           // Mata-mata decidido em 90 min (sem prorrogação): finalizar automático + calcular pontos
+          const classificadoId = golsCasa > golsVisitante ? jogo.selecao_casa_id : jogo.selecao_visitante_id;
           await run(
-            'UPDATE jogos SET gols_casa = ?, gols_visitante = ?, finalizado = 1 WHERE id = ?',
-            [golsCasa, golsVisitante, jogo.id]
+            'UPDATE jogos SET gols_casa = ?, gols_visitante = ?, finalizado = 1, classificado_id = ? WHERE id = ?',
+            [golsCasa, golsVisitante, classificadoId, jogo.id]
           );
 
           const ptsConfig = await get('SELECT * FROM fase_pontuacao WHERE fase = ?', [jogo.fase]);
@@ -136,8 +138,6 @@ async function buscarPlacares() {
             );
 
             for (const p of palpites) {
-              // Mata-mata decidido em 90 min: classificado = quem ganhou
-              const classificadoId = golsCasa > golsVisitante ? jogo.selecao_casa_id : jogo.selecao_visitante_id;
               const pontos = calcularPontosMataMata(
                 { gols_casa: golsCasa, gols_visitante: golsVisitante, classificado_id: classificadoId },
                 p.palpite_gols_casa,
@@ -171,20 +171,20 @@ async function buscarPlacares() {
     } catch (err) {
       if (tentativa < MAX_RETRIES) {
         const delay = RETRY_DELAYS[tentativa - 1] || RETRY_DELAYS[RETRY_DELAYS.length - 1];
-        console.error(`[Placar Automático] Tentativa ${tentativa}/${MAX_RETRIES} falhou: ${err.message}. Tentando novamente em ${delay / 1000}s...`);
+        logger.warn('placar-automatico retry', { tentativa, max: MAX_RETRIES, error: err.message, delay_ms: delay });
         await new Promise(r => setTimeout(r, delay));
       } else {
         falhasConsecutivas++;
         resultado.mensagem = `Erro após ${MAX_RETRIES} tentativas: ${err.message}`;
         resultado.erros = 1;
-        console.error(`[Placar Automático] ${resultado.mensagem} (${falhasConsecutivas} falhas consecutivas)`);
+        logger.error('placar-automatico falhou', { error: err.message, falhasConsecutivas });
       }
     }
   }
 
   ultimaExecucao = new Date();
   ultimoResultado = resultado;
-  console.log(`[Placar Automático] ${resultado.mensagem} (${resultado.atualizados} atualizados, ${resultado.ignorados} ignorados)`);
+  logger.info('placar-automatico executado', { atualizados: resultado.atualizados, ignorados: resultado.ignorados, erros: resultado.erros, mensagem: resultado.mensagem });
   return resultado;
 }
 

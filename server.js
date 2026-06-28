@@ -159,7 +159,7 @@ function csrfProtection(req, res, next) {
   let token = req.body?._csrf || req.query?._csrf || req.headers?.['x-csrf-token'];
   if (Array.isArray(token)) token = token[0];
   if (!token || token !== req.session.csrfToken) {
-    console.warn('CSRF inválido:', {
+    logger.warn('CSRF inválido', {
       method: req.method,
       url: req.originalUrl,
       hasSessionCsrf: !!req.session.csrfToken,
@@ -196,7 +196,7 @@ app.use(async (req, res, next) => {
       const row = await get('SELECT foto FROM usuarios WHERE id = ?', [req.session.usuario.id]);
       req.session.usuario.foto = row?.foto || null;
       res.locals.usuario = req.session.usuario;
-    } catch (e) { /* fallback silencioso */ }
+    } catch (e) { logger.warn('foto refresh falhou', { error: e.message, usuarioId: req.session.usuario.id }); }
   }
   next();
 });
@@ -315,8 +315,10 @@ app.use('/regras', regrasRoutes);
 
 // GET /foto/:id — serve a foto do usuário com fallback SVG (iniciais) se o arquivo sumiu (deploy Render)
 app.get('/foto/:id', async (req, res) => {
+  const usuarioId = parseInt(req.params.id, 10);
+  if (isNaN(usuarioId)) return res.status(404).type('svg').send('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect fill="#ccc" width="200" height="200"/><text x="100" y="115" text-anchor="middle" font-size="60" fill="#666" font-family="sans-serif">?</text></svg>');
   try {
-    const usuario = await get('SELECT nome, foto, foto_base64 FROM usuarios WHERE id = ?', [req.params.id]);
+    const usuario = await get('SELECT nome, foto, foto_base64 FROM usuarios WHERE id = ?', [usuarioId]);
     if (!usuario) return res.status(404).type('svg').send('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect fill="#ccc" width="200" height="200"/><text x="100" y="115" text-anchor="middle" font-size="60" fill="#666" font-family="sans-serif">?</text></svg>');
 
     // 1. Tenta base64 do banco (persiste após deploy)
@@ -332,7 +334,7 @@ app.get('/foto/:id', async (req, res) => {
     const fs = require('fs');
     const uploadsDir = path.join(__dirname, 'public', 'uploads');
     if (usuario.foto) {
-      const files = fs.readdirSync(uploadsDir).filter(f => f.startsWith(`usuario-${req.params.id}.`));
+      const files = fs.readdirSync(uploadsDir).filter(f => f.startsWith(`usuario-${usuarioId}.`));
       if (files.length > 0) {
         const filePath = path.join(uploadsDir, files[0]);
         const ext = path.extname(files[0]).toLowerCase();
@@ -346,10 +348,11 @@ app.get('/foto/:id', async (req, res) => {
     const nome = usuario.nome || '?';
     const palavras = nome.trim().split(/\s+/);
     const iniciais = palavras.length >= 2 ? (palavras[0][0] + palavras[palavras.length - 1][0]).toUpperCase() : nome.substring(0, 2).toUpperCase();
-    const cor = ['#22c55e','#3b82f6','#ef4444','#ca8a04','#a855f7','#06b6d4','#ec4899'][Number(req.params.id) % 7];
+    const cor = ['#22c55e','#3b82f6','#ef4444','#ca8a04','#a855f7','#06b6d4','#ec4899'][usuarioId % 7];
     res.type('svg');
     res.send(`<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect fill="${cor}" width="200" height="200"/><text x="100" y="120" text-anchor="middle" font-size="64" fill="white" font-family="sans-serif" font-weight="bold">${iniciais}</text></svg>`);
   } catch (e) {
+    logger.error('foto erro', { error: e.message, usuarioId });
     res.status(500).type('svg').send('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect fill="#ccc" width="200" height="200"/><text x="100" y="115" text-anchor="middle" font-size="60" fill="#666" font-family="sans-serif">?</text></svg>');
   }
 });
@@ -383,7 +386,7 @@ app.get('/api/proximo-jogo', async (req, res) => {
       data: dataJogo.toISOString()
     });
   } catch (err) {
-    console.error('Erro ao buscar próximo jogo:', err);
+    logger.error('proximo-jogo erro', { error: err.message });
     res.json({ ok: false });
   }
 });

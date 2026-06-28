@@ -1,6 +1,7 @@
 const express = require('express');
 const { all, get } = require('../database/db');
 const { CATEGORIAS } = require('./extras');
+const logger = require('../logger');
 
 const router = express.Router();
 
@@ -295,7 +296,7 @@ router.get('/', async (req, res) => {
       premios, pontuacaoFases, faseLabelCompleto
     });
   } catch (err) {
-    console.error('Erro ao listar ranking:', err);
+    logger.error('Erro ao listar ranking:', err);
     req.flash('erro', 'Erro ao carregar ranking.');
     res.redirect('/');
   }
@@ -395,7 +396,7 @@ router.get('/usuario/:id', async (req, res) => {
       CATEGORIAS
     });
   } catch (err) {
-    console.error('Erro ao listar palpites do usuário:', err);
+    logger.error('Erro ao listar palpites do usuário:', err);
     req.flash('erro', 'Erro ao carregar palpites.');
     res.redirect('/ranking');
   }
