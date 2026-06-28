@@ -1,5 +1,5 @@
 const { run, get, all } = require('../database/db');
-const { calcularPontos } = require('./pontuacao');
+const { calcularPontos, calcularPontosMataMata } = require('./pontuacao');
 
 const API_URL = 'https://worldcup26.ir/get/games';
 
@@ -76,7 +76,8 @@ async function buscarPlacares() {
         }
 
         const jogo = await get(`
-          SELECT j.id, j.finalizado, j.gols_casa, j.gols_visitante, j.fase
+          SELECT j.id, j.finalizado, j.gols_casa, j.gols_visitante, j.fase,
+                 j.selecao_casa_id, j.selecao_visitante_id
           FROM jogos j
           JOIN selecoes sc ON j.selecao_casa_id = sc.id
           JOIN selecoes sv ON j.selecao_visitante_id = sv.id
@@ -96,8 +97,11 @@ async function buscarPlacares() {
         const golsCasa = Number(partida.home_score);
         const golsVisitante = Number(partida.away_score);
         const ehGrupo = jogo.fase === 'grupo';
+        const ehMataMata = !ehGrupo;
+        const decididoNos90Min = golsCasa !== golsVisitante; // mata-mata: empate vai pra prorrogação/pênaltis
 
         if (ehGrupo) {
+          // Jogos de grupo: sempre finalizar — não tem prorrogação
           await run(
             'UPDATE jogos SET gols_casa = ?, gols_visitante = ?, finalizado = 1 WHERE id = ?',
             [golsCasa, golsVisitante, jogo.id]
@@ -116,7 +120,36 @@ async function buscarPlacares() {
               await run('UPDATE palpites SET pontos_obtidos = ? WHERE id = ?', [pontos, p.id]);
             }
           }
+        } else if (ehMataMata && decididoNos90Min) {
+          // Mata-mata decidido em 90 min (sem prorrogação): finalizar automático + calcular pontos
+          await run(
+            'UPDATE jogos SET gols_casa = ?, gols_visitante = ?, finalizado = 1 WHERE id = ?',
+            [golsCasa, golsVisitante, jogo.id]
+          );
+
+          const ptsConfig = await get('SELECT * FROM fase_pontuacao WHERE fase = ?', [jogo.fase]);
+
+          if (ptsConfig) {
+            const palpites = await all(
+              'SELECT id, palpite_gols_casa, palpite_gols_visitante, palpite_classificado_id FROM palpites WHERE jogo_id = ?',
+              [jogo.id]
+            );
+
+            for (const p of palpites) {
+              // Mata-mata decidido em 90 min: classificado = quem ganhou
+              const classificadoId = golsCasa > golsVisitante ? jogo.selecao_casa_id : jogo.selecao_visitante_id;
+              const pontos = calcularPontosMataMata(
+                { gols_casa: golsCasa, gols_visitante: golsVisitante, classificado_id: classificadoId },
+                p.palpite_gols_casa,
+                p.palpite_gols_visitante,
+                p.palpite_classificado_id,
+                ptsConfig
+              );
+              await run('UPDATE palpites SET pontos_obtidos = ? WHERE id = ?', [pontos, p.id]);
+            }
+          }
         } else {
+          // Mata-mata empatado nos 90 min: só grava os gols, admin finaliza com prorrogação/pênaltis
           await run(
             'UPDATE jogos SET gols_casa = ?, gols_visitante = ? WHERE id = ?',
             [golsCasa, golsVisitante, jogo.id]
