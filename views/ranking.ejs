@@ -403,7 +403,8 @@
           <% rodadas.forEach(function(r) { %>
             <th class="text-center"><%= labels[r] %></th>
           <% }); %>
-          <th class="text-center">Extra</th>
+          <th class="text-center" title="Pontos de palpites extras (campeão, artilheiro, oitavas, etc)">Extras</th>
+          <th class="text-center" title="Pontos bônus concedidos pelo admin">Bônus</th>
           <th class="text-center">Total</th>
         </tr>
       </thead>
@@ -420,11 +421,8 @@
               var extraSom = u.extras_pontos || 0;
               var bonusSom = u.bonus_pontos || 0;
             %>
-            <td class="text-center" style="color:var(--cinza-escuro)" title="<%= extraSom > 0 ? 'Extra: +' + extraSom : 'Sem pontos extras' %><%= bonusSom > 0 ? ' | Bônus: +' + bonusSom + (bonusInfo ? ' (' + bonusInfo + ')' : '') : '' %>">
-              <% if (extraSom > 0) { %><span style="color:var(--verde)">+<%= extraSom %>e</span><% } %>
-              <% if (bonusSom > 0) { %><span style="color:var(--cinza-escuro);font-size:0.85em">+<%= bonusSom %>b</span><% } %>
-              <% if (extraSom === 0 && bonusSom === 0) { %>—<% } %>
-            </td>
+            <td class="text-center" style="color:var(--verde)" title="Pontos de palpites extras (campeão, artilheiro, oitavas etc)"><%= extraSom > 0 ? '+' + extraSom : '—' %></td>
+            <td class="text-center" style="color:var(--cinza-escuro);font-size:0.9em" title="<%= bonusInfo ? bonusInfo : 'Sem bônus' %>"><%= bonusSom > 0 ? '+' + bonusSom : '—' %></td>
             <td class="text-center pontos"><%= u.total_pontos %></td>
           </tr>
         <% }); %>
