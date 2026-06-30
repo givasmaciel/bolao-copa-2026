@@ -822,30 +822,54 @@ footer a:hover { text-decoration: underline; }
   margin-top: 4px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .extra-score-hint {
   font-size: 0.7rem;
   color: var(--cinza-escuro);
+  text-align: center;
+  margin-bottom: 2px;
 }
 
-.extra-score-field {
+.extra-score-match {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
 }
 
-.extra-score-field-label {
-  font-size: 0.72rem;
+.extra-score-match-title {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--cinza-escuro);
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.extra-score-match-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.extra-score-team {
+  font-size: 0.78rem;
   font-weight: 600;
   color: var(--texto);
+  max-width: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.extra-score-inputs {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+.extra-score-team:first-child {
+  text-align: right;
+}
+
+.extra-score-team:last-child {
+  text-align: left;
 }
 
 .extra-score-input {
@@ -869,23 +893,30 @@ footer a:hover { text-decoration: underline; }
   -moz-appearance: textfield;
 }
 
-.extra-score-inputs .x {
+.extra-score-match-row .x {
   font-size: 1rem;
   font-weight: 700;
   color: var(--cinza-escuro);
 }
 
+.extra-score-classificado {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
 .extra-score-select {
   width: auto;
-  min-width: 140px;
+  min-width: 160px;
   font-size: 0.78rem;
-  display: inline-block;
 }
 
 .extra-score-footnote {
   font-size: 0.68rem;
   color: var(--cinza-escuro);
   font-style: italic;
+  text-align: center;
 }
 
 /* ============== Responsivo ============== */
@@ -958,6 +989,7 @@ footer a:hover { text-decoration: underline; }
   .card { padding: 10px; }
   .jogo-card .jogo-placar input { width: 50px !important; font-size: 0.95rem; padding: 5px 4px; min-height: 44px; }
   .extra-score-input { width: 54px !important; min-width: 54px; font-size: 0.95rem; }
+  .extra-score-team { max-width: 65px; font-size: 0.72rem; }
   /* mantém layout horizontal mesmo em telas pequenas */
   .jogo-time { font-size: 0.78rem; gap: 4px; }
   .jogo-time img { width: 22px; height: 16px; }

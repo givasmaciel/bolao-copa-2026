@@ -48,9 +48,10 @@
             <summary style="cursor:pointer;color:var(--azul);font-weight:600">⏱ Prorrogação / Pênaltis / Classificado</summary>
             <div class="extra-score-container">
               <div class="extra-score-hint">Preencha <strong>somente se o jogo foi para prorrogação ou pênaltis</strong>.</div>
-              <div class="extra-score-field">
-                <div class="extra-score-field-label">Prorrogação</div>
-                <div class="extra-score-inputs">
+              <div class="extra-score-match">
+                <div class="extra-score-match-title">Prorrogação</div>
+                <div class="extra-score-match-row">
+                  <span class="extra-score-team"><%= jogo.casa_pt %></span>
                   <input type="number" name="gols_casa_pror" min="0" max="99" class="form-control extra-score-input"
                          value="<%= jogo.gols_casa_pror !== null && jogo.gols_casa_pror !== undefined ? jogo.gols_casa_pror : '' %>"
                          placeholder="—">
@@ -58,11 +59,13 @@
                   <input type="number" name="gols_visitante_pror" min="0" max="99" class="form-control extra-score-input"
                          value="<%= jogo.gols_visitante_pror !== null && jogo.gols_visitante_pror !== undefined ? jogo.gols_visitante_pror : '' %>"
                          placeholder="—">
+                  <span class="extra-score-team"><%= jogo.visitante_pt %></span>
                 </div>
               </div>
-              <div class="extra-score-field">
-                <div class="extra-score-field-label">Pênaltis</div>
-                <div class="extra-score-inputs">
+              <div class="extra-score-match">
+                <div class="extra-score-match-title">Pênaltis</div>
+                <div class="extra-score-match-row">
+                  <span class="extra-score-team"><%= jogo.casa_pt %></span>
                   <input type="number" name="placar_penaltis_casa" min="0" max="99" class="form-control extra-score-input"
                          value="<%= jogo.placar_penaltis_casa !== null && jogo.placar_penaltis_casa !== undefined ? jogo.placar_penaltis_casa : '' %>"
                          placeholder="—">
@@ -70,10 +73,11 @@
                   <input type="number" name="placar_penaltis_visitante" min="0" max="99" class="form-control extra-score-input"
                          value="<%= jogo.placar_penaltis_visitante !== null && jogo.placar_penaltis_visitante !== undefined ? jogo.placar_penaltis_visitante : '' %>"
                          placeholder="—">
+                  <span class="extra-score-team"><%= jogo.visitante_pt %></span>
                 </div>
               </div>
-              <div class="extra-score-field">
-                <div class="extra-score-field-label">Classificado</div>
+              <div class="extra-score-classificado">
+                <div class="extra-score-match-title">Quem classificou?</div>
                 <select name="classificado_id" class="form-control extra-score-select">
                   <option value="">— sem prorrogação —</option>
                   <% if (jogo.casa_sigla) { %>
