@@ -306,9 +306,9 @@
 <div class="section-group" data-tipo="finalizados">
   <div class="flex-between" style="cursor:pointer;margin-top:24px;padding:8px 0" onclick="this.nextElementSibling.classList.toggle('hidden');this.querySelector('.toggle-icon').textContent = this.nextElementSibling.classList.contains('hidden') ? '▶' : '▼'">
     <h2 class="jogo-rodada-titulo" style="margin:0;color:var(--cinza-escuro);font-size:1rem">🏁 Jogos finalizados (<%= contarJogos(finalizados) %>)</h2>
-    <span class="toggle-icon" style="font-size:0.8rem;color:var(--cinza-escuro)">▼</span>
+    <span class="toggle-icon" style="font-size:0.8rem;color:var(--cinza-escuro)">▶</span>
   </div>
-  <div>
+  <div class="hidden">
   <% for (var g = 0; g < finalizados.length; g++) {
     const grupo = finalizados[g];
   %>

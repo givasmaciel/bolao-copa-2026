@@ -62,8 +62,12 @@
 </div>
 
 <!-- Jogos finalizados -->
-<div class="card">
-  <h3 style="margin-top:0">📋 Histórico de jogos finalizados</h3>
+<details class="card">
+  <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px">
+    <span class="seta">▶</span>
+    <h3 style="margin:0;display:inline">📋 Histórico de jogos finalizados</h3>
+    <span class="texto-aux" style="font-size:0.8rem;margin-left:6px">— <%= jogosFinalizados.length %> jogo(s), mais recentes no topo</span>
+  </summary>
   <% if (jogosFinalizados.length === 0) { %>
     <p class="texto-aux">Nenhum jogo finalizado ainda.</p>
   <% } else { %>
@@ -128,7 +132,7 @@
       </table>
     </div>
   <% } %>
-</div>
+</details>
 
 <!-- Racha -->
 <div class="card">

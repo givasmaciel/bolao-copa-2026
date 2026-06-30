@@ -92,7 +92,7 @@ router.get('/', verificarAutenticado, async (req, res) => {
       LEFT JOIN selecoes cc ON j.classificado_id = cc.id
       LEFT JOIN palpites p ON p.jogo_id = j.id AND p.usuario_id = ?
       WHERE j.finalizado = 1
-      ORDER BY j.data DESC
+      ORDER BY j.data DESC, j.id DESC
     `, [userId]);
 
     // Lista de participantes para racha

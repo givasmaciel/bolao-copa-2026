@@ -172,6 +172,24 @@ router.get('/', verificarAutenticado, async (req, res) => {
       }).map(function(k) { return dict[k]; });
     }
 
+    // Finalizados: ordem cronológica DESC — o grupo com os jogos mais recentes
+    // (maior j.data) aparece primeiro, e dentro de cada grupo o jogo mais recente
+    // também vem primeiro. Isso garante que os jogos de hoje fiquem no topo.
+    function sortEntriesPorData(dict) {
+      const maxData = (entry) => entry.jogos.reduce((m, j) => {
+        const t = new Date(j.data).getTime();
+        return t > m ? t : m;
+      }, 0);
+      return Object.keys(dict).sort(function(a, b) {
+        return maxData(dict[b]) - maxData(dict[a]);
+      }).map(function(k) {
+        dict[k].jogos.sort(function(a, b) {
+          return new Date(b.data).getTime() - new Date(a.data).getTime();
+        });
+        return dict[k];
+      });
+    }
+
     // Estatísticas do usuário
     const stats = await get(`
       SELECT
@@ -185,7 +203,7 @@ router.get('/', verificarAutenticado, async (req, res) => {
       title: 'Meus palpites',
       abertos: sortEntries(abertos),
       fechados: sortEntries(fechados),
-      finalizados: sortEntries(finalizados),
+      finalizados: sortEntriesPorData(finalizados),
       stats: stats || { total_palpites: 0, total_pontos: 0 },
       totalJogos: totalTodos,
       faseGroups: FASE_GROUPS
