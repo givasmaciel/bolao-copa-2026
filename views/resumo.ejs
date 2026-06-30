@@ -150,26 +150,112 @@
   </form>
 
   <% if (racha) { %>
+    <%
+      const diffTotal = racha.pontosEu - racha.pontosEle;
+      const fmtDiff = (n) => (n > 0 ? '+' + n : String(n));
+      const corDiff = (n) => n > 0 ? 'var(--verde)' : (n < 0 ? 'var(--erro)' : 'var(--cinza-escuro)');
+    %>
     <div style="margin-top:16px;display:flex;gap:16px;flex-wrap:wrap">
-      <div style="flex:1;min-width:140px;text-align:center;padding:16px;background:var(--verde);color:white;border-radius:8px">
+      <div style="flex:1;min-width:160px;text-align:center;padding:16px;background:var(--verde);color:white;border-radius:8px">
         <div style="font-size:0.8rem;opacity:0.9">Você</div>
         <div style="font-size:1.8rem;font-weight:800"><%= racha.pontosEu %></div>
-        <% if (racha.bonusEu > 0) { %><div style="font-size:0.65rem;opacity:0.8">(+<%= racha.bonusEu %> bônus/extras)</div><% } %>
+        <div style="font-size:0.7rem;opacity:0.85">
+          palpites: <%= racha.palpitesEuTotal %><% if (racha.bonusEu > 0) { %> · bônus/extras: +<%= racha.bonusEu %><% } %>
+        </div>
       </div>
-      <div style="flex:1;min-width:140px;text-align:center;padding:16px;background:var(--cinza);border-radius:8px">
+      <div style="flex:1;min-width:160px;text-align:center;padding:16px;background:var(--cinza);border-radius:8px">
         <div style="display:flex;align-items:center;justify-content:center;gap:6px;font-size:0.8rem;color:var(--cinza-escuro)">
           <img src="/foto/<%= racha.usuario.id %>" alt="" style="width:24px;height:24px;border-radius:50%;object-fit:cover" onerror="this.outerHTML='👤'">
           <%= racha.usuario.nome %>
         </div>
         <div style="font-size:1.8rem;font-weight:800"><%= racha.pontosEle %></div>
-        <% if (racha.bonusEle > 0) { %><div style="font-size:0.65rem;color:var(--cinza-escuro)">(+<%= racha.bonusEle %> bônus/extras)</div><% } %>
+        <div style="font-size:0.7rem;color:var(--cinza-escuro)">
+          palpites: <%= racha.palpitesEleTotal %><% if (racha.bonusEle > 0) { %> · bônus/extras: +<%= racha.bonusEle %><% } %>
+        </div>
       </div>
     </div>
+
+    <div style="margin-top:8px;text-align:center;font-size:0.95rem;font-weight:700;color:<%= corDiff(diffTotal) %>">
+      Diferença total: <%= fmtDiff(diffTotal) %> pts
+    </div>
+
     <div style="margin-top:12px;text-align:center">
       <span style="padding:4px 12px;background:var(--verde);color:white;border-radius:4px;margin:0 4px"><%= racha.vitorias %> vitórias</span>
       <span style="padding:4px 12px;background:var(--cinza);border-radius:4px;margin:0 4px"><%= racha.empates %> empates</span>
       <span style="padding:4px 12px;background:var(--erro);color:white;border-radius:4px;margin:0 4px"><%= racha.derrotas %> derrotas</span>
     </div>
+
+    <% if (racha.pontosPorRodada && racha.pontosPorRodada.length > 0) { %>
+      <h4 style="margin:18px 0 6px;font-size:0.9rem">📊 Pontos por rodada / fase</h4>
+      <div style="overflow-x:auto">
+        <table class="ranking-tabela" style="font-size:0.85rem">
+          <thead>
+            <tr>
+              <th>Rodada / Fase</th>
+              <th class="text-center">Você</th>
+              <th class="text-center"><%= racha.usuario.nome %></th>
+              <th class="text-center">Diferença</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% racha.pontosPorRodada.forEach(function(linha) { %>
+              <tr>
+                <td><strong><%= linha.label %></strong></td>
+                <td class="text-center"><%= linha.eu %></td>
+                <td class="text-center"><%= linha.ele %></td>
+                <td class="text-center" style="font-weight:700;color:<%= corDiff(linha.diff) %>"><%= fmtDiff(linha.diff) %></td>
+              </tr>
+            <% }); %>
+          </tbody>
+          <tfoot>
+            <tr style="background:var(--cinza-claro);font-weight:700">
+              <td>Subtotal palpites</td>
+              <td class="text-center"><%= racha.palpitesEuTotal %></td>
+              <td class="text-center"><%= racha.palpitesEleTotal %></td>
+              <td class="text-center" style="color:<%= corDiff(racha.palpitesEuTotal - racha.palpitesEleTotal) %>"><%= fmtDiff(racha.palpitesEuTotal - racha.palpitesEleTotal) %></td>
+            </tr>
+            <% if (racha.bonusEu > 0 || racha.bonusEle > 0) { %>
+              <tr>
+                <td>Bônus + extras</td>
+                <td class="text-center" style="color:var(--cinza-escuro)"><%= racha.bonusEu > 0 ? '+' + racha.bonusEu : '—' %></td>
+                <td class="text-center" style="color:var(--cinza-escuro)"><%= racha.bonusEle > 0 ? '+' + racha.bonusEle : '—' %></td>
+                <td class="text-center" style="color:<%= corDiff(racha.bonusEu - racha.bonusEle) %>"><%= fmtDiff(racha.bonusEu - racha.bonusEle) %></td>
+              </tr>
+              <tr style="background:var(--cinza-claro);font-weight:700">
+                <td>Total geral</td>
+                <td class="text-center"><%= racha.pontosEu %></td>
+                <td class="text-center"><%= racha.pontosEle %></td>
+                <td class="text-center" style="color:<%= corDiff(diffTotal) %>"><%= fmtDiff(diffTotal) %></td>
+              </tr>
+            <% } %>
+          </tfoot>
+        </table>
+      </div>
+    <% } %>
+
+    <% if (racha.top5Gaps && racha.top5Gaps.length > 0) { %>
+      <h4 style="margin:18px 0 6px;font-size:0.9rem">🔥 Top 5 maiores diferenças jogo a jogo</h4>
+      <p class="texto-aux" style="font-size:0.75rem;margin:0 0 6px">Onde o gap entre você e <%= racha.usuario.nome %> foi maior (em pontos absolutos). <strong style="color:var(--verde)">Verde</strong> = você ganhou mais; <strong style="color:var(--erro)">vermelho</strong> = você perdeu mais.</p>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <% racha.top5Gaps.forEach(function(g) {
+             const siglaFase = { grupo: 'G', r32: '16av', r16: '8av', qf: 'QF', sf: 'SF', terceiro: '3º', final: 'F' };
+             const fLabel = (siglaFase[g.fase] || g.fase) + (g.rodada && g.fase === 'grupo' ? '·' + g.rodada : '');
+        %>
+          <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--cinza-claro);border-radius:6px;font-size:0.85rem;flex-wrap:wrap">
+            <span style="background:var(--cinza);color:#fff;padding:2px 6px;border-radius:8px;font-size:0.7rem;font-weight:600"><%= fLabel %></span>
+            <strong><%= g.casa_sigla || '?' %></strong>
+            <span style="background:var(--azul);color:#fff;padding:1px 6px;border-radius:4px;font-weight:700;font-size:0.8rem"><%= g.placar %></span>
+            <strong><%= g.visitante_sigla || '?' %></strong>
+            <span style="margin-left:auto;display:flex;gap:8px;align-items:center;font-size:0.8rem">
+              <span>Você: <strong><%= g.ptsEu %></strong></span>
+              <span style="color:var(--cinza-escuro)">·</span>
+              <span>Ele: <strong><%= g.ptsEle %></strong></span>
+              <span style="font-weight:800;color:<%= corDiff(g.diff) %>;min-width:36px;text-align:right"><%= fmtDiff(g.diff) %></span>
+            </span>
+          </div>
+        <% }); %>
+      </div>
+    <% } %>
   <% } %>
 </div>
 

@@ -106,20 +106,30 @@ router.get('/', verificarAutenticado, async (req, res) => {
     if (rachaId && !isNaN(rachaId)) {
       const rachaUser = await get('SELECT id, nome, foto FROM usuarios WHERE id = ?', [rachaId]);
       if (rachaUser) {
+        // Busca palpites dos dois incluindo fase, rodada, nomes e placar — dados
+        // necessários para montar a tabela por rodada/fase e o top 5 maiores gaps.
         const palpitesEu = await all(`
-          SELECT p.jogo_id, p.pontos_obtidos, j.rodada
+          SELECT p.jogo_id, p.pontos_obtidos, j.rodada, j.fase,
+                 j.gols_casa, j.gols_visitante,
+                 sc.sigla AS casa_sigla, sv.sigla AS visitante_sigla
           FROM palpites p
           JOIN jogos j ON j.id = p.jogo_id
+          LEFT JOIN selecoes sc ON sc.id = j.selecao_casa_id
+          LEFT JOIN selecoes sv ON sv.id = j.selecao_visitante_id
           WHERE p.usuario_id = ? AND j.finalizado = 1
-          ORDER BY j.rodada, p.jogo_id
+          ORDER BY j.data, j.id
         `, [userId]);
 
         const palpitesEle = await all(`
-          SELECT p.jogo_id, p.pontos_obtidos, j.rodada
+          SELECT p.jogo_id, p.pontos_obtidos, j.rodada, j.fase,
+                 j.gols_casa, j.gols_visitante,
+                 sc.sigla AS casa_sigla, sv.sigla AS visitante_sigla
           FROM palpites p
           JOIN jogos j ON j.id = p.jogo_id
+          LEFT JOIN selecoes sc ON sc.id = j.selecao_casa_id
+          LEFT JOIN selecoes sv ON sv.id = j.selecao_visitante_id
           WHERE p.usuario_id = ? AND j.finalizado = 1
-          ORDER BY j.rodada, p.jogo_id
+          ORDER BY j.data, j.id
         `, [rachaId]);
 
         // Busca bônus e extras de ambos
@@ -132,14 +142,68 @@ router.get('/', verificarAutenticado, async (req, res) => {
         const totalBonusEu = (bonusEu?.total || 0) + (extrasEu?.total || 0);
         const totalBonusEle = (bonusEle?.total || 0) + (extrasEle?.total || 0);
 
-        // Total de pontos (inclui bônus e extras)
-        const pontosEu = palpitesEu.reduce((s, p) => s + (p.pontos_obtidos || 0), 0) + totalBonusEu;
-        const pontosEle = palpitesEle.reduce((s, p) => s + (p.pontos_obtidos || 0), 0) + totalBonusEle;
+        // Total de pontos de palpites (sem bônus/extras)
+        const palpitesEuTotal = palpitesEu.reduce((s, p) => s + (p.pontos_obtidos || 0), 0);
+        const palpitesEleTotal = palpitesEle.reduce((s, p) => s + (p.pontos_obtidos || 0), 0);
 
-        // Comparação jogo a jogo
+        // Total geral (palpites + bônus/extras)
+        const pontosEu = palpitesEuTotal + totalBonusEu;
+        const pontosEle = palpitesEleTotal + totalBonusEle;
+
+        // === Pontos por rodada/fase (lado a lado) ===
+        // Cada entrada: { key, label, eu, ele, diff }
+        const chaveRodada = (j) => {
+          if (j.fase === 'grupo') return { key: 'g' + j.rodada, label: 'R' + j.rodada };
+          const mapa = { r32: '16 avos', r16: 'Oitavas', qf: 'Quartas', sf: 'Semi', terceiro: '3º', final: 'Final' };
+          return { key: j.fase, label: mapa[j.fase] || j.fase };
+        };
+        const mapRodada = new Map();
+        for (const p of palpitesEu) {
+          const k = chaveRodada(p);
+          if (!mapRodada.has(k.key)) mapRodada.set(k.key, { key: k.key, label: k.label, eu: 0, ele: 0 });
+          mapRodada.get(k.key).eu += (p.pontos_obtidos || 0);
+        }
+        for (const p of palpitesEle) {
+          const k = chaveRodada(p);
+          if (!mapRodada.has(k.key)) mapRodada.set(k.key, { key: k.key, label: k.label, eu: 0, ele: 0 });
+          mapRodada.get(k.key).ele += (p.pontos_obtidos || 0);
+        }
+        // Ordem fixa de fases (grupos primeiro em ordem de rodada, depois mata-mata)
+        const ordemFases = ['g1', 'g2', 'g3', 'r32', 'r16', 'qf', 'sf', 'terceiro', 'final'];
+        const pontosPorRodada = ordemFases
+          .filter(k => mapRodada.has(k))
+          .map(k => {
+            const r = mapRodada.get(k);
+            r.diff = r.eu - r.ele;
+            return r;
+          });
+
+        // === Top 5 maiores gaps (jogo a jogo) ===
         const mapaEle = {};
         for (const p of palpitesEle) mapaEle[p.jogo_id] = p.pontos_obtidos || 0;
+        const gaps = [];
+        for (const p of palpitesEu) {
+          const pEle = mapaEle[p.jogo_id];
+          if (pEle === undefined) continue; // ele não palpitou neste jogo
+          const diff = (p.pontos_obtidos || 0) - pEle;
+          if (diff !== 0) {
+            gaps.push({
+              jogo_id: p.jogo_id,
+              rodada: p.rodada,
+              fase: p.fase,
+              casa_sigla: p.casa_sigla,
+              visitante_sigla: p.visitante_sigla,
+              placar: p.gols_casa + '×' + p.gols_visitante,
+              ptsEu: p.pontos_obtidos || 0,
+              ptsEle,
+              diff
+            });
+          }
+        }
+        gaps.sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff));
+        const top5Gaps = gaps.slice(0, 5);
 
+        // === V/E/D jogo a jogo (mantido para compatibilidade) ===
         let vitorias = 0, empates = 0, derrotas = 0;
         for (const p of palpitesEu) {
           const pEle = mapaEle[p.jogo_id] ?? -1;
@@ -153,8 +217,12 @@ router.get('/', verificarAutenticado, async (req, res) => {
           usuario: rachaUser,
           pontosEu,
           pontosEle,
+          palpitesEuTotal,
+          palpitesEleTotal,
           bonusEu: totalBonusEu,
           bonusEle: totalBonusEle,
+          pontosPorRodada,
+          top5Gaps,
           vitorias,
           empates,
           derrotas
