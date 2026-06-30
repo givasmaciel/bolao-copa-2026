@@ -849,11 +849,11 @@ footer a:hover { text-decoration: underline; }
 }
 
 .extra-score-input {
-  width: 60px;
-  min-width: 60px;
+  width: 65px !important;
+  min-width: 65px;
   text-align: center;
-  font-size: 0.95rem;
-  padding: 0.35rem;
+  font-size: 1rem;
+  padding: 0.4rem 0.25rem;
   font-weight: 600;
 }
 
@@ -867,6 +867,12 @@ footer a:hover { text-decoration: underline; }
 /* Firefox - remove spinner */
 .extra-score-input[type="number"] {
   -moz-appearance: textfield;
+}
+
+.extra-score-inputs .x {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--cinza-escuro);
 }
 
 .extra-score-select {
@@ -951,7 +957,7 @@ footer a:hover { text-decoration: underline; }
   .jogo-card { padding: 10px; gap: 6px; }
   .card { padding: 10px; }
   .jogo-card .jogo-placar input { width: 50px !important; font-size: 0.95rem; padding: 5px 4px; min-height: 44px; }
-  .extra-score-input { width: 52px; min-width: 52px; font-size: 0.9rem; }
+  .extra-score-input { width: 54px !important; min-width: 54px; font-size: 0.95rem; }
   /* mantém layout horizontal mesmo em telas pequenas */
   .jogo-time { font-size: 0.78rem; gap: 4px; }
   .jogo-time img { width: 22px; height: 16px; }
