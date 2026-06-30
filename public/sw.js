@@ -8,7 +8,7 @@
  * Incrementar CACHE_NAME (v2, v3...) quando mudar assets pra forçar update.
  */
 
-const CACHE_NAME = 'bolao-v3';
+const CACHE_NAME = 'bolao-v4';
 const STATIC_ASSETS = [
   '/',
   '/css/style.css',
