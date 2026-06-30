@@ -113,6 +113,26 @@ router.get('/', async (req, res) => {
       rodadaMap[r.usuario_id][r.rodada] = r.pontos;
     });
 
+    // Pontos de qualificação: bônus pts_classificado ganho em mata-mata que foi para
+    // prorrogação/pênaltis (90 min terminou empatado) e o participante acertou quem avançou.
+    // Este valor JÁ está incluído nos pontos por rodada; a coluna é só para transparência
+    // da soma final (mostra quanto do total veio de acertos de classificado).
+    const pontosQualificacao = await all(`
+      SELECT p.usuario_id, COALESCE(SUM(fp.pts_classificado), 0) AS pontos
+      FROM palpites p
+      JOIN jogos j ON j.id = p.jogo_id
+      JOIN fase_pontuacao fp ON fp.fase = j.fase
+      WHERE j.finalizado = 1
+        AND j.fase <> 'grupo'
+        AND j.gols_casa = j.gols_visitante
+        AND j.classificado_id IS NOT NULL
+        AND p.palpite_classificado_id IS NOT NULL
+        AND p.palpite_classificado_id = j.classificado_id
+      GROUP BY p.usuario_id
+    `);
+    const qualifMap = {};
+    for (const q of pontosQualificacao) qualifMap[q.usuario_id] = Number(q.pontos) || 0;
+
     // Busca rodadas dinâmicas do banco (em vez de array fixo)
     const fasesRodada = await all(
       'SELECT DISTINCT rodada, fase FROM jogos WHERE fase IS NOT NULL ORDER BY rodada'
@@ -291,6 +311,7 @@ router.get('/', async (req, res) => {
     res.render('ranking', {
       title: 'Ranking do Bolão',
       ranking, totais, rodadaMap, rodadas, labels,
+      qualifMap,
       extrasResultados, extrasPorCategoria, CATEGORIAS,
       totalDisputado, bonusMap, statsConcluidos,
       premios, pontuacaoFases, faseLabelCompleto

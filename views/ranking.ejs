@@ -392,7 +392,7 @@
 
 <div class="card mt-3">
   <h2>📊 Ranking por rodada</h2>
-  <p class="texto-aux">Pontos acumulados em cada rodada. <strong>R1</strong> a <strong>R3</strong> = grupos, <strong>16av</strong> a <strong>Final</strong> = mata-mata.</p>
+  <p class="texto-aux">Pontos acumulados em cada rodada. <strong>R1</strong> a <strong>R3</strong> = grupos, <strong>16av</strong> a <strong>Final</strong> = mata-mata. <strong>Qualif.</strong> mostra quanto do total veio do bônus por acertar quem classifica nos mata-mata que foram para prorrogação/pênaltis — esse valor já está dentro das colunas de rodada, é só para deixar a soma mais transparente.</p>
   <div style="overflow-x:auto">
     <table class="ranking-tabela">
       <thead>
@@ -403,6 +403,7 @@
             <th class="text-center"><%= labels[r] %></th>
           <% }); %>
           <th class="text-center" title="Pontos de palpites extras (campeão, artilheiro, oitavas, etc)">Extras</th>
+          <th class="text-center" title="Pontos de qualificação: bônus por acertar quem classifica nos mata-mata que foram para prorrogação/pênaltis (90 min empatados). Valor JÁ está incluído nos pontos por rodada — esta coluna é só para mostrar a origem do total.">Qualif.</th>
           <th class="text-center" title="Pontos bônus concedidos pelo admin">Bônus</th>
           <th class="text-center">Total</th>
         </tr>
@@ -419,8 +420,10 @@
               var bonusInfo = bonusMap && bonusMap[u.id] && bonusMap[u.id].length > 0 ? bonusMap[u.id].map(function(b) { return b.motivo ? b.pontos + ' (' + b.motivo + ')' : '+' + b.pontos; }).join('; ') : '';
               var extraSom = u.extras_pontos || 0;
               var bonusSom = u.bonus_pontos || 0;
+              var qualifSom = (qualifMap && qualifMap[u.id]) || 0;
             %>
             <td class="text-center" style="color:var(--verde)" title="Pontos de palpites extras (campeão, artilheiro, oitavas etc)"><%= extraSom > 0 ? '+' + extraSom : '—' %></td>
+            <td class="text-center" style="color:var(--cinza-escuro);font-size:0.9em" title="Pontos de qualificação: bônus por acertar quem classifica nos mata-mata que foram para prorrogação/pênaltis (90 min empatados). Já incluído nos pontos por rodada."><%= qualifSom > 0 ? '+' + qualifSom : '—' %></td>
             <td class="text-center" style="color:var(--cinza-escuro);font-size:0.9em" title="<%= bonusInfo ? bonusInfo : 'Sem bônus' %>"><%= bonusSom > 0 ? '+' + bonusSom : '—' %></td>
             <td class="text-center pontos"><%= u.total_pontos %></td>
           </tr>

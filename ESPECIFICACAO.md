@@ -668,7 +668,7 @@ bolao/
 
 ## 11. Notas Técnicas Adicionais
 
-- **Render free tier**: O serviço web pode hibernar após inatividade. A primeira requisição pode levar alguns segundos (cold start). A produção atual usa Render Postgres; Neon é apenas uma migração futura.
+- **Render free tier**: O serviço web pode hibernar após inatividade. A primeira requisição pode levar alguns segundos (cold start). A produção roda no **Neon** (PostgreSQL serverless) desde 28/06/2026 — Render Postgres foi descontinuado como banco primário.
 - **Timezone — TZ=UTC no db.js**: O Render roda com TZ=America/Sao_Paulo. O driver node-pg, por padrão, parseia TIMESTAMPTZ usando o fuso local do processo — isso adiciona +3h ao Date retornado. Para corrigir, `process.env.TZ = 'UTC'` é forçado antes do `require('pg')` em `database/db.js`. Com TZ=UTC, o parse devolve o timestamp UTC correto, e as views convertem para BRT com `toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })`.
 - **Timezone — Armazenamento**: Todas as datas de jogos são armazenadas como TIMESTAMPTZ no PostgreSQL (ou DATETIME no SQLite). O seed usa timestamps em UTC. As views convertem para BRT no front-end.
 - **Segurança de sessão**: `sameSite: 'lax'` e `secure: true` em produção. O trust proxy é ativado com `app.set('trust proxy', 1)` para que o Express confie no header `X-Forwarded-Proto` enviado pelo proxy do Render.
