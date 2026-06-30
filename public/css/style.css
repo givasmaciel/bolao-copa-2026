@@ -814,6 +814,74 @@ footer a:hover { text-decoration: underline; }
 .gap-2 { gap: 16px; }
 .hidden { display: none; }
 
+/* ============== Extra score (prorrogação/pênaltis/classificado) ============== */
+.extra-score-container {
+  padding: 8px;
+  background: var(--cinza-claro);
+  border-radius: 6px;
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.extra-score-hint {
+  font-size: 0.7rem;
+  color: var(--cinza-escuro);
+}
+
+.extra-score-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.extra-score-field-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--texto);
+}
+
+.extra-score-inputs {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.extra-score-input {
+  width: 60px;
+  min-width: 60px;
+  text-align: center;
+  font-size: 0.95rem;
+  padding: 0.35rem;
+  font-weight: 600;
+}
+
+/* Chrome, Edge, Safari - remove spinner */
+.extra-score-input::-webkit-outer-spin-button,
+.extra-score-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox - remove spinner */
+.extra-score-input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+.extra-score-select {
+  width: auto;
+  min-width: 140px;
+  font-size: 0.78rem;
+  display: inline-block;
+}
+
+.extra-score-footnote {
+  font-size: 0.68rem;
+  color: var(--cinza-escuro);
+  font-style: italic;
+}
+
 /* ============== Responsivo ============== */
 @media (max-width: 768px) {
   .jogo-form-main { grid-template-columns: 1fr; gap: 8px; }
@@ -847,6 +915,7 @@ footer a:hover { text-decoration: underline; }
   .col-desktop { display: none; }
   .btn-lg { padding: 10px 18px; font-size: 0.95rem; }
   .jogo-card .jogo-placar select { max-width: 100px; font-size: 0.72rem; }
+  .extra-score-select { width: 100%; }
   .user-pill { width: 100%; justify-content: center; margin-top: 4px; font-size: 0.85rem; }
   .ranking-tabela { font-size: 0.8rem; }
   .ranking-tabela th, .ranking-tabela td { padding: 4px 6px; }
@@ -882,6 +951,7 @@ footer a:hover { text-decoration: underline; }
   .jogo-card { padding: 10px; gap: 6px; }
   .card { padding: 10px; }
   .jogo-card .jogo-placar input { width: 50px !important; font-size: 0.95rem; padding: 5px 4px; min-height: 44px; }
+  .extra-score-input { width: 52px; min-width: 52px; font-size: 0.9rem; }
   /* mantém layout horizontal mesmo em telas pequenas */
   .jogo-time { font-size: 0.78rem; gap: 4px; }
   .jogo-time img { width: 22px; height: 16px; }

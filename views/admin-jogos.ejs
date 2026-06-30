@@ -46,32 +46,35 @@
         <% if (jogo.fase !== 'grupo') { %>
           <details class="jogo-pror" style="margin-top:6px;font-size:0.78rem">
             <summary style="cursor:pointer;color:var(--azul);font-weight:600">⏱ Prorrogação / Pênaltis / Classificado</summary>
-            <div style="padding:8px;background:var(--cinza-claro);border-radius:6px;margin-top:4px;display:flex;flex-direction:column;gap:6px">
-              <div style="font-size:0.7rem;color:var(--cinza-escuro)">Preencha <strong>somente se o jogo foi para prorrogação ou pênaltis</strong>.</div>
-              <label style="font-size:0.72rem">Prorrogação
-                <span style="display:inline-flex;gap:3px;align-items:center;margin-left:4px">
-                  <input type="number" name="gols_casa_pror" min="0" max="99" class="form-control"
+            <div class="extra-score-container">
+              <div class="extra-score-hint">Preencha <strong>somente se o jogo foi para prorrogação ou pênaltis</strong>.</div>
+              <div class="extra-score-field">
+                <div class="extra-score-field-label">Prorrogação</div>
+                <div class="extra-score-inputs">
+                  <input type="number" name="gols_casa_pror" min="0" max="99" class="form-control extra-score-input"
                          value="<%= jogo.gols_casa_pror !== null && jogo.gols_casa_pror !== undefined ? jogo.gols_casa_pror : '' %>"
-                         placeholder="—" style="width:48px;font-size:0.78rem">
+                         placeholder="—">
                   <span class="x">×</span>
-                  <input type="number" name="gols_visitante_pror" min="0" max="99" class="form-control"
+                  <input type="number" name="gols_visitante_pror" min="0" max="99" class="form-control extra-score-input"
                          value="<%= jogo.gols_visitante_pror !== null && jogo.gols_visitante_pror !== undefined ? jogo.gols_visitante_pror : '' %>"
-                         placeholder="—" style="width:48px;font-size:0.78rem">
-                </span>
-              </label>
-              <label style="font-size:0.72rem">Pênaltis
-                <span style="display:inline-flex;gap:3px;align-items:center;margin-left:4px">
-                  <input type="number" name="placar_penaltis_casa" min="0" max="99" class="form-control"
+                         placeholder="—">
+                </div>
+              </div>
+              <div class="extra-score-field">
+                <div class="extra-score-field-label">Pênaltis</div>
+                <div class="extra-score-inputs">
+                  <input type="number" name="placar_penaltis_casa" min="0" max="99" class="form-control extra-score-input"
                          value="<%= jogo.placar_penaltis_casa !== null && jogo.placar_penaltis_casa !== undefined ? jogo.placar_penaltis_casa : '' %>"
-                         placeholder="—" style="width:48px;font-size:0.78rem">
+                         placeholder="—">
                   <span class="x">×</span>
-                  <input type="number" name="placar_penaltis_visitante" min="0" max="99" class="form-control"
+                  <input type="number" name="placar_penaltis_visitante" min="0" max="99" class="form-control extra-score-input"
                          value="<%= jogo.placar_penaltis_visitante !== null && jogo.placar_penaltis_visitante !== undefined ? jogo.placar_penaltis_visitante : '' %>"
-                         placeholder="—" style="width:48px;font-size:0.78rem">
-                </span>
-              </label>
-              <label style="font-size:0.72rem">Quem classificou
-                <select name="classificado_id" class="form-control" style="width:auto;font-size:0.78rem;display:inline-block;margin-left:4px">
+                         placeholder="—">
+                </div>
+              </div>
+              <div class="extra-score-field">
+                <div class="extra-score-field-label">Classificado</div>
+                <select name="classificado_id" class="form-control extra-score-select">
                   <option value="">— sem prorrogação —</option>
                   <% if (jogo.casa_sigla) { %>
                     <option value="<%= jogo.selecao_casa_id %>" <%= jogo.classificado_id === jogo.selecao_casa_id ? 'selected' : '' %>><%= jogo.casa_pt %></option>
@@ -80,10 +83,8 @@
                     <option value="<%= jogo.selecao_visitante_id %>" <%= jogo.classificado_id === jogo.selecao_visitante_id ? 'selected' : '' %>><%= jogo.visitante_pt %></option>
                   <% } %>
                 </select>
-              </label>
-              <div style="font-size:0.68rem;color:var(--cinza-escuro);font-style:italic">
-                💡 Se o placar 90 min for empate, é obrigatório informar quem classificou.
               </div>
+              <div class="extra-score-footnote">💡 Se o placar 90 min for empate, é obrigatório informar quem classificou.</div>
             </div>
           </details>
         <% } %>
