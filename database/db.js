@@ -13,6 +13,13 @@ const usandoPG = !!process.env.DATABASE_URL;
 let pgPool, sqlite3, db;
 
 if (usandoPG) {
+  // node-pg retorna BIGINT (OID 20) como STRING por padrão. Isso quebra
+  // qualquer soma no template EJS (ex.: "884" + 160 vira "884160" em vez
+  // de 1044). Registramos um parser que converte para Number antes do
+  // `require('pg')` — seguro para os volumes do bolão (totais < milhões,
+  // bem dentro de Number.MAX_SAFE_INTEGER = 9.007e15).
+  require('pg').types.setTypeParser(20, (val) => parseInt(val, 10));
+
   const { Pool } = require('pg');
   pgPool = new Pool({
     connectionString: process.env.DATABASE_URL,
