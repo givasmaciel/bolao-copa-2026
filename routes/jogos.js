@@ -89,6 +89,7 @@ router.get('/:id/palpites', verificarAutenticado, async (req, res) => {
         j.finalizado, j.gols_casa, j.gols_visitante, j.palpite_limite,
         j.gols_casa_pror, j.gols_visitante_pror,
         j.placar_penaltis_casa, j.placar_penaltis_visitante,
+        j.selecao_casa_id, j.selecao_visitante_id,
         g.letra AS grupo_letra,
         sc.nome_pt AS casa_pt, sc.sigla AS casa_sigla, sc.bandeira_url AS casa_bandeira,
         sv.nome_pt AS visitante_pt, sv.sigla AS visitante_sigla, sv.bandeira_url AS visitante_bandeira,
@@ -116,7 +117,8 @@ router.get('/:id/palpites', verificarAutenticado, async (req, res) => {
 
     if (bloqueado) {
       const rows = await all(`
-        SELECT p.palpite_gols_casa, p.palpite_gols_visitante, p.pontos_obtidos,
+        SELECT p.palpite_gols_casa, p.palpite_gols_visitante,
+               p.palpite_classificado_id, p.pontos_obtidos,
                u.nome, u.id AS usuario_id
         FROM palpites p
         JOIN usuarios u ON p.usuario_id = u.id

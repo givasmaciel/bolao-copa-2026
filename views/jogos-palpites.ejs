@@ -96,6 +96,9 @@
           <tr>
             <th>Participante</th>
             <th class="text-center">Palpite</th>
+            <% if (jogo.fase !== 'grupo') { %>
+              <th class="text-center">Classificado</th>
+            <% } %>
             <% if (jogo.finalizado === 1) { %>
               <th class="text-center">Pontos</th>
             <% } %>
@@ -106,6 +109,15 @@
             <tr style="<%= p.usuario_id === usuarioId ? 'font-weight:700;background:var(--cinza-claro)' : '' %>">
               <td><%= p.nome %><%- p.usuario_id === usuarioId ? ' <span style="font-size:0.75rem;opacity:0.6">(você)</span>' : '' %></td>
               <td class="text-center"><%= p.palpite_gols_casa %>×<%= p.palpite_gols_visitante %></td>
+              <% if (jogo.fase !== 'grupo') { %>
+                <td class="text-center" style="font-size:0.85rem">
+                  <% if (p.palpite_classificado_id) { %>
+                    <%= p.palpite_classificado_id === jogo.selecao_casa_id ? jogo.casa_sigla : jogo.visitante_sigla %>
+                  <% } else { %>
+                    <span class="texto-aux">—</span>
+                  <% } %>
+                </td>
+              <% } %>
               <% if (jogo.finalizado === 1) { %>
                 <td class="text-center" style="<%= p.pontos_obtidos > 0 ? 'color:var(--verde);font-weight:700' : 'color:var(--erro)' %>">
                   <% if (p.pontos_obtidos > 0) { %>+<% } %><%= p.pontos_obtidos %>
@@ -115,7 +127,7 @@
           <% }); %>
           <% if (palpites.filter(function(p){return p.temPalpite;}).length === 0) { %>
             <tr>
-              <td colspan="<%= jogo.finalizado === 1 ? 3 : 2 %>" class="text-center texto-aux" style="padding:20px">
+              <td colspan="<%= (jogo.finalizado === 1 ? 1 : 0) + (jogo.fase !== 'grupo' ? 1 : 0) + 2 %>" class="text-center texto-aux" style="padding:20px">
                 Nenhum palpite registrado para este jogo.
               </td>
             </tr>

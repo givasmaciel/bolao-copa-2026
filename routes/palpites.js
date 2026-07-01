@@ -333,7 +333,8 @@ router.get('/jogo/:id', verificarAutenticado, async (req, res) => {
     }
 
     const palpites = await all(`
-      SELECT u.nome, p.palpite_gols_casa, p.palpite_gols_visitante, p.pontos_obtidos
+      SELECT u.nome, p.palpite_gols_casa, p.palpite_gols_visitante,
+             p.palpite_classificado_id, p.pontos_obtidos
       FROM palpites p
       JOIN usuarios u ON u.id = p.usuario_id
       WHERE p.jogo_id = ?
