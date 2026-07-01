@@ -266,7 +266,7 @@ router.get('/', async (req, res) => {
       LEFT JOIN selecoes sv ON j.selecao_visitante_id = sv.id
       LEFT JOIN fase_pontuacao fp ON fp.fase = j.fase
       WHERE j.finalizado = 1
-      ORDER BY j.data ASC, j.id ASC
+      ORDER BY j.data DESC, j.id DESC
       LIMIT 10
     `);
 
