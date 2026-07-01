@@ -316,9 +316,29 @@ Armazena configurações do sistema, como o prazo limite dos palpites extras (ex
 - Exibe placar real se finalizado, ou "×" se pendente.
 - Fases: grupo, r32, r16, qf, sf, terceiro, final.
 - Mostra bandeira, estádio, cidade, data/hora e grupo (quando aplicável).
+- Jogos finalizados ordenados do **mais recente para o mais antigo** dentro de cada fase (via `.sort()` no template).
 - **`/jogos/db-info`**: o `marcador` permite distinguir Render Postgres vs Neon vs dev local. É exibido também no rodapé do site (discreto, opacity 0.5) para evitar confusão quando há mais de um banco em uso.
 
-### 5.8 Ranking (`routes/ranking.js`)
+### 5.8 Palpites Públicos de um Jogo
+
+| Método | Rota | Descrição |
+|---|---|---|
+| GET | `/jogos/:id/palpites` | Palpites públicos de um jogo (requer login) — exibe apostas agrupadas por resultado e tabela individual |
+| GET | `/palpites/jogo/:id` | Palpites de um jogo na área de palpites (requer login, mesma visualização) |
+
+**Níveis de visibilidade (3 estados):**
+1. **🔒 Antes do fechamento** — card "Palpites ocultos", sem revelar nada.
+2. **👀 Após fechar, antes do resultado** — tabela com placar palpitado de cada participante (sem pontos).
+3. **📋 Após resultado** — tabela com placar + pontos obtidos.
+
+**Coluna de classificado no mata-mata:**
+- Em jogos de mata-mata (`fase !== 'grupo'`), a tabela exibe uma coluna adicional **"Classificado"** entre o placar e os pontos.
+- Mostra a sigla do time que o participante apostou para avançar (ex: `BRA`), comparando `palpite_classificado_id` com `selecao_casa_id` / `selecao_visitante_id`.
+- Se o participante não escolheu classificado, exibe `—`.
+- A coluna só aparece em jogos de mata-mata; jogos de grupos não a exibem.
+- Implementado tanto em `views/jogos-palpites.ejs` (rota `/jogos/:id/palpites`) quanto em `views/jogo-palpites.ejs` (rota `/palpites/jogo/:id`).
+
+### 5.9 Ranking (`routes/ranking.js`)
 
 | Método | Rota | Descrição |
 |---|---|---|
@@ -360,7 +380,7 @@ Armazena configurações do sistema, como o prazo limite dos palpites extras (ex
 - Posição calculada no servidor após aplicar todos os critérios de desempate; cada participante recebe uma posição sequencial.
 - No ranking geral, aproveitamento = pontos dos jogos / máximo possível nos jogos finalizados. No perfil, inclui jogos + extras no numerador e no máximo possível; bônus administrativos ficam fora.
 
-### 5.9 Recuperação de Senha (`routes/senha.js`)
+### 5.10 Recuperação de Senha (`routes/senha.js`)
 
 | Método | Rota | Descrição |
 |---|---|---|
@@ -374,7 +394,7 @@ Armazena configurações do sistema, como o prazo limite dos palpites extras (ex
 - Se SMTP não configurado (variáveis `SMTP_*` ausentes), o link de redefinição é exibido na tela (modo teste/desenvolvimento).
 - Mensagem genérica se e-mail não encontrado (segurança — não revela existência da conta).
 
-### 5.10 Administração (`routes/admin.js`)
+### 5.11 Administração (`routes/admin.js`)
 
 | Método | Rota | Descrição |
 |---|---|---|
@@ -679,6 +699,7 @@ bolao/
 - **PWA (Progressive Web App)**: `public/manifest.json` + `public/sw.js` (service worker). Estratégia híbrida — assets estáticos cache-first, HTML network-first, APIs/login/admin nunca cacheia. Instalável no celular como app nativo (⚽ verde Brasil). Atalhos para Palpites/Ranking/Jogos. Service worker pula `/healthz` e `/jogos/db-info`.
 - **Sentry (opcional)**: se `NODE_ENV=production` E `SENTRY_DSN` estiver setado, inicializa com `tracesSampleRate: 0.1` e middleware de request/error handlers. Filtra `/healthz`, `/favicon` e `/admin`. Zero overhead em dev local.
 - **Content-Security-Policy**: middleware seta CSP, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`. Defesa em profundidade contra XSS e clickjacking. Permite inline (EJS usa) e `flagcdn.com` para bandeiras.
+- **Palpite de classificado nas views públicas**: Nas telas de palpites públicos de um jogo (`/jogos/:id/palpites` e `/palpites/jogo/:id`), jogos de mata-mata exibem uma coluna **"Classificado"** na tabela de participantes. A coluna mostra a sigla do time que cada um apostou para avançar (ex: `BRA`), obtida comparando `palpite_classificado_id` com `selecao_casa_id` e `selecao_visitante_id` do jogo. Implementado via `views/jogos-palpites.ejs` e `views/jogo-palpites.ejs`. Segue o mesmo estilo da exibição em `views/resumo.ejs` e `views/palpites-usuario.ejs`.
 - **Placar automático no mata-mata**: o serviço (`services/placar-automatico.js`) busca resultados da API `worldcup26.ir` (open-source, gratuita) para todas as fases. Em jogos de grupos, finaliza e recalcula pontos automaticamente. Em mata-mata, apenas atualiza o placar dos 90 min (`gols_casa`/`gols_visitante`) sem finalizar — o admin deve revisar e adicionar dados de prorrogação/pênaltis manualmente em `/admin/jogos` antes de marcar `finalizado`.
 - **Proteção contra sobrescrita de horários**: `setup.js` e `schema.js` usam `COALESCE` nos UPDATEs. Se o admin editou um jogo via `/admin/jogos/:id/horario`, o próximo deploy não desfaz a alteração.
 - **Logs estruturados**: `logger.js` emite JSON para stdout (Render indexa). Substitui `console.log/error/warn` por `logger.info/warn/error/debug`. Permite buscas por `level`, `msg`, campos customizados.
