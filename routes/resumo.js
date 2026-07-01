@@ -195,7 +195,7 @@ router.get('/', verificarAutenticado, async (req, res) => {
               visitante_sigla: p.visitante_sigla,
               placar: p.gols_casa + '×' + p.gols_visitante,
               ptsEu: p.pontos_obtidos || 0,
-              ptsEle,
+              ptsEle: pEle,
               diff
             });
           }
