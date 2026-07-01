@@ -44,7 +44,7 @@ return h; }
   <h2><%= f.nome %></h2>
   <%
     const abertos = f.jogos.filter(function(j){ return j.finalizado !== 1; });
-    const finalizados = f.jogos.filter(function(j){ return j.finalizado === 1; });
+    const finalizados = f.jogos.filter(function(j){ return j.finalizado === 1; }).sort(function(a,b){ return new Date(b.data) - new Date(a.data); });
   %>
   <% abertos.forEach(function(jogo) { %><%- jogoCard(jogo) %><% }); %>
   <% if (finalizados.length > 0) { %>
