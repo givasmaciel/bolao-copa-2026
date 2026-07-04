@@ -1,7 +1,11 @@
 <%- include('partials/header', { active: 'classificacao' }) %>
 
 <h1>📊 Grupos</h1>
-<p class="subtitulo">Classificação calculada automaticamente. Colunas completas no desktop.</p>
+<p class="subtitulo">
+  <a href="https://www.fifa.com/pt/tournaments/mens/worldcup/canadamexicousa2026/standings" target="_blank" rel="noopener noreferrer" style="color:var(--verde);font-weight:600">
+    🏆 Ver chaveamento completo no site oficial da FIFA →
+  </a>
+</p>
 
 <div class="grid grid-3">
   <% grupos.forEach(function(grupo) { %>
@@ -49,14 +53,6 @@
       </table>
     </div>
   <% }); %>
-</div>
-
-<div class="text-center mt-2">
-  <p class="texto-aux">
-    <a href="https://www.fifa.com/pt/tournaments/mens/worldcup/canadamexicousa2026/standings" target="_blank" rel="noopener noreferrer" style="color:var(--verde);font-weight:600">
-      🏆 Ver chaveamento completo no site oficial da FIFA →
-    </a>
-  </p>
 </div>
 
 <%- include('partials/footer') %>
