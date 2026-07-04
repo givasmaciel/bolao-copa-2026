@@ -201,4 +201,4 @@ function getStatus() {
   };
 }
 
-module.exports = { buscarPlacares, getStatus };
+module.exports = { buscarPlacares, getStatus, API_NOME_PARA_SIGLA };
