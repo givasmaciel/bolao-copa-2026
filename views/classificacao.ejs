@@ -51,4 +51,51 @@
   <% }); %>
 </div>
 
+<% if (confrontos && confrontos.length > 0) { %>
+<hr class="my-2">
+<h1>🏆 Fases Finais</h1>
+<p class="subtitulo">Confrontos do mata-mata — passe o mouse para detalhes.</p>
+
+<div class="bracket-scroll">
+<div class="bracket">
+  <% 
+    const fasesBracket = [
+      { key: 'r32', label: '16-avos' },
+      { key: 'r16', label: 'Oitavas' },
+      { key: 'qf', label: 'Quartas' },
+      { key: 'sf', label: 'Semi' },
+      { key: 'terceiro', label: '3º lugar' },
+      { key: 'final', label: 'Final' }
+    ];
+    const gamesPorFase = {};
+    fasesBracket.forEach(function(f) { gamesPorFase[f.key] = confrontos.filter(function(j) { return j.fase === f.key; }); });
+  %>
+  <% fasesBracket.forEach(function(fase) { %>
+    <% const jogos = gamesPorFase[fase.key] || []; %>
+    <div class="bracket-round">
+      <div class="bracket-round-title"><%= fase.label %></div>
+      <% if (jogos.length === 0) { %>
+        <div class="bracket-game" style="text-align:center;color:#aaa;font-style:italic;padding:12px 8px">—</div>
+      <% } %>
+      <% jogos.forEach(function(jogo) { %>
+        <div class="bracket-game<%= jogo.finalizado ? ' finalizado' : '' %>">
+          <div class="bracket-team <%= jogo.casa_id ? 'definido' : 'indefinido' %> <%= (jogo.finalizado && jogo.gols_casa !== null && jogo.gols_visitante !== null && jogo.gols_casa > jogo.gols_visitante) ? 'vencedor' : (jogo.finalizado ? 'eliminado' : '') %>">
+            <% if (jogo.casa_bandeira) { %><img src="<%= jogo.casa_bandeira %>" alt="" class="bandeira-mini" loading="lazy"><% } %>
+            <span class="team-name"><%= jogo.casa_pt || (jogo.casa_id ? 'Time #'+jogo.casa_id : 'A definir') %></span>
+            <% if (jogo.gols_casa !== null) { %><span class="team-score"><%= jogo.gols_casa %></span><% } %>
+          </div>
+          <div class="bracket-team <%= jogo.visitante_id ? 'definido' : 'indefinido' %> <%= (jogo.finalizado && jogo.gols_casa !== null && jogo.gols_visitante !== null && jogo.gols_visitante > jogo.gols_casa) ? 'vencedor' : (jogo.finalizado ? 'eliminado' : '') %>">
+            <% if (jogo.visitante_bandeira) { %><img src="<%= jogo.visitante_bandeira %>" alt="" class="bandeira-mini" loading="lazy"><% } %>
+            <span class="team-name"><%= jogo.visitante_pt || (jogo.visitante_id ? 'Time #'+jogo.visitante_id : 'A definir') %></span>
+            <% if (jogo.gols_visitante !== null) { %><span class="team-score"><%= jogo.gols_visitante %></span><% } %>
+          </div>
+          <% if (jogo.descricao) { %><div class="bracket-desc"><%= jogo.descricao %></div><% } %>
+        </div>
+      <% }); %>
+    </div>
+  <% }); %>
+</div>
+</div>
+<% } %>
+
 <%- include('partials/footer') %>

@@ -1049,3 +1049,108 @@ footer a:hover { text-decoration: underline; }
 @media (min-width: 769px) {
   .sigla-time { display: none; }
 }
+
+/* ============== Mata-mata bracket ============== */
+.bracket-scroll {
+  overflow-x: auto;
+  padding-bottom: 16px;
+  -webkit-overflow-scrolling: touch;
+}
+.bracket {
+  display: flex;
+  gap: 24px;
+  min-width: 750px;
+}
+.bracket-round {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-width: 140px;
+}
+.bracket-round-title {
+  text-align: center;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--cinza-escuro);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 6px 0;
+  border-bottom: 2px solid var(--verde);
+  margin-bottom: 4px;
+}
+.bracket-game {
+  background: var(--branco);
+  border: 1px solid var(--cinza);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 0.75rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  transition: box-shadow 0.15s;
+  position: relative;
+}
+.bracket-game:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+.bracket-game.finalizado {
+  border-left: 3px solid var(--verde);
+}
+.bracket-team {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 0;
+}
+.bracket-team .bandeira-mini {
+  width: 14px;
+  height: 10px;
+  flex-shrink: 0;
+}
+.bracket-team .team-name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+}
+.bracket-team .team-score {
+  font-weight: 700;
+  font-size: 0.82rem;
+  min-width: 18px;
+  text-align: center;
+  color: var(--verde);
+}
+.bracket-team.definido {
+  color: var(--texto);
+}
+.bracket-team.indefinido {
+  color: #aaa;
+  font-style: italic;
+}
+.bracket-team.vencedor {
+  font-weight: 700;
+}
+.bracket-team.eliminado .team-name {
+  opacity: 0.5;
+}
+.bracket-desc {
+  font-size: 0.6rem;
+  color: var(--cinza-escuro);
+  text-align: center;
+  padding-top: 2px;
+  border-top: 1px solid var(--cinza);
+  margin-top: 2px;
+  opacity: 0.7;
+}
+@media (max-width: 768px) {
+  .bracket-round {
+    min-width: 120px;
+  }
+  .bracket-game {
+    font-size: 0.68rem;
+    padding: 4px 6px;
+  }
+  .bracket-round-title {
+    font-size: 0.68rem;
+  }
+}
