@@ -49,6 +49,27 @@
   </div>
 </div>
 
+<% if (extrasDetalhado && extrasDetalhado.length > 0) { %>
+  <div class="card">
+    <h3 style="margin-top:0">🏆 Palpites Extras</h3>
+    <p class="texto-aux" style="font-size:0.8rem;margin:0 0 8px">Pontos dos palpites extras por categoria (definidos pelo administrador).</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <% extrasDetalhado.forEach(function(ext) {
+        var cat = CATEGORIAS.find(function(c) { return c.id === ext.categoria; });
+      %>
+        <div style="flex:1;min-width:100px;text-align:center;padding:10px;background:var(--cinza-claro);border-radius:8px">
+          <div style="font-size:0.7rem;color:var(--cinza-escuro)"><%= cat ? cat.nome : ext.categoria %></div>
+          <div style="font-size:1.2rem;font-weight:700;color:var(--verde)">+<%= ext.pontos %></div>
+        </div>
+      <% }); %>
+      <div style="flex:1;min-width:100px;text-align:center;padding:10px;background:var(--verde);color:#fff;border-radius:8px">
+        <div style="font-size:0.7rem;opacity:0.9">Total extras</div>
+        <div style="font-size:1.2rem;font-weight:700"><%= extrasPontos %></div>
+      </div>
+    </div>
+  </div>
+<% } %>
+
 <div class="card">
   <h3 style="margin-top:0">📈 Pontos por rodada</h3>
   <div style="display:flex;gap:12px;flex-wrap:wrap">
@@ -79,7 +100,7 @@
             <th>Jogo</th>
             <th class="text-center">Resultado</th>
             <th class="text-center">Seu palpite</th>
-            <th class="text-center">Pontos</th>
+            <th class="text-center" title="Pontos totais do jogo (placar base + bônus de qualificação em mata-mata empatado)">Pontos</th>
           </tr>
         </thead>
         <tbody>
@@ -122,6 +143,11 @@
               <td class="text-center">
                 <% if (j.pontos_obtidos !== null) { %>
                   <span class="pontos-badge <%= j.pontos_obtidos === 0 ? 'zero' : '' %>"><%= j.pontos_obtidos %></span>
+                  <% if (j.bonus_qualificacao > 0) { %>
+                    <div style="font-size:0.62rem;color:var(--cinza-escuro);margin-top:2px">
+                      placar <%= j.pontos_obtidos - j.bonus_qualificacao %> + qualif. <%= j.bonus_qualificacao %>
+                    </div>
+                  <% } %>
                 <% } else { %>
                   <span class="texto-aux">—</span>
                 <% } %>

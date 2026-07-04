@@ -1,6 +1,7 @@
 const express = require('express');
 const { run, get, all } = require('../database/db');
 const { verificarAutenticado } = require('../middleware/auth');
+const { CATEGORIAS } = require('./extras');
 const logger = require('../logger');
 
 const router = express.Router();
@@ -85,12 +86,20 @@ router.get('/', verificarAutenticado, async (req, res) => {
         sc.nome_pt AS casa_pt, sc.sigla AS casa_sigla, sc.bandeira_url AS casa_bandeira,
         sv.nome_pt AS visitante_pt, sv.sigla AS visitante_sigla, sv.bandeira_url AS visitante_bandeira,
         p.palpite_gols_casa, p.palpite_gols_visitante, p.palpite_classificado_id, p.pontos_obtidos,
-        cc.nome_pt AS classificado_pt
+        cc.nome_pt AS classificado_pt,
+        fp.pts_classificado,
+        CASE WHEN j.fase <> 'grupo'
+               AND j.gols_casa = j.gols_visitante
+               AND j.classificado_id IS NOT NULL
+               AND p.palpite_classificado_id IS NOT NULL
+               AND p.palpite_classificado_id = j.classificado_id
+             THEN fp.pts_classificado ELSE 0 END AS bonus_qualificacao
       FROM jogos j
       LEFT JOIN selecoes sc ON j.selecao_casa_id = sc.id
       LEFT JOIN selecoes sv ON j.selecao_visitante_id = sv.id
       LEFT JOIN selecoes cc ON j.classificado_id = cc.id
       LEFT JOIN palpites p ON p.jogo_id = j.id AND p.usuario_id = ?
+      LEFT JOIN fase_pontuacao fp ON fp.fase = j.fase
       WHERE j.finalizado = 1
       ORDER BY j.data DESC, j.id DESC
     `, [userId]);
@@ -238,6 +247,15 @@ router.get('/', verificarAutenticado, async (req, res) => {
       WHERE pe.usuario_id = ?
     `, [userId]);
 
+    const extrasDetalhado = await all(`
+      SELECT pe.categoria, SUM(r.pontos) AS pontos
+      FROM palpites_extras pe
+      JOIN resultados_extras r ON r.categoria = pe.categoria AND r.selecao_id = pe.selecao_id
+      WHERE pe.usuario_id = ?
+      GROUP BY pe.categoria
+      ORDER BY pe.categoria
+    `, [userId]);
+
     const totalDisputadoResumo = await get(`
       SELECT COALESCE(SUM(
         fp.pts_exato +
@@ -263,6 +281,8 @@ router.get('/', verificarAutenticado, async (req, res) => {
       stats,
       bonusPontos: bonusRow?.total || 0,
       extrasPontos: extrasRowPts?.total || 0,
+      extrasDetalhado,
+      CATEGORIAS,
       aproveitamento,
       porRodada,
       jogosFinalizados,
