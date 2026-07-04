@@ -255,6 +255,51 @@ router.get('/', async (req, res) => {
       WHERE j.finalizado = 1 AND p.pontos_obtidos > 0
     `);
 
+    // Jogos mais difíceis (menos placares exatos)
+    const jogosDificeis = await all(`
+      SELECT j.id, j.rodada, j.fase, j.gols_casa, j.gols_visitante,
+             sc.sigla AS casa_sigla, sv.sigla AS visitante_sigla,
+             COUNT(CASE WHEN p.palpite_gols_casa = j.gols_casa AND p.palpite_gols_visitante = j.gols_visitante THEN 1 END) AS total_exatos,
+             COUNT(p.id) AS total_palpites
+      FROM jogos j
+      LEFT JOIN selecoes sc ON j.selecao_casa_id = sc.id
+      LEFT JOIN selecoes sv ON j.selecao_visitante_id = sv.id
+      LEFT JOIN palpites p ON p.jogo_id = j.id
+      WHERE j.finalizado = 1
+      GROUP BY j.id
+      ORDER BY total_exatos ASC, total_palpites DESC
+      LIMIT 5
+    `);
+
+    // Jogos mais fáceis (mais placares exatos)
+    const jogosFaceis = await all(`
+      SELECT j.id, j.rodada, j.fase, j.gols_casa, j.gols_visitante,
+             sc.sigla AS casa_sigla, sv.sigla AS visitante_sigla,
+             COUNT(CASE WHEN p.palpite_gols_casa = j.gols_casa AND p.palpite_gols_visitante = j.gols_visitante THEN 1 END) AS total_exatos,
+             COUNT(p.id) AS total_palpites
+      FROM jogos j
+      LEFT JOIN selecoes sc ON j.selecao_casa_id = sc.id
+      LEFT JOIN selecoes sv ON j.selecao_visitante_id = sv.id
+      LEFT JOIN palpites p ON p.jogo_id = j.id
+      WHERE j.finalizado = 1
+      GROUP BY j.id
+      HAVING COUNT(CASE WHEN p.palpite_gols_casa = j.gols_casa AND p.palpite_gols_visitante = j.gols_visitante THEN 1 END) > 0
+      ORDER BY total_exatos DESC, total_palpites ASC
+      LIMIT 5
+    `);
+
+    // Quantos jogos tiveram 0 placares exatos
+    const jogosSemExato = await get(`
+      SELECT COUNT(*) AS total FROM (
+        SELECT j.id
+        FROM jogos j
+        LEFT JOIN palpites p ON p.jogo_id = j.id
+        WHERE j.finalizado = 1
+        GROUP BY j.id
+        HAVING COUNT(CASE WHEN p.palpite_gols_casa = j.gols_casa AND p.palpite_gols_visitante = j.gols_visitante THEN 1 END) = 0
+      )
+    `);
+
     // Lista compacta dos jogos finalizados (para mostrar no card)
     const jogosConcluidos = await all(`
       SELECT j.id, j.rodada, j.fase, j.gols_casa, j.gols_visitante, j.data,
@@ -281,14 +326,16 @@ router.get('/', async (req, res) => {
       acertosResultado: tierCount.resultado + tierCount.resultado_gol,
       acertosGol: tierCount.gol,
       zeros: tierCount.zero,
-      usuariosComPontos: usuariosComPontos?.total || 0,
       mediaPontosPorPalpite: pontosDistribuidos?.total_palpites_finalizados > 0
         ? ((pontosDistribuidos.total / pontosDistribuidos.total_palpites_finalizados).toFixed(2))
         : 0,
       aproveitamentoMedio: totalDisputado > 0
         ? Math.round((pontosDistribuidos.total / (totalDisputado * (totais.total_usuarios || 1))) * 100)
         : 0,
-      jogosConcluidos
+      jogosConcluidos,
+      jogosDificeis,
+      jogosFaceis,
+      jogosSemExato: jogosSemExato?.total || 0
     };
 
     // Busca detalhes dos bônus (motivo) para tooltip

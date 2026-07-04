@@ -269,11 +269,38 @@
         <div style="font-size:0.7rem;color:var(--cinza-escuro)">em um único jogo</div>
       </div>
       <div class="stat-cell" style="background:#fff;border-radius:8px;padding:10px 6px">
-        <div style="font-size:0.7rem;color:var(--cinza-escuro);text-transform:uppercase">Usuários pontuando</div>
-        <div style="font-size:1.4rem;font-weight:800;color:var(--azul)"><%= statsConcluidos.usuariosComPontos %>/<%= totais.total_usuarios %></div>
-        <div style="font-size:0.7rem;color:var(--cinza-escuro)">fizeram ≥ 1 ponto</div>
+        <div style="font-size:0.7rem;color:var(--cinza-escuro);text-transform:uppercase">Ninguém acertou</div>
+        <div style="font-size:1.4rem;font-weight:800;color:var(--vermelho)"><%= statsConcluidos.jogosSemExato %></div>
+        <div style="font-size:0.7rem;color:var(--cinza-escuro)">jogos sem placar exato</div>
       </div>
     </div>
+
+    <% if (statsConcluidos.jogosDificeis && statsConcluidos.jogosDificeis.length > 0) { %>
+      <div style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div style="background:#fff;border-radius:8px;padding:10px">
+          <h4 style="margin:0 0 6px;font-size:0.85rem;color:var(--vermelho)">🔴 Mais difíceis</h4>
+          <p class="texto-aux" style="font-size:0.72rem;margin:0 0 6px">Jogos com menos placares exatos.</p>
+          <% statsConcluidos.jogosDificeis.forEach(function(j) { %>
+            <div style="display:flex;align-items:center;gap:6px;padding:4px 0;font-size:0.8rem;border-bottom:1px solid var(--cinza-claro)">
+              <span style="background:var(--cinza-claro);padding:1px 5px;border-radius:6px;font-size:0.65rem;font-weight:600"><%= j.casa_sigla %>×<%= j.visitante_sigla %></span>
+              <span style="font-weight:700"><%= j.gols_casa %>×<%= j.gols_visitante %></span>
+              <span style="margin-left:auto;color:var(--cinza-escuro);font-size:0.75rem"><%= j.total_exatos %>/<%= j.total_palpites %> exatos</span>
+            </div>
+          <% }); %>
+        </div>
+        <div style="background:#fff;border-radius:8px;padding:10px">
+          <h4 style="margin:0 0 6px;font-size:0.85rem;color:var(--verde)">🟢 Mais acertados</h4>
+          <p class="texto-aux" style="font-size:0.72rem;margin:0 0 6px">Jogos com mais placares exatos.</p>
+          <% statsConcluidos.jogosFaceis.forEach(function(j) { %>
+            <div style="display:flex;align-items:center;gap:6px;padding:4px 0;font-size:0.8rem;border-bottom:1px solid var(--cinza-claro)">
+              <span style="background:var(--cinza-claro);padding:1px 5px;border-radius:6px;font-size:0.65rem;font-weight:600"><%= j.casa_sigla %>×<%= j.visitante_sigla %></span>
+              <span style="font-weight:700"><%= j.gols_casa %>×<%= j.gols_visitante %></span>
+              <span style="margin-left:auto;color:var(--cinza-escuro);font-size:0.75rem"><%= j.total_exatos %>/<%= j.total_palpites %> exatos</span>
+            </div>
+          <% }); %>
+        </div>
+      </div>
+    <% } %>
 
     <% if (statsConcluidos.jogosConcluidos && statsConcluidos.jogosConcluidos.length > 0) { %>
       <div style="margin-top:14px">
