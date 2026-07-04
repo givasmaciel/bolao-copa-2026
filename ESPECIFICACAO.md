@@ -199,6 +199,7 @@ Armazena configurações do sistema, como o prazo limite dos palpites extras (ex
 | GET | `/login` | Exibe formulário de login |
 | POST | `/login` | Autentica por email / username / nome + senha; inicia sessão |
 | POST | `/logout` | Destrói a sessão |
+| GET | `/login/:token` | Login automático via token de acesso (link gerado pelo admin) |
 
 **Regras:**
 - Usuários já logados são redirecionados para `/dashboard`.
@@ -214,7 +215,7 @@ Armazena configurações do sistema, como o prazo limite dos palpites extras (ex
 | GET | `/dashboard` | Página principal pós-login com resumo estatístico |
 
 **Conteúdo:**
-- Cards com: total de pontos (incluindo bônus e extras com tags), jogos finalizados, palpites pendentes.
+- Cards com: total de pontos (incluindo bônus e extras com tags), jogos finalizados, palpites pendentes, total de palpites, placares exatos, aproveitamento, média/palpite.
 - Tabela de pontuação por fase (dinâmica do banco).
 - Regras gerais com item sobre encerramento de cadastro após prazo dos extras.
 - Próximos 5 jogos com contagem regressiva (BRT).
@@ -401,28 +402,38 @@ Armazena configurações do sistema, como o prazo limite dos palpites extras (ex
 | GET | `/admin` | Painel administrativo com estatísticas |
 | GET | `/admin/jogos` | Lista todos os jogos para editar resultados |
 | POST | `/admin/jogos/:id` | Salva resultado + flag `finalizado`; recalcula pontos automaticamente |
+| POST | `/admin/jogos/:id/horario` | Edita data/hora, estádio, cidade e país de um jogo (interpretado como BRT, convertido para UTC) |
+| POST | `/admin/jogos/:id/limite` | Define prazo personalizado de palpites para um jogo |
+| POST | `/admin/jogos/:id/limpar-limite` | Remove prazo personalizado |
 | POST | `/admin/recalcular` | Recalcula TODOS os pontos de TODOS os palpites |
 | GET | `/admin/usuarios` | Gerencia participantes |
+| POST | `/admin/usuarios/criar` | Cria participante manualmente |
 | POST | `/admin/usuarios/:id/tornar-admin` | Promove participante a administrador |
 | POST | `/admin/usuarios/:id/rebaixar` | Rebaixa administrador a participante |
 | POST | `/admin/usuarios/:id/resetar-palpites` | Apaga palpites e palpites extras do usuário |
 | POST | `/admin/usuarios/:id/resetar-senha` | Redefine a senha do usuário |
 | POST | `/admin/usuarios/:id/excluir` | Exclui usuário e todos os seus palpites |
 | POST | `/admin/usuarios/:id/alterar-username` | Altera o username do usuário |
-| POST | `/admin/resetar-todos-palpites` | Apaga TODOS os palpites do sistema |
-| GET | `/admin/criar-participante` | Formulário para criar participante manualmente |
-| POST | `/admin/criar-participante` | Cria participante (ignorando sistema de convites) |
-| POST | `/admin/config` | Atualiza configurações (ex.: prazo dos extras) |
-| GET | `/admin/pontuacao-fases` | Exibe formulário de configuração de pontos por fase |
-| POST | `/admin/pontuacao-fases` | Salva pontuação personalizada por fase |
-| POST | `/admin/jogos/:id/horario` | Edita data/hora, estádio, cidade e país de um jogo (interpretado como BRT, convertido para UTC) |
 | POST | `/admin/usuarios/:id/bonus` | Adiciona pontos bônus a um participante (com motivo) |
 | POST | `/admin/usuarios/:id/bonus/:bonusId/remover` | Remove um bônus específico |
 | POST | `/admin/usuarios/:id/bonus/:bonusId/editar` | Edita pontos e motivo de um bônus específico |
+| POST | `/admin/resetar-todos-palpites` | Apaga palpites pendentes + resultados extras |
+| GET | `/admin/mata-mata` | Visualiza confrontos do mata-mata |
+| POST | `/admin/mata-mata/gerar` | Gera confrontos automaticamente com base na classificação dos grupos |
+| POST | `/admin/mata-mata/limpar` | Limpa todos os confrontos do mata-mata |
+| POST | `/admin/mata-mata/:id/editar` | Edita time de um confronto manualmente |
+| GET | `/admin/pontuacao-fases` | Exibe formulário de configuração de pontos por fase |
+| POST | `/admin/pontuacao-fases` | Salva pontuação personalizada por fase |
+| GET | `/admin/premios` | Edita premiações do bolão |
+| POST | `/admin/premios` | Salva premiações |
+| GET | `/admin/placar-automatico` | Status do placar automático |
+| POST | `/admin/placar-automatico/executar` | Executa busca de placares manualmente |
+| GET | `/admin/link-login` | Gera link de login automático |
+| GET | `/admin/diagnostic` | Diagnóstico do banco (via chave `DIAGNOSTIC_KEY`) |
 
 **Regras:**
 - Todas as rotas protegidas pelo middleware `verificarAdmin`.
-- Ao finalizar um jogo com placar, os pontos de todos os palpites daquele jogo são recalculados automaticamente via `calcularPontos()`.
+- Ao finalizar um jogo com placar, os pontos de todos os palpites daquele jogo são recalculados automaticamente via `calcularPontos()` em `services/pontuacao.js`.
 - Se um jogo for "desfinalizado" (`finalizado = 0`), os pontos são zerados.
 - **Editar horário/estádio**: o botão "🕐 Horário/Estádio" em `/admin/jogos` abre um modal inline com os valores atuais de data/hora, estádio, cidade e país. A data/hora é interpretada como BRT e convertida para UTC ao salvar. Útil para correções pontuais sem deploy.
 
@@ -430,7 +441,7 @@ Armazena configurações do sistema, como o prazo limite dos palpites extras (ex
 
 ## 6. Sistema de Pontuação
 
-### 6.1 Pontuação dos Palpites (função `calcularPontos` em `routes/admin.js`)
+### 6.1 Pontuação dos Palpites (função `calcularPontos` em `services/pontuacao.js`)
 
 A lógica segue a ordem de precedência abaixo (a primeira condição verdadeira determina os pontos). Os valores exatos para cada condição são lidos da tabela `fase_pontuacao` de acordo com a fase do jogo, e configuráveis pelo admin em `/admin/pontuacao-fases`:
 
@@ -628,10 +639,11 @@ bolao/
 │   ├── resumo.js                     # Estatísticas detalhadas, racha, histórico
 │   ├── config.js                     # Configurações do perfil (nome)
 │   ├── classificacao.js             # Classificação dos 12 grupos
-│   ├── jogos.js                      # Listagem pública de jogos
-│   ├── ranking.js                    # Ranking geral
+│   ├── jogos.js                      # Listagem pública de jogos + db-info
+│   ├── ranking.js                    # Ranking geral com estatísticas dos jogos
+│   ├── regras.js                     # Redirect da antiga página de regras → /dashboard
 │   ├── senha.js                      # Recuperação de senha
-│   └── admin.js                      # Painel admin: resultados, recalcular, usuários, bônus, pontuação por fase, extras, config
+│   └── admin.js                      # Painel admin: resultados, recalcular, usuários, bônus, pontuação por fase, mata-mata, placar automático, extras, horários, premios, link-login
 │
 ├── middleware/
 │   └── auth.js                       # Middlewares: verificarAutenticado, verificarAdmin, jaLogado
@@ -650,6 +662,7 @@ bolao/
 │   ├── palpites-usuario.ejs          # Detalhamento dos palpites de um participante
 │   ├── jogos.ejs                     # Tabela de jogos pública
 │   ├── jogos-palpites.ejs            # Palpites públicos de um jogo (3 níveis)
+│   ├── jogo-palpites.ejs             # Palpites de um jogo na área de palpites (mesma view)
 │   ├── classificacao.ejs             # Grupos e classificação
 │   ├── ranking.ejs                   # Ranking geral
 │   ├── resumo.ejs                    # Estatísticas detalhadas
@@ -659,6 +672,10 @@ bolao/
 │   ├── admin-usuarios.ejs            # Admin: gerenciar participantes
 │   ├── admin-extras.ejs              # Admin: definir resultados extras
 │   ├── admin-pontuacao-fases.ejs    # Admin: configurar pontuação por fase
+│   ├── admin-mata-mata.ejs           # Admin: gerenciar confrontos
+│   ├── admin-placar-automatico.ejs   # Admin: status do placar automático
+│   ├── admin-premios.ejs             # Admin: editar premiações
+│   ├── admin-link-login.ejs          # Admin: gerar link de login automático
 │   ├── esqueci-senha.ejs             # Formulário "esqueci minha senha"
 │   ├── redefinir-senha.ejs           # Formulário de redefinição de senha
 │   ├── 404.ejs                       # Página de erro 404
@@ -671,9 +688,15 @@ bolao/
 ├── scripts/
 │   ├── verificar-horarios.js         # Script utilitário para verificar horários dos jogos
 │   ├── daily-snapshot.js             # Backup completo (todas as tabelas) com rotação automática
-│   ├── fix-palpites-futuro.js        # Espelha Render→Neon preservando jogos finalizados
+│   ├── dump-db-json.js               # Dump manual em JSON (legado)
+│   ├── compare-dbs.js                # Compara contagens entre Render e Neon
+│   ├── sync-render-to-neon.js        # Espelha Render → Neon (dump + comparação + import)
+│   ├── fix-palpites-futuro.js        # Corrige palpites não-finalizados do Neon
+│   ├── import-neon.js                # Reimporta espelho a partir de render-dump.json
 │   ├── import-render-dump.js         # Import full do dump Render para outro banco
-│   └── import-palpites-only.js       # Import focado só em palpites e palpites_extras
+│   ├── import-snapshot.js            # Importa um snapshot JSON (qualquer banco)
+│   ├── import-palpites-only.js       # Import focado só em palpites e palpites_extras
+│   └── test-mata-mata-e2e.js         # Teste end-to-end da lógica de mata-mata
 │
 ├── data/
 │   └── bolao.db                      # Arquivo do banco SQLite (gitignorado)
@@ -700,7 +723,7 @@ bolao/
 - **Sentry (opcional)**: se `NODE_ENV=production` E `SENTRY_DSN` estiver setado, inicializa com `tracesSampleRate: 0.1` e middleware de request/error handlers. Filtra `/healthz`, `/favicon` e `/admin`. Zero overhead em dev local.
 - **Content-Security-Policy**: middleware seta CSP, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`. Defesa em profundidade contra XSS e clickjacking. Permite inline (EJS usa) e `flagcdn.com` para bandeiras.
 - **Palpite de classificado nas views públicas**: Nas telas de palpites públicos de um jogo (`/jogos/:id/palpites` e `/palpites/jogo/:id`), jogos de mata-mata exibem uma coluna **"Classificado"** na tabela de participantes. A coluna mostra a sigla do time que cada um apostou para avançar (ex: `BRA`), obtida comparando `palpite_classificado_id` com `selecao_casa_id` e `selecao_visitante_id` do jogo. Implementado via `views/jogos-palpites.ejs` e `views/jogo-palpites.ejs`. Segue o mesmo estilo da exibição em `views/resumo.ejs` e `views/palpites-usuario.ejs`.
-- **Placar automático no mata-mata**: o serviço (`services/placar-automatico.js`) busca resultados da API `worldcup26.ir` (open-source, gratuita) para todas as fases. Em jogos de grupos, finaliza e recalcula pontos automaticamente. Em mata-mata, apenas atualiza o placar dos 90 min (`gols_casa`/`gols_visitante`) sem finalizar — o admin deve revisar e adicionar dados de prorrogação/pênaltis manualmente em `/admin/jogos` antes de marcar `finalizado`.
+- **Placar automático no mata-mata**: o serviço (`services/placar-automatico.js`) busca resultados da API `worldcup26.ir` (open-source, gratuita) para **todas as fases**. Em jogos de grupos, finaliza e recalcula pontos automaticamente. No mata-mata **decidido nos 90 min**, também finaliza automaticamente com `classificado_id` e **avança o vencedor para a próxima fase** via `avancarVencedor()`. Se empate nos 90 min, apenas grava o placar — admin deve revisar e adicionar dados de prorrogação/pênaltis manualmente em `/admin/jogos` antes de marcar `finalizado`.
 - **Proteção contra sobrescrita de horários**: `setup.js` e `schema.js` usam `COALESCE` nos UPDATEs. Se o admin editou um jogo via `/admin/jogos/:id/horario`, o próximo deploy não desfaz a alteração.
 - **Logs estruturados**: `logger.js` emite JSON para stdout (Render indexa). Substitui `console.log/error/warn` por `logger.info/warn/error/debug`. Permite buscas por `level`, `msg`, campos customizados.
 - **Toast/snackbar**: `public/js/toast.js` expõe `window.toast(msg, tipo, duracao)`. Substitui `alert()` por notificações modernas com ícones (success/error/warning/info), cor por tipo, posição canto-inferior-central, some sozinho. Usado em `salvarIndividual`, `salvarGrupo` e outros pontos com mensagem de erro/sucesso.

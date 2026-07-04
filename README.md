@@ -17,7 +17,7 @@ Deploy no Render (Node.js) com **Postgres no Neon** (free tier permanente). Loca
 - **Config** (`/config`) — participante altera próprio nome (sincronizado com username)
 - **Admin** — gerencia o site via `/admin/*` (jogos, usuários, extras, bônus, mata-mata, horários, pontuação por fase). Pode apostar em `/palpites` e `/palpites-extras` se quiser **e participa normalmente do ranking** — seus palpites contam como qualquer outro participante.
 - **Admin: editar horário/estádio** — botão "🕐 Horário/Estádio" em `/admin/jogos` para corrigir data/hora, estádio, cidade e país de qualquer jogo sem precisar de deploy
-- **Placar automático** — busca resultados reais da API worldcup26.ir (open-source) a cada 16 minutos; atualiza placar e recalcula pontos automaticamente (fase de grupos); no mata-mata, atualiza o placar dos 90 min **e já salva o classificado_id** quando há vencedor nos 90 min (se empate, admin adiciona prorrogação/pênaltis manualmente); acionável manualmente pelo admin em `/admin/placar-automatico`
+- **Placar automático** — busca resultados reais da API worldcup26.ir (open-source) a cada 16 minutos; atualiza placar e recalcula pontos automaticamente para **todas as fases** (grupos + mata-mata). No mata-mata decidido nos 90 min, **finaliza automaticamente** com `classificado_id` e **avança o vencedor para a próxima fase** (`avancarVencedor`). Se empate nos 90 min, só grava o placar — admin adiciona prorrogação/pênaltis manualmente. Acionável manualmente pelo admin em `/admin/placar-automatico`
 - **Pontos bônus** — participantes tardios recebem pontuação do último colocado -1 da rodada de ingresso; cadastro encerra após fechamento dos extras; tooltip no ranking mostra motivo
 - **Rotas administrativas** — resultados dos jogos, recalcular pontos, gerenciar usuários (promover/rebaixar/excluir/resetar senha, resetar palpites individual/massa, alterar username, criar participante), admin extras, admin config
 - **Rota de diagnóstico** — `/jogos/db-info` retorna JSON com `host`, `marcador` (do `db_marker` da tabela `config`), contagens (`usuarios`, `jogos`, `palpites`, `jogos_finalizados`) e timestamp
@@ -151,7 +151,7 @@ routes/
   admin.js       — resultados, recalcular, placar automático, usuários, criar participante, extras, config, pontuação por fase, pontos bônus
 
 services/
-  placar-automatico.js — integração com API worldcup26.ir (busca resultados a cada 16 min, API pública e gratuita)
+  placar-automatico.js — integração com API worldcup26.ir (busca resultados a cada 16 min, recalcula pontos, avanço automático de vencedores)
   mata-mata.js         — lógica de geração dos confrontos eliminatórios
 
 middleware/

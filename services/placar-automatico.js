@@ -1,5 +1,6 @@
 const { run, get, all } = require('../database/db');
 const { calcularPontos, calcularPontosMataMata } = require('./pontuacao');
+const { avancarVencedor } = require('./mata-mata');
 const logger = require('../logger');
 
 const API_URL = 'https://worldcup26.ir/get/games';
@@ -147,6 +148,11 @@ async function buscarPlacares() {
               );
               await run('UPDATE palpites SET pontos_obtidos = ? WHERE id = ?', [pontos, p.id]);
             }
+          }
+          // Avança vencedor para a próxima fase automaticamente
+          const adv = await avancarVencedor(jogo.id);
+          if (adv.advanced) {
+            logger.info('placar-automatico vencedor avançou', { jogoId: jogo.id, winnerTeamId: adv.winnerTeamId, nextMatchId: adv.nextMatchId });
           }
         } else {
           // Mata-mata empatado nos 90 min: só grava os gols, admin finaliza com prorrogação/pênaltis

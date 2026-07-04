@@ -143,4 +143,37 @@ async function listarConfrontos() {
   return jogosMM;
 }
 
-module.exports = { gerarMataMata, listarConfrontos, limparMataMata };
+async function avancarVencedor(jogoId) {
+  const vencedorId = await obterVencedor(jogoId);
+  if (!vencedorId) return { advanced: false, reason: 'winner_not_determined' };
+
+  // Procura jogo cuja descricao referencia "Vencedor {jogoId}"
+  const proximo = await get(
+    "SELECT id, descricao, selecao_casa_id, selecao_visitante_id, finalizado FROM jogos WHERE descricao LIKE ? AND finalizado = 0",
+    [`%Vencedor ${jogoId}%`]
+  );
+  if (!proximo) return { advanced: false, reason: 'next_match_not_found' };
+
+  const partes = proximo.descricao.split(' vs ');
+  const campo = partes[0].trim() === `Vencedor ${jogoId}`
+    ? 'selecao_casa_id'
+    : 'selecao_visitante_id';
+
+  if (proximo[campo] === vencedorId) return { advanced: false, reason: 'already_advanced' };
+
+  await run(`UPDATE jogos SET ${campo} = ? WHERE id = ? AND finalizado = 0`, [vencedorId, proximo.id]);
+  return { advanced: true, winnerTeamId: vencedorId, nextMatchId: proximo.id };
+}
+
+async function avancarVencedoresMataMata() {
+  const finalizados = await all(
+    "SELECT id FROM jogos WHERE fase IN ('r32','r16','qf','sf') AND finalizado = 1 ORDER BY id"
+  );
+  const resultados = [];
+  for (const j of finalizados) {
+    resultados.push(await avancarVencedor(j.id));
+  }
+  return resultados;
+}
+
+module.exports = { gerarMataMata, listarConfrontos, limparMataMata, avancarVencedor, avancarVencedoresMataMata };
