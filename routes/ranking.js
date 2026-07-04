@@ -328,20 +328,20 @@ router.get('/', async (req, res) => {
       LEFT JOIN selecoes sc ON sc.id = j.selecao_casa_id
       LEFT JOIN selecoes sv ON sv.id = j.selecao_visitante_id
       WHERE j.finalizado = 1
-      GROUP BY j.id
+      GROUP BY j.id, sc.sigla, sv.sigla, j.gols_casa, j.gols_visitante
       ORDER BY zeros DESC, total_palpites DESC LIMIT 1
     `);
 
     // Jogo que mais distribuiu pontos (maior média)
     const jogoMaisPontos = await get(`
       SELECT j.id, j.gols_casa, j.gols_visitante, sc.sigla AS casa_sigla, sv.sigla AS visitante_sigla,
-             ROUND(AVG(p.pontos_obtidos), 1) AS media, SUM(p.pontos_obtidos) AS total_pontos
+             ROUND(AVG(COALESCE(p.pontos_obtidos, 0)), 1) AS media, SUM(COALESCE(p.pontos_obtidos, 0)) AS total_pontos
       FROM jogos j
       LEFT JOIN palpites p ON p.jogo_id = j.id
       LEFT JOIN selecoes sc ON sc.id = j.selecao_casa_id
       LEFT JOIN selecoes sv ON sv.id = j.selecao_visitante_id
       WHERE j.finalizado = 1
-      GROUP BY j.id
+      GROUP BY j.id, sc.sigla, sv.sigla, j.gols_casa, j.gols_visitante
       ORDER BY media DESC LIMIT 1
     `);
 
@@ -395,7 +395,7 @@ router.get('/', async (req, res) => {
       LEFT JOIN selecoes sc ON sc.id = j.selecao_casa_id
       LEFT JOIN selecoes sv ON sv.id = j.selecao_visitante_id
       WHERE j.finalizado = 1
-      GROUP BY j.id, p.palpite_gols_casa, p.palpite_gols_visitante
+      GROUP BY j.id, sc.sigla, sv.sigla, j.gols_casa, j.gols_visitante, p.palpite_gols_casa, p.palpite_gols_visitante
       ORDER BY total_no_palpite DESC LIMIT 1
     `);
 
