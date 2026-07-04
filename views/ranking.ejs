@@ -302,6 +302,81 @@
       </div>
     <% } %>
 
+    <% if (statsConcluidos.placarMaisPalpitado) { %>
+      <details style="margin-top:14px;background:rgba(255,255,255,0.5);border-radius:8px;padding:6px 10px;font-size:0.8rem">
+        <summary style="cursor:pointer;font-weight:600;list-style:none;display:flex;align-items:center;gap:4px">
+          <span>📊 Mais estatísticas</span>
+          <span style="font-weight:400;color:var(--cinza-escuro);font-size:0.72rem">placares, zebras, fases, recordes</span>
+        </summary>
+        <div style="margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:0.78rem">
+          <div style="background:#fff;border-radius:6px;padding:8px">
+            <strong>📋 Placar mais palpitado</strong>
+            <div style="margin-top:4px"><%= statsConcluidos.placarMaisPalpitado.gols_casa %>×<%= statsConcluidos.placarMaisPalpitado.gols_visitante %> — <span style="color:var(--cinza-escuro)"><%= statsConcluidos.placarMaisPalpitado.total %> palpites</span></div>
+            <div style="margin-top:4px"><strong>Real mais comum:</strong>
+              <% if (statsConcluidos.placarRealMaisComum) { %>
+                <%= statsConcluidos.placarRealMaisComum.gols_casa %>×<%= statsConcluidos.placarRealMaisComum.gols_visitante %> (<%= statsConcluidos.placarRealMaisComum.total %> jogos)
+              <% } %>
+            </div>
+          </div>
+          <div style="background:#fff;border-radius:6px;padding:8px">
+            <strong>🃏 Mais zerado</strong>
+            <% if (statsConcluidos.jogoMaisZerado) { var z = statsConcluidos.jogoMaisZerado; %>
+              <div style="margin-top:4px"><%= z.casa_sigla %> <%= z.gols_casa %>×<%= z.gols_visitante %> <%= z.visitante_sigla %></div>
+              <div style="color:var(--cinza-escuro)"><%= z.zeros %>/<%= z.total_palpites %> tiraram 0 pts</div>
+            <% } %>
+          </div>
+          <div style="background:#fff;border-radius:6px;padding:8px">
+            <strong>💎 Mais pontos distribuídos</strong>
+            <% if (statsConcluidos.jogoMaisPontos) { var p = statsConcluidos.jogoMaisPontos; %>
+              <div style="margin-top:4px"><%= p.casa_sigla %> <%= p.gols_casa %>×<%= p.gols_visitante %> <%= p.visitante_sigla %></div>
+              <div style="color:var(--cinza-escuro)">média <%= p.media %> pts/palpite</div>
+            <% } %>
+          </div>
+          <div style="background:#fff;border-radius:6px;padding:8px">
+            <strong>😴 Mais chato</strong>
+            <% if (statsConcluidos.jogoMaisChato) { var c = statsConcluidos.jogoMaisChato; %>
+              <div style="margin-top:4px"><%= c.casa_sigla %> <%= c.gols_casa %>×<%= c.gols_visitante %> <%= c.visitante_sigla %></div>
+              <div style="color:var(--cinza-escuro)"><%= c.total_no_palpite %> palpitaram <%= c.palpite_casa %>×<%= c.palpite_visitante %></div>
+            <% } %>
+          </div>
+        </div>
+        <% if (statsConcluidos.aproveitamentoFases && statsConcluidos.aproveitamentoFases.length > 0) { %>
+          <div style="margin-top:8px;background:#fff;border-radius:6px;padding:8px;font-size:0.78rem">
+            <strong>📈 Aproveitamento por fase</strong>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
+              <% var faseLabel = {grupo:'Grupos',r32:'16av',r16:'8av',qf:'QF',sf:'SF',terceiro:'3º',final:'Final'}; %>
+              <% statsConcluidos.aproveitamentoFases.forEach(function(f) { %>
+                <% var pct = f.total_palpites > 0 ? Math.round(f.palpites_com_pontos / f.total_palpites * 100) : 0; %>
+                <span style="background:var(--cinza-claro);padding:3px 8px;border-radius:6px;white-space:nowrap">
+                  <strong><%= faseLabel[f.fase] || f.fase %>:</strong> <%= pct %>%
+                  <span style="color:var(--cinza-escuro)">(<%= f.palpites_com_pontos %>/<%= f.total_palpites %>)</span>
+                </span>
+              <% }); %>
+            </div>
+          </div>
+        <% } %>
+        <div style="margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:0.78rem">
+          <div style="background:#fff;border-radius:6px;padding:8px">
+            <strong>🔥 Top 3 maiores pontuações</strong>
+            <% if (statsConcluidos.top3Maiores && statsConcluidos.top3Maiores.length > 0) { %>
+              <% statsConcluidos.top3Maiores.forEach(function(t, i) { %>
+                <div style="margin-top:4px;display:flex;align-items:center;gap:4px">
+                  <span><%= ['🥇','🥈','🥉'][i] %></span>
+                  <strong><%= t.pontos_obtidos %> pts</strong>
+                  <span style="color:var(--cinza-escuro)"><%= t.nome %> — <%= t.casa_sigla %>×<%= t.visitante_sigla %></span>
+                </div>
+              <% }); %>
+            <% } %>
+          </div>
+          <div style="background:#fff;border-radius:6px;padding:8px">
+            <strong>🚫 Sem acerto de resultado</strong>
+            <div style="margin-top:4px;font-size:1.1rem;font-weight:700;color:var(--vermelho)"><%= statsConcluidos.jogosSemResultado %></div>
+            <div style="color:var(--cinza-escuro)">jogos que ninguém acertou vencedor/empate</div>
+          </div>
+        </div>
+      </details>
+    <% } %>
+
     <% if (statsConcluidos.jogosConcluidos && statsConcluidos.jogosConcluidos.length > 0) { %>
       <div style="margin-top:14px">
         <div class="finalizados-toggle" onclick="toggleConcluidos(this)" style="cursor:pointer;display:flex;align-items:center;gap:6px;padding:8px 12px;background:rgba(255,255,255,0.7);border-radius:6px;font-size:0.85rem;user-select:none">

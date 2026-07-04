@@ -300,6 +300,105 @@ router.get('/', async (req, res) => {
       )
     `);
 
+    // Placar mais palpitado
+    const placarMaisPalpitado = await get(`
+      SELECT p.palpite_gols_casa AS gols_casa, p.palpite_gols_visitante AS gols_visitante, COUNT(*) AS total
+      FROM palpites p
+      JOIN jogos j ON j.id = p.jogo_id
+      WHERE j.finalizado = 1
+      GROUP BY p.palpite_gols_casa, p.palpite_gols_visitante
+      ORDER BY total DESC LIMIT 1
+    `);
+    // Placar real mais comum
+    const placarRealMaisComum = await get(`
+      SELECT j.gols_casa, j.gols_visitante, COUNT(*) AS total
+      FROM jogos j
+      WHERE j.finalizado = 1
+      GROUP BY j.gols_casa, j.gols_visitante
+      ORDER BY total DESC LIMIT 1
+    `);
+
+    // Jogo mais zerado (maioria tirou 0)
+    const jogoMaisZerado = await get(`
+      SELECT j.id, j.gols_casa, j.gols_visitante, sc.sigla AS casa_sigla, sv.sigla AS visitante_sigla,
+             COUNT(CASE WHEN p.pontos_obtidos = 0 THEN 1 END) AS zeros,
+             COUNT(p.id) AS total_palpites
+      FROM jogos j
+      LEFT JOIN palpites p ON p.jogo_id = j.id
+      LEFT JOIN selecoes sc ON sc.id = j.selecao_casa_id
+      LEFT JOIN selecoes sv ON sv.id = j.selecao_visitante_id
+      WHERE j.finalizado = 1
+      GROUP BY j.id
+      ORDER BY zeros DESC, total_palpites DESC LIMIT 1
+    `);
+
+    // Jogo que mais distribuiu pontos (maior média)
+    const jogoMaisPontos = await get(`
+      SELECT j.id, j.gols_casa, j.gols_visitante, sc.sigla AS casa_sigla, sv.sigla AS visitante_sigla,
+             ROUND(AVG(p.pontos_obtidos), 1) AS media, SUM(p.pontos_obtidos) AS total_pontos
+      FROM jogos j
+      LEFT JOIN palpites p ON p.jogo_id = j.id
+      LEFT JOIN selecoes sc ON sc.id = j.selecao_casa_id
+      LEFT JOIN selecoes sv ON sv.id = j.selecao_visitante_id
+      WHERE j.finalizado = 1
+      GROUP BY j.id
+      ORDER BY media DESC LIMIT 1
+    `);
+
+    // Aproveitamento por fase
+    const aproveitamentoFases = await all(`
+      SELECT j.fase,
+             COUNT(*) AS total_palpites,
+             COUNT(CASE WHEN p.pontos_obtidos > 0 THEN 1 END) AS palpites_com_pontos
+      FROM palpites p
+      JOIN jogos j ON j.id = p.jogo_id
+      WHERE j.finalizado = 1
+      GROUP BY j.fase
+      ORDER BY CASE j.fase WHEN 'grupo' THEN 1 WHEN 'r32' THEN 2 WHEN 'r16' THEN 3 WHEN 'qf' THEN 4 WHEN 'sf' THEN 5 WHEN 'terceiro' THEN 6 WHEN 'final' THEN 7 END
+    `);
+
+    // Top 3 maiores pontuações individuais em um jogo
+    const top3Maiores = await all(`
+      SELECT p.pontos_obtidos, u.nome, j.gols_casa, j.gols_visitante,
+             sc.sigla AS casa_sigla, sv.sigla AS visitante_sigla, j.fase
+      FROM palpites p
+      JOIN usuarios u ON u.id = p.usuario_id
+      JOIN jogos j ON j.id = p.jogo_id
+      JOIN selecoes sc ON sc.id = j.selecao_casa_id
+      JOIN selecoes sv ON sv.id = j.selecao_visitante_id
+      WHERE j.finalizado = 1
+      ORDER BY p.pontos_obtidos DESC LIMIT 3
+    `);
+
+    // Quantos jogos ninguém acertou o resultado (vencedor/empate)
+    const jogosSemResultado = await get(`
+      SELECT COUNT(*) AS total FROM (
+        SELECT j.id
+        FROM jogos j
+        LEFT JOIN palpites p ON p.jogo_id = j.id
+         AND ((j.gols_casa > j.gols_visitante AND p.palpite_gols_casa > p.palpite_gols_visitante)
+           OR (j.gols_casa < j.gols_visitante AND p.palpite_gols_casa < p.palpite_gols_visitante)
+           OR (j.gols_casa = j.gols_visitante AND p.palpite_gols_casa = p.palpite_gols_visitante))
+        WHERE j.finalizado = 1
+        GROUP BY j.id
+        HAVING COUNT(p.id) = 0
+      )
+    `);
+
+    // Jogo mais chato (maior concentração num mesmo palpite)
+    const jogoMaisChato = await get(`
+      SELECT j.id, j.gols_casa, j.gols_visitante, sc.sigla AS casa_sigla, sv.sigla AS visitante_sigla,
+             p.palpite_gols_casa AS palpite_casa, p.palpite_gols_visitante AS palpite_visitante,
+             COUNT(*) AS total_no_palpite
+      FROM jogos j
+      JOIN palpites p ON p.jogo_id = j.id
+      LEFT JOIN selecoes sc ON sc.id = j.selecao_casa_id
+      LEFT JOIN selecoes sv ON sv.id = j.selecao_visitante_id
+      WHERE j.finalizado = 1
+      GROUP BY j.id, p.palpite_gols_casa, p.palpite_gols_visitante
+      ORDER BY total_no_palpite DESC LIMIT 1
+    `);
+
     // Lista compacta dos jogos finalizados (para mostrar no card)
     const jogosConcluidos = await all(`
       SELECT j.id, j.rodada, j.fase, j.gols_casa, j.gols_visitante, j.data,
@@ -335,7 +434,15 @@ router.get('/', async (req, res) => {
       jogosConcluidos,
       jogosDificeis,
       jogosFaceis,
-      jogosSemExato: jogosSemExato?.total || 0
+      jogosSemExato: jogosSemExato?.total || 0,
+      placarMaisPalpitado,
+      placarRealMaisComum,
+      jogoMaisZerado,
+      jogoMaisPontos,
+      aproveitamentoFases,
+      top3Maiores,
+      jogosSemResultado: jogosSemResultado?.total || 0,
+      jogoMaisChato
     };
 
     // Busca detalhes dos bônus (motivo) para tooltip
