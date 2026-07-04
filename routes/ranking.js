@@ -266,7 +266,7 @@ router.get('/', async (req, res) => {
       LEFT JOIN selecoes sv ON j.selecao_visitante_id = sv.id
       LEFT JOIN palpites p ON p.jogo_id = j.id
       WHERE j.finalizado = 1
-      GROUP BY j.id
+      GROUP BY j.id, sc.sigla, sv.sigla, j.rodada, j.fase, j.gols_casa, j.gols_visitante
       ORDER BY total_exatos ASC, total_palpites DESC
       LIMIT 5
     `);
@@ -282,7 +282,7 @@ router.get('/', async (req, res) => {
       LEFT JOIN selecoes sv ON j.selecao_visitante_id = sv.id
       LEFT JOIN palpites p ON p.jogo_id = j.id
       WHERE j.finalizado = 1
-      GROUP BY j.id
+      GROUP BY j.id, sc.sigla, sv.sigla, j.rodada, j.fase, j.gols_casa, j.gols_visitante
       HAVING COUNT(CASE WHEN p.palpite_gols_casa = j.gols_casa AND p.palpite_gols_visitante = j.gols_visitante THEN 1 END) > 0
       ORDER BY total_exatos DESC, total_palpites ASC
       LIMIT 5
