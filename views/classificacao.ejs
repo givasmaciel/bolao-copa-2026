@@ -51,51 +51,287 @@
   <% }); %>
 </div>
 
-<% if (confrontos && confrontos.length > 0) { %>
+<% if (bracket) { %>
 <hr class="my-2">
-<h1>🏆 Fases Finais</h1>
-<p class="subtitulo">Confrontos do mata-mata — passe o mouse para detalhes.</p>
 
-<div class="bracket-scroll">
-<div class="bracket">
-  <% 
-    const fasesBracket = [
-      { key: 'r32', label: '16-avos' },
-      { key: 'r16', label: 'Oitavas' },
-      { key: 'qf', label: 'Quartas' },
-      { key: 'sf', label: 'Semi' },
-      { key: 'terceiro', label: '3º lugar' },
-      { key: 'final', label: 'Final' }
-    ];
-    const gamesPorFase = {};
-    fasesBracket.forEach(function(f) { gamesPorFase[f.key] = confrontos.filter(function(j) { return j.fase === f.key; }); });
-  %>
-  <% fasesBracket.forEach(function(fase) { %>
-    <% const jogos = gamesPorFase[fase.key] || []; %>
-    <div class="bracket-round">
-      <div class="bracket-round-title"><%= fase.label %></div>
-      <% if (jogos.length === 0) { %>
-        <div class="bracket-game" style="text-align:center;color:#aaa;font-style:italic;padding:12px 8px">—</div>
-      <% } %>
-      <% jogos.forEach(function(jogo) { %>
-        <div class="bracket-game<%= jogo.finalizado ? ' finalizado' : '' %>">
-          <div class="bracket-team <%= jogo.casa_id ? 'definido' : 'indefinido' %> <%= (jogo.finalizado && jogo.gols_casa !== null && jogo.gols_visitante !== null && jogo.gols_casa > jogo.gols_visitante) ? 'vencedor' : (jogo.finalizado ? 'eliminado' : '') %>">
-            <% if (jogo.casa_bandeira) { %><img src="<%= jogo.casa_bandeira %>" alt="" class="bandeira-mini" loading="lazy"><% } %>
-            <span class="team-name"><%= jogo.casa_pt || (jogo.casa_id ? 'Time #'+jogo.casa_id : 'A definir') %></span>
-            <% if (jogo.gols_casa !== null) { %><span class="team-score"><%= jogo.gols_casa %></span><% } %>
+<h1>🏆 Mata-Mata</h1>
+<p class="subtitulo">Chaveamento completo das fases eliminatórias.</p>
+
+<div class="bracket-wrap">
+<div class="bracket" id="bracket">
+
+<% 
+const ROUNDS = ['r32', 'r16', 'qf', 'sf'];
+const ROUND_LABELS = { r32: '16-avos', r16: 'Oitavas', qf: 'Quartas', sf: 'Semi' };
+const side = bracket.sides;
+
+function matchTeam(m, field, prefix) {
+  const isCasa = field === 'casa';
+  const nome = isCasa ? m.displayCasa : m.displayVisitante;
+  const score = isCasa ? m.gols_casa : m.gols_visitante;
+  const bandeira = isCasa ? m.casa_bandeira : m.visitante_bandeira;
+  const venceu = isCasa ? m.casaVenceu : m.visitanteVenceu;
+  const indefinido = (!isCasa && !m.visitante_id) || (isCasa && !m.casa_id);
+  const classes = (venceu ? 'vencedor' : 'eliminado') + (indefinido ? ' indefinido' : '');
+  return { nome, score, bandeira, venceu, classes, indefinido };
+}
+%>
+
+<!-- LEFT SIDE -->
+<div class="bracket-side">
+
+<% ROUNDS.forEach(function(round, ri) { %>
+  <div class="bracket-col">
+    <div class="bracket-col-header"><%= ROUND_LABELS[round] %></div>
+    <% (side.left[round] || []).forEach(function(m, mi) { %>
+      <% const t1 = matchTeam(m, 'casa'); %>
+      <% const t2 = matchTeam(m, 'visitante'); %>
+      <div class="match-slot" style="flex:<%= Math.pow(2, ri) %>">
+        <div class="match-card<%= m.finalizado ? ' finalizado' : '' %>">
+          <div class="match-team <%= t1.classes %>">
+            <% if (t1.bandeira) { %><img src="<%= t1.bandeira %>" alt="" class="bandeira-mini" loading="lazy"><% } %>
+            <span class="team-label"><%= t1.nome %></span>
+            <% if (t1.score !== null) { %><span class="team-score"><%= t1.score %></span><% } %>
           </div>
-          <div class="bracket-team <%= jogo.visitante_id ? 'definido' : 'indefinido' %> <%= (jogo.finalizado && jogo.gols_casa !== null && jogo.gols_visitante !== null && jogo.gols_visitante > jogo.gols_casa) ? 'vencedor' : (jogo.finalizado ? 'eliminado' : '') %>">
-            <% if (jogo.visitante_bandeira) { %><img src="<%= jogo.visitante_bandeira %>" alt="" class="bandeira-mini" loading="lazy"><% } %>
-            <span class="team-name"><%= jogo.visitante_pt || (jogo.visitante_id ? 'Time #'+jogo.visitante_id : 'A definir') %></span>
-            <% if (jogo.gols_visitante !== null) { %><span class="team-score"><%= jogo.gols_visitante %></span><% } %>
+          <div class="match-team <%= t2.classes %>">
+            <% if (t2.bandeira) { %><img src="<%= t2.bandeira %>" alt="" class="bandeira-mini" loading="lazy"><% } %>
+            <span class="team-label"><%= t2.nome %></span>
+            <% if (t2.score !== null) { %><span class="team-score"><%= t2.score %></span><% } %>
           </div>
-          <% if (jogo.descricao) { %><div class="bracket-desc"><%= jogo.descricao %></div><% } %>
         </div>
-      <% }); %>
+      </div>
+    <% }); %>
+  </div>
+<% }); %>
+
+</div>
+
+<!-- CENTER: FINAL + CHAMPION -->
+<div class="bracket-center">
+  <div class="bracket-col-header">Final</div>
+
+  <% if (bracket.final) { %>
+    <% const m = bracket.final; %>
+    <% const t1 = matchTeam(m, 'casa'); %>
+    <% const t2 = matchTeam(m, 'visitante'); %>
+    <div class="match-slot" style="flex:1">
+      <div class="match-card<%= m.finalizado ? ' finalizado' : '' %>">
+        <div class="match-team <%= t1.classes %>">
+          <% if (t1.bandeira) { %><img src="<%= t1.bandeira %>" alt="" class="bandeira-mini" loading="lazy"><% } %>
+          <span class="team-label"><%= t1.nome %></span>
+          <% if (t1.score !== null) { %><span class="team-score"><%= t1.score %></span><% } %>
+        </div>
+        <div class="match-team <%= t2.classes %>">
+          <% if (t2.bandeira) { %><img src="<%= t2.bandeira %>" alt="" class="bandeira-mini" loading="lazy"><% } %>
+          <span class="team-label"><%= t2.nome %></span>
+          <% if (t2.score !== null) { %><span class="team-score"><%= t2.score %></span><% } %>
+        </div>
+      </div>
     </div>
-  <% }); %>
+
+    <div class="champion-area">
+      <% if (m.finalizado && (m.casaVenceu || m.visitanteVenceu)) { %>
+        <span class="champion-trophy">🏆</span>
+        <div class="champion-label">Campeão</div>
+        <div class="champion-name">
+          <img src="<%= m.casaVenceu ? m.casa_bandeira : m.visitante_bandeira %>" alt="" class="bandeira-mini" style="width:20px;height:14px;vertical-align:middle">
+          <%= m.casaVenceu ? m.displayCasa : m.displayVisitante %>
+        </div>
+      <% } else { %>
+        <span class="champion-empty">A definir</span>
+      <% } %>
+    </div>
+  <% } else { %>
+    <div class="champion-area">
+      <span class="champion-empty">A definir</span>
+    </div>
+  <% } %>
+
+  <% if (bracket.terceiro) { %>
+    <% const m3 = bracket.terceiro; %>
+    <% const tc1 = matchTeam(m3, 'casa'); %>
+    <% const tc2 = matchTeam(m3, 'visitante'); %>
+    <div class="terceiro-section">
+      <div class="terceiro-label">3º lugar</div>
+      <div class="terceiro-card-small">
+        <% if (tc1.bandeira) { %><img src="<%= tc1.bandeira %>" alt="" class="bandeira-mini" loading="lazy"><% } %>
+        <span><%= tc1.nome %></span>
+        <% if (tc1.score !== null) { %><strong style="margin:0 4px"><%= tc1.score %>×<%= tc2.score %></strong><% } else { %><span style="margin:0 4px">vs</span><% } %>
+        <span><%= tc2.nome %></span>
+        <% if (tc2.bandeira) { %><img src="<%= tc2.bandeira %>" alt="" class="bandeira-mini" loading="lazy"><% } %>
+      </div>
+    </div>
+  <% } %>
+</div>
+
+<!-- RIGHT SIDE -->
+<div class="bracket-side">
+
+<% for (var ri = ROUNDS.length - 1; ri >= 0; ri--) { %>
+  <% var round = ROUNDS[ri]; %>
+  <div class="bracket-col">
+    <div class="bracket-col-header"><%= ROUND_LABELS[round] %></div>
+    <% (side.right[round] || []).forEach(function(m, mi) { %>
+      <% const t1 = matchTeam(m, 'casa'); %>
+      <% const t2 = matchTeam(m, 'visitante'); %>
+      <div class="match-slot" style="flex:<%= Math.pow(2, ri) %>">
+        <div class="match-card<%= m.finalizado ? ' finalizado' : '' %>">
+          <div class="match-team <%= t1.classes %>">
+            <% if (t1.bandeira) { %><img src="<%= t1.bandeira %>" alt="" class="bandeira-mini" loading="lazy"><% } %>
+            <span class="team-label"><%= t1.nome %></span>
+            <% if (t1.score !== null) { %><span class="team-score"><%= t1.score %></span><% } %>
+          </div>
+          <div class="match-team <%= t2.classes %>">
+            <% if (t2.bandeira) { %><img src="<%= t2.bandeira %>" alt="" class="bandeira-mini" loading="lazy"><% } %>
+            <span class="team-label"><%= t2.nome %></span>
+            <% if (t2.score !== null) { %><span class="team-score"><%= t2.score %></span><% } %>
+          </div>
+        </div>
+      </div>
+    <% }); %>
+  </div>
+<% } %>
+
+</div>
+
 </div>
 </div>
+
+<script>
+(function() {
+  const MATCH_UNIT = 1; // base flex unit per R32 match slot
+  const ROUND_MULT = [1, 2, 4, 8]; // R32=1, R16=2, QF=4, SF=8
+  const CONN_GAP = 20; // connector gap between rounds in px
+  var svgNS = 'http://www.w3.org/2000/svg';
+  var bracket = document.getElementById('bracket');
+  if (!bracket) return;
+
+  var leftSide = bracket.querySelector('.bracket-side:first-child');
+  var center = bracket.querySelector('.bracket-center');
+  var rightSide = bracket.querySelector('.bracket-side:last-child');
+  if (!leftSide || !center || !rightSide) return;
+
+  // Get the computed positions of all match-slots
+  var sides = [
+    { el: leftSide, dir: 'left' },
+    { el: rightSide, dir: 'right' }
+  ];
+
+  sides.forEach(function(side) {
+    var roundCols = side.el.querySelectorAll('.bracket-col');
+    if (roundCols.length < 2) return;
+
+    for (var r = 0; r < roundCols.length - 1; r++) {
+      var leftCol = roundCols[r];
+      var rightCol = roundCols[r + 1];
+      var leftSlots = leftCol.querySelectorAll('.match-slot');
+      var rightSlots = rightCol.querySelectorAll('.match-slot');
+
+      if (leftSlots.length < 2 || rightSlots.length < 1) continue;
+
+      // Each pair in leftCol connects to one in rightCol
+      var pairs = Math.floor(leftSlots.length / 2);
+      var totalPairs = Math.min(pairs, rightSlots.length);
+
+      for (var p = 0; p < totalPairs; p++) {
+        var topSlot = leftSlots[p * 2];
+        var botSlot = leftSlots[p * 2 + 1];
+        var targetSlot = rightSlots[p];
+
+        var topRect = topSlot.getBoundingClientRect();
+        var botRect = botSlot.getBoundingClientRect();
+        var targetRect = targetSlot.getBoundingClientRect();
+        var bracketRect = bracket.getBoundingClientRect();
+
+        var x1 = topRect.right - bracketRect.left;
+        var x2 = targetRect.left - bracketRect.left;
+        var xMid = (x1 + x2) / 2;
+        var yTop = (topRect.top + topRect.bottom) / 2 - bracketRect.top;
+        var yBot = (botRect.top + botRect.bottom) / 2 - bracketRect.top;
+        var yMid = (yTop + yBot) / 2;
+
+        var svg = document.createElementNS(svgNS, 'svg');
+        svg.setAttribute('style', 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1;overflow:visible');
+        svg.setAttribute('preserveAspectRatio', 'none');
+
+        var lines = [
+          { x1: x1, y1: yTop, x2: xMid, y2: yTop },
+          { x1: x1, y1: yBot, x2: xMid, y2: yBot },
+          { x1: xMid, y1: yTop, x2: xMid, y2: yBot },
+          { x1: xMid, y1: yMid, x2: x2, y2: yMid }
+        ];
+
+        lines.forEach(function(l) {
+          var line = document.createElementNS(svgNS, 'line');
+          line.setAttribute('x1', l.x1);
+          line.setAttribute('y1', l.y1);
+          line.setAttribute('x2', l.x2);
+          line.setAttribute('y2', l.y2);
+          line.setAttribute('stroke', '#4caf50');
+          line.setAttribute('stroke-width', '2');
+          svg.appendChild(line);
+        });
+
+        bracket.appendChild(svg);
+      }
+    }
+  });
+
+  // Center connections: left SF → Final, right SF → Final
+  var leftRounds = leftSide ? leftSide.querySelectorAll('.bracket-col') : [];
+  var rightRounds = rightSide ? rightSide.querySelectorAll('.bracket-col') : [];
+  var lastLeft = leftRounds.length > 0 ? leftRounds[leftRounds.length - 1] : null;
+  var lastRight = rightRounds.length > 0 ? rightRounds[0] : null;
+  var finalSlot = center ? center.querySelector('.match-slot') : null;
+
+  if (lastLeft && finalSlot) {
+    var sfSlot = lastLeft.querySelector('.match-slot');
+    if (sfSlot) {
+      var sfRect = sfSlot.getBoundingClientRect();
+      var finRect = finalSlot.getBoundingClientRect();
+      var bRect = bracket.getBoundingClientRect();
+
+      var xStart = sfRect.right - bRect.left;
+      var xEnd = finRect.left - bRect.left;
+      var xMid = (xStart + xEnd) / 2;
+      var y = (sfRect.top + sfRect.bottom) / 2 - bRect.top;
+
+      var svg = document.createElementNS(svgNS, 'svg');
+      svg.setAttribute('style', 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1;overflow:visible');
+      var line = document.createElementNS(svgNS, 'line');
+      line.setAttribute('x1', xStart); line.setAttribute('y1', y);
+      line.setAttribute('x2', xEnd); line.setAttribute('y2', y);
+      line.setAttribute('stroke', '#4caf50'); line.setAttribute('stroke-width', '2');
+      svg.appendChild(line);
+      bracket.appendChild(svg);
+    }
+  }
+
+  if (lastRight && finalSlot) {
+    var sfSlot = lastRight.querySelector('.match-slot');
+    if (sfSlot) {
+      var sfRect = sfSlot.getBoundingClientRect();
+      var finRect = finalSlot.getBoundingClientRect();
+      var bRect = bracket.getBoundingClientRect();
+
+      var xStart = finRect.right - bRect.left;
+      var xEnd = sfRect.left - bRect.left;
+      var xMid = (xStart + xEnd) / 2;
+      var y = (sfRect.top + sfRect.bottom) / 2 - bRect.top;
+
+      var svg = document.createElementNS(svgNS, 'svg');
+      svg.setAttribute('style', 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1;overflow:visible');
+      var line = document.createElementNS(svgNS, 'line');
+      line.setAttribute('x1', xStart); line.setAttribute('y1', y);
+      line.setAttribute('x2', xEnd); line.setAttribute('y2', y);
+      line.setAttribute('stroke', '#4caf50'); line.setAttribute('stroke-width', '2');
+      svg.appendChild(line);
+      bracket.appendChild(svg);
+    }
+  }
+})();
+</script>
+
 <% } %>
 
 <%- include('partials/footer') %>
