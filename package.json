@@ -9,7 +9,12 @@
     "dev": "node server.js",
     "seed": "node database/seed.js",
     "setup": "node database/setup.js",
-    "criar-admin": "node database/criar-admin.js"
+    "criar-admin": "node database/criar-admin.js",
+    "test": "node tests/pontuacao.test.js && node tests/comprehensive.test.js",
+    "test:unit": "node tests/pontuacao.test.js",
+    "test:comprehensive": "node tests/comprehensive.test.js",
+    "lint": "npx eslint . --ext .js --max-warnings 100 || true",
+    "format": "npx prettier --check . || true"
   },
   "keywords": [
     "bolao",

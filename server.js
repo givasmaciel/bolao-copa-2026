@@ -9,6 +9,8 @@ const rateLimit = require('express-rate-limit');
 const logger = require('./logger');
 
 const { criarSchema } = require('./database/schema');
+const cspHeaders = require('./middleware/csp');
+const { csrfToken, csrfProtection } = require('./middleware/csrf');
 const authRoutes = require('./routes/auth');
 const palpitesRoutes = require('./routes/palpites');
 const jogosRoutes = require('./routes/jogos');
@@ -68,26 +70,8 @@ app.set('views', path.join(__dirname, 'views'));
 // Trust proxy (Render, Heroku, etc)
 app.set('trust proxy', 1);
 
-// Content-Security-Policy — protege contra XSS limitando origens
-app.use((req, res, next) => {
-  // Permite inline styles/scripts (EJS usa) e imagens externas (flagcdn para bandeiras)
-  res.setHeader(
-    'Content-Security-Policy',
-    "default-src 'self'; " +
-    "script-src 'self' 'unsafe-inline'; " +
-    "style-src 'self' 'unsafe-inline'; " +
-    "img-src 'self' data: blob: https://flagcdn.com https://*.flagcdn.com; " +
-    "font-src 'self' data:; " +
-    "connect-src 'self'; " +
-    "object-src 'none'; " +
-    "base-uri 'self'; " +
-    "frame-ancestors 'none'"
-  );
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'DENY');
-  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  next();
-});
+// CSP e headers de segurança
+app.use(cspHeaders);
 
 // Middlewares
 app.use(express.urlencoded({ extended: true }));
@@ -134,48 +118,7 @@ const dbMarkerPromise = (async () => {
 })();
 
 // CSRF token — gera e valida
-const crypto = require('crypto');
-app.use((req, res, next) => {
-  if (!req.session.csrfToken) {
-    req.session.csrfToken = crypto.randomUUID();
-  }
-  res.locals.csrfToken = req.session.csrfToken;
-  next();
-});
-
-// Middleware de validação CSRF para métodos que alteram estado
-function csrfProtection(req, res, next) {
-  if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) return next();
-  // Uploads multipart: CSRF vem como query param na URL (req.query._csrf)
-  if (req.headers['content-type'] && req.headers['content-type'].includes('multipart/form-data')) {
-    const token = req.query?._csrf || req.headers?.['x-csrf-token'];
-    if (!token || token !== req.session.csrfToken) {
-      if (req.accepts('json')) return res.status(403).json({ ok: false, erro: 'CSRF inválido. Recarregue a página e tente novamente.' });
-      req.flash('erro', 'Sessão expirada. Recarregue a página e tente novamente.');
-      return res.redirect('back');
-    }
-    return next();
-  }
-  let token = req.body?._csrf || req.query?._csrf || req.headers?.['x-csrf-token'];
-  if (Array.isArray(token)) token = token[0];
-  if (!token || token !== req.session.csrfToken) {
-    logger.warn('CSRF inválido', {
-      method: req.method,
-      url: req.originalUrl,
-      hasSessionCsrf: !!req.session.csrfToken,
-      sessionToken: req.session.csrfToken ? String(req.session.csrfToken).substring(0, 8) + '...' : null,
-      tokenRecebido: token ? String(token).substring(0, 8) + '...' : null,
-      sessionId: req.sessionID,
-      contentType: req.headers['content-type']
-    });
-    if (req.accepts('json')) {
-      return res.status(403).json({ ok: false, erro: 'CSRF inválido. Recarregue a página e tente novamente.' });
-    }
-    req.flash('erro', 'Sessão expirada. Recarregue a página e tente novamente.');
-    return res.redirect('back');
-  }
-  next();
-}
+app.use(csrfToken);
 app.use(csrfProtection);
 
 // Disponibiliza flash messages, usuário e constantes para as views

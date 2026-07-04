@@ -701,10 +701,11 @@ bolao/
 ├── data/
 │   └── bolao.db                      # Arquivo do banco SQLite (gitignorado)
 │
-├── check-db.js                       # Script: exibe palpites do banco
-├── check-jogos.js                    # Script: verifica jogos e palpites
-├── reset-palpites.js                 # Script: limpa palpites e resultados
-└── promover-admin.js                 # Script: promove usuário a admin via argumento
+├── scripts/
+│   ├── check-db.js                       # Script: exibe palpites do banco
+│   ├── check-jogos.js                    # Script: verifica jogos e palpites
+│   ├── reset-palpites.js                 # Script: limpa palpites e resultados
+│   └── promover-admin.js                 # Script: promove usuário a admin via argumento
 ```
 
 ---

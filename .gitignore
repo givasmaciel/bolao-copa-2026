@@ -9,3 +9,11 @@ data/
 MANUAL_LOCAL.md
 backups/
 scripts/compare-dbs.js
+seed_err.log
+seed_out.log
+server_err.log
+server_out.log
+server_test.log
+server_test_loop.log
+_query_db.js
+logs/
