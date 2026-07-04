@@ -176,4 +176,4 @@ async function avancarVencedoresMataMata() {
   return resultados;
 }
 
-module.exports = { gerarMataMata, listarConfrontos, limparMataMata, avancarVencedor, avancarVencedoresMataMata };
+module.exports = { gerarMataMata, listarConfrontos, limparMataMata, avancarVencedor };

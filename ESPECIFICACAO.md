@@ -618,10 +618,20 @@ Executado em todo deploy (`node database/setup.js && node server.js`):
 ```
 bolao/
 ├── server.js                         # Entry point: configura Express, middlewares, rotas, trust proxy
-├── package.json                      # Dependências e scripts (start, dev, seed, setup, criar-admin)
+├── package.json                      # Dependências e scripts (start, dev, seed, setup, criar-admin, test, lint, format)
+├── .editorconfig                     # Padrões de editor (indentação, charset, etc.)
 ├── .env.example                      # Template de variáveis de ambiente
+├── .eslintrc.json                    # Configuração de lint (ESLint)
 ├── .node-version                     # Versão do Node (18)
+├── .prettierrc                       # Configuração de formatação (Prettier)
+├── .dockerignore                     # Arquivos ignorados no build Docker
+├── Dockerfile                        # Build containerizado
+├── logger.js                         # Logs estruturados em JSON (substitui console.log/error)
+├── MANUAL_LOCAL.md                   # Guia rápido de execução local
 ├── render.yaml                       # Configuração de deploy no Render.com
+├── .github/
+│   └── workflows/
+│       └── test.yml                  # CI: testes automáticos em push/PR
 │
 ├── database/
 │   ├── db.js                         # Adaptador dual SQLite/PostgreSQL (run, get, all); força TZ=UTC
@@ -638,7 +648,7 @@ bolao/
 │   ├── extras.js                     # Palpites extras (campeão, vice, fases)
 │   ├── resumo.js                     # Estatísticas detalhadas, racha, histórico
 │   ├── config.js                     # Configurações do perfil (nome)
-│   ├── classificacao.js             # Classificação dos 12 grupos
+│   ├── classificacao.js              # Classificação dos grupos + chaveamento FIFA via link
 │   ├── jogos.js                      # Listagem pública de jogos + db-info
 │   ├── ranking.js                    # Ranking geral com estatísticas dos jogos
 │   ├── regras.js                     # Redirect da antiga página de regras → /dashboard
@@ -646,7 +656,9 @@ bolao/
 │   └── admin.js                      # Painel admin: resultados, recalcular, usuários, bônus, pontuação por fase, mata-mata, placar automático, extras, horários, premios, link-login
 │
 ├── middleware/
-│   └── auth.js                       # Middlewares: verificarAutenticado, verificarAdmin, jaLogado
+│   ├── auth.js                       # Middlewares: verificarAutenticado, verificarAdmin, jaLogado
+│   ├── csp.js                        # CSP e headers de segurança (X-Frame-Options, etc.)
+│   └── csrf.js                       # Geração e validação de token CSRF
 │
 ├── views/
 │   ├── partials/
@@ -663,7 +675,7 @@ bolao/
 │   ├── jogos.ejs                     # Tabela de jogos pública
 │   ├── jogos-palpites.ejs            # Palpites públicos de um jogo (3 níveis)
 │   ├── jogo-palpites.ejs             # Palpites de um jogo na área de palpites (mesma view)
-│   ├── classificacao.ejs             # Grupos e classificação
+│   ├── classificacao.ejs             # Classificação dos grupos + link oficial FIFA
 │   ├── ranking.ejs                   # Ranking geral
 │   ├── resumo.ejs                    # Estatísticas detalhadas
 │   ├── config.ejs                    # Configurações do perfil
@@ -682,30 +694,49 @@ bolao/
 │   └── 500.ejs                       # Página de erro 500
 │
 ├── public/
-│   └── css/
-│       └── style.css                 # CSS responsivo (tema verde/amarelo/azul)
+│   ├── css/
+│   │   └── style.css                 # CSS responsivo (tema verde/amarelo/azul)
+│   ├── js/
+│   │   └── toast.js                  # Toast/snackbar (substitui alert())
+│   ├── icon-192.svg                  # Ícone PWA 192×192 (⚽ verde)
+│   ├── icon-512.svg                  # Ícone PWA 512×512 (⚽ verde)
+│   ├── manifest.json                 # Manifest PWA (instalável como app)
+│   └── sw.js                         # Service worker (cache-first assets, network-first HTML)
+│
+├── services/
+│   ├── classificacao.js              # Cálculo de classificação dos grupos
+│   ├── mata-mata.js                  # Geração de confrontos, listagem, avanço de vencedores
+│   ├── palpite-config.js             # Constantes de configuração de palpites
+│   ├── placar-automatico.js          # Integração com API worldcup26.ir, auto-score + avanço
+│   └── pontuacao.js                  # Cálculo de pontos (grupos e mata-mata com bônus)
 │
 ├── scripts/
-│   ├── verificar-horarios.js         # Script utilitário para verificar horários dos jogos
-│   ├── daily-snapshot.js             # Backup completo (todas as tabelas) com rotação automática
-│   ├── dump-db-json.js               # Dump manual em JSON (legado)
+│   ├── avancar-vencedores.js          # Avança vencedores de todas as fases mata-mata finalizadas
+│   ├── check-db.js                   # Exibe palpites do banco
+│   ├── check-jogos.js                # Verifica jogos e palpites
 │   ├── compare-dbs.js                # Compara contagens entre Render e Neon
-│   ├── sync-render-to-neon.js        # Espelha Render → Neon (dump + comparação + import)
+│   ├── daily-snapshot.js             # Backup completo com rotação automática
+│   ├── dump-db-json.js               # Dump manual em JSON (legado)
 │   ├── fix-palpites-futuro.js        # Corrige palpites não-finalizados do Neon
 │   ├── import-neon.js                # Reimporta espelho a partir de render-dump.json
+│   ├── import-palpites-only.js       # Import focado só em palpites e palpites_extras
 │   ├── import-render-dump.js         # Import full do dump Render para outro banco
 │   ├── import-snapshot.js            # Importa um snapshot JSON (qualquer banco)
-│   ├── import-palpites-only.js       # Import focado só em palpites e palpites_extras
-│   └── test-mata-mata-e2e.js         # Teste end-to-end da lógica de mata-mata
+│   ├── promover-admin.js             # Promove usuário a admin via argumento
+│   ├── reset-palpites.js             # Limpa palpites e resultados
+│   ├── sync-render-to-neon.js        # Espelha Render → Neon (dump + comparação + import)
+│   ├── test-mata-mata-e2e.js         # Teste end-to-end da lógica de mata-mata
+│   └── verificar-horarios.js         # Verifica horários dos jogos
+│
+├── tests/
+│   ├── comprehensive.test.js          # Testes completos (backup, placar-auto, etc.)
+│   └── pontuacao.test.js             # Testes de pontuação (placar exato, mata-mata, etc.)
+│
+├── docs/
+│   └── MIGRACAO_RENDER_NEON.md       # Histórico e procedimentos da migração Render → Neon
 │
 ├── data/
 │   └── bolao.db                      # Arquivo do banco SQLite (gitignorado)
-│
-├── scripts/
-│   ├── check-db.js                       # Script: exibe palpites do banco
-│   ├── check-jogos.js                    # Script: verifica jogos e palpites
-│   ├── reset-palpites.js                 # Script: limpa palpites e resultados
-│   └── promover-admin.js                 # Script: promove usuário a admin via argumento
 ```
 
 ---

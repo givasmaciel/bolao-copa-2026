@@ -8,7 +8,7 @@
  */
 const { run, get, all } = require('../database/db');
 const { classificarGrupo, classificarTodosGrupos, obterVencedor, obterPerdedor, terceirosColocados } = require('../services/classificacao');
-const { avancarVencedor, avancarVencedoresMataMata, gerarMataMata, limparMataMata, listarConfrontos } = require('../services/mata-mata');
+const { avancarVencedor, gerarMataMata, limparMataMata, listarConfrontos } = require('../services/mata-mata');
 const { getStatus } = require('../services/placar-automatico');
 
 let passed = 0, failed = 0;

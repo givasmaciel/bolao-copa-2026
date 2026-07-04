@@ -97,10 +97,10 @@ Prazo dos palpites extras configurável via tabela `config` (chave `extras_data_
 ## Testes
 
 ```bash
-node tests/pontuacao.test.js
+node tests/pontuacao.test.js          # 24 testes de pontuação
+node tests/comprehensive.test.js      # 12 testes: backup, placar-auto, import, comparação
+npm test                              # roda ambos
 ```
-
-24 testes cobrindo regras de pontuação (placar exato, resultado+gol, só resultado, 1 gol, empate, mata-mata com prorrogação/pênaltis, null-safety).
 
 ## Rodar local
 
@@ -144,18 +144,23 @@ routes/
   dashboard.js   — cards, próximos jogos, top 5 (admin entra), banner com contagem regressiva, pontuação por fase
   resumo.js      — stats detalhadas, pontos por rodada, racha, histórico
   config.js      — alterar nome (sincroniza com username)
-  classificacao.js — classificação dos grupos
+  classificacao.js — classificação dos grupos + link oficial FIFA
   jogos.js       — listagem pública dos 104 jogos + rota /jogos/db-info para diagnóstico do banco conectado
   ranking.js     — ranking com pontos extras, desempate, admin entra normalmente
   senha.js       — reset de senha com token + email
   admin.js       — resultados, recalcular, placar automático, usuários, criar participante, extras, config, pontuação por fase, pontos bônus
 
 services/
-  placar-automatico.js — integração com API worldcup26.ir (busca resultados a cada 16 min, recalcula pontos, avanço automático de vencedores)
+  classificacao.js     — cálculo de classificação dos grupos
   mata-mata.js         — lógica de geração dos confrontos eliminatórios
+  palpite-config.js    — constantes de configuração de palpites (PALPITE_MARGEM_MS)
+  placar-automatico.js — integração com API worldcup26.ir (busca resultados a cada 16 min, recalcula pontos, avanço automático de vencedores)
+  pontuacao.js         — cálculo de pontos (grupos e mata-mata com bônus)
 
 middleware/
   auth.js        — verificarAutenticado, verificarAdmin, jaLogado
+  csp.js         — CSP e headers de segurança (X-Frame-Options, X-Content-Type-Options, Referrer-Policy)
+  csrf.js        — geração e validação de token CSRF em todos os POST/PUT/PATCH/DELETE
 
 views/
   partials/      — header.ejs (nav), footer.ejs, flash.ejs
@@ -166,22 +171,33 @@ views/
   palpites.ejs   — formulários por jogo com salvamento individual e botão "Salvar todos" por agrupamento
   palpites-extras.ejs — formulários por categoria com grid, busca, bandeiras, progresso, preview pts
   jogos-palpites.ejs — palpites públicos de um jogo (3 níveis, agrupado por pontos)
+  jogo-palpites.ejs  — palpites de um jogo na área de palpites (mesma view)
   palpites-usuario.ejs — detalhe dos palpites de um participante
   jogos.ejs      — tabela de jogos públicas
   ranking.ejs    — ranking com posições
   resumo.ejs     — estatísticas, rodadas, racha, histórico
   config.ejs     — alterar nome
-  classificacao.ejs — grupos e classificação
-  admin.ejs, admin-jogos.ejs, admin-usuarios.ejs, admin-extras.ejs, admin-pontuacao-fases.ejs, admin-placar-automatico.ejs
+  classificacao.ejs — grupos e classificação (com link FIFA)
+  admin.ejs, admin-jogos.ejs, admin-usuarios.ejs, admin-extras.ejs, admin-pontuacao-fases.ejs, admin-mata-mata.ejs, admin-placar-automatico.ejs, admin-premios.ejs, admin-link-login.ejs
   esqueci-senha.ejs, redefinir-senha.ejs
   404.ejs, 500.ejs
 
 raiz/
   server.js      — entry point (trust proxy, session, rotas, dbMarker)
+  logger.js      — logs estruturados em JSON (substitui console.log/error)
+  Dockerfile     — build containerizado
+  .dockerignore  — arquivos ignorados no build Docker
+  .editorconfig  — padrões de editor (indentação, charset, etc.)
+  .eslintrc.json — configuração de lint (ESLint)
+  .prettierrc    — configuração de formatação (Prettier)
   render.yaml    — Blueprint do Render (não provisiona mais Render Postgres; DATABASE_URL manual)
   .env.example, .node-version, package.json
+  .github/workflows/test.yml — CI: testes automáticos em push/PR
 
 scripts/
+  avancar-vencedores.js — avança vencedores de todas as fases mata-mata finalizadas
+  check-db.js           — exibe palpites do banco
+  check-jogos.js        — verifica jogos e palpites
   daily-snapshot.js     — backup de todas as tabelas com rotação (30 últimos) — Render ou Neon
   compare-dbs.js        — compara contagens entre Render e Neon (dry-run, --sync, --force)
   sync-render-to-neon.js — espelha Render → Neon (dump + comparação + import automático)
@@ -191,7 +207,25 @@ scripts/
   import-snapshot.js    — importa um snapshot JSON (Render ou Neon)
   import-palpites-only.js — import focado só em palpites e palpites_extras
   dump-db-json.js       — dump manual em JSON (legado, prefira `daily-snapshot.js`)
+  promover-admin.js     — promove usuário a admin via argumento
+  reset-palpites.js     — limpa palpites e resultados
   test-mata-mata-e2e.js — teste end-to-end da lógica de mata-mata
+  verificar-horarios.js — verifica horários dos jogos
+
+public/
+  css/style.css    — CSS responsivo (tema verde/amarelo/azul)
+  js/toast.js      — toast/snackbar (substitui alert())
+  icon-192.svg     — ícone PWA 192×192
+  icon-512.svg     — ícone PWA 512×512
+  manifest.json    — manifesto PWA
+  sw.js            — service worker
+
+tests/
+  comprehensive.test.js — testes completos (backup, placar-auto, import, etc.)
+  pontuacao.test.js     — testes de pontuação
+
+docs/
+  MIGRACAO_RENDER_NEON.md — histórico da migração Render → Neon
 ```
 
 ## Regras de negócio
